@@ -42,7 +42,7 @@ Bruk conventional commits:
 
 ## Nåværende Status
 
-**Versjon:** 0.2 (Asset-Ready Build)
+**Versjon:** 0.3 (Shop System Build)
 
 **Ferdig:**
 - [x] Parallax layer system
@@ -52,13 +52,17 @@ Bruk conventional commits:
 - [x] Fishing mechanics
 - [x] Prosedyral grafikk
 - [x] Sprite-ready arkitektur
+- [x] NPC Old Marsh med butikk
+- [x] Butikk-system (selg fisk, kjøp utstyr)
+- [x] Progression-system (stenger, agn, båter)
+- [x] Inventory-system
 
 **Neste prioritet:**
-- [ ] NPC fiskehandler med Claude API
-- [ ] Butikk-system
+- [ ] Claude API-integrasjon for dynamisk NPC-dialog
 - [ ] Lyd/musikk
 - [ ] Flere creatures
 - [ ] Narrativ/lore fragments
+- [ ] Save/load system
 
 ---
 

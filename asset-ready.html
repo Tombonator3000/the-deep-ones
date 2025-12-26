@@ -150,6 +150,8 @@
             <div>💰 <span id="money">0</span></div>
             <div>📏 <span id="depth">0</span>m</div>
             <div>🧠 <span id="sanity">██████████</span></div>
+            <div>🎒 <span id="inventory">0/10</span></div>
+            <div>🎣 <span id="rod">Old Bamboo</span></div>
             <div id="catch-display"></div>
         </div>
         
@@ -159,7 +161,7 @@
         </div>
         
         <div id="controls">
-            [SPACE] Cast/Reel | [↑↓] Depth | [←→] Move | [T] Time | [D] Debug
+            [SPACE] Cast/Reel | [↑↓] Depth | [←→] Move | [E] Shop | [T] Time | [D] Debug
         </div>
     </div>
 
@@ -171,13 +173,82 @@
 const CONFIG = {
     canvas: { width: 1000, height: 650 },
     waterLine: 280,
-    
+
     // Set to true when you have real assets
     useSprites: false,
     showDebug: true,
-    
+
     // Asset base path
     assetPath: 'assets/',
+
+    // NPC & Shop
+    dockX: 180, // Where Old Marsh's shop is located
+};
+
+// ============================================================
+// SHOP SYSTEM
+// ============================================================
+
+const SHOP = {
+    rods: [
+        { id: 'bamboo', name: "Old Bamboo", desc: "Your grandfather's rod. Reliable, if limited.", depthMax: 30, strength: 1, price: 0, owned: true },
+        { id: 'steel', name: "Steel Spinner", desc: "Reaches the mid-waters. Something watches from below.", depthMax: 60, strength: 2, price: 200, owned: false },
+        { id: 'deep', name: "Deep Diver", desc: "For those who seek what shouldn't be found.", depthMax: 100, strength: 3, price: 500, owned: false },
+        { id: 'abyss', name: "Abyss Caller", desc: "Marsh won't say where he got this. Don't ask.", depthMax: 120, strength: 4, price: 1500, owned: false }
+    ],
+    lures: [
+        { id: 'worm', name: "Common Worm", desc: "Simple. Effective. The fish seem... too eager.", bonus: "surface", multiplier: 1.2, price: 10, count: 0 },
+        { id: 'glow', name: "Glowing Jig", desc: "It pulses with an unnatural light.", bonus: "mid", multiplier: 1.3, price: 50, count: 0 },
+        { id: 'blood', name: "Blood Bait", desc: "Best not to ask whose blood.", bonus: "deep", multiplier: 1.4, price: 150, count: 0 },
+        { id: 'offering', name: "The Offering", desc: "They will come. They always come.", bonus: "abyss", multiplier: 1.5, price: 500, count: 0 }
+    ],
+    boats: [
+        { id: 'rowboat', name: "Old Rowboat", desc: "Creaks with every wave. Feels like home.", storage: 10, speed: 1, price: 0, owned: true },
+        { id: 'skiff', name: "Weathered Skiff", desc: "Faster. The dog seems nervous in it.", storage: 20, speed: 1.5, price: 400, owned: false },
+        { id: 'trawler', name: "The Endeavour", desc: "A serious vessel. For serious work.", storage: 40, speed: 2, price: 1200, owned: false }
+    ]
+};
+
+// NPC Dialog system - Old Marsh
+const NPC_DIALOGS = {
+    greeting: [
+        "Ah, another early riser. The fish bite best when the world sleeps.",
+        "Back again? The sea keeps calling, doesn't it?",
+        "You've got that look. The deep-water look. Be careful.",
+        "Morning. Or is it evening? Time moves strange here.",
+        "The dog knows. They always know. Watch its ears."
+    ],
+    lowSanity: [
+        "Your eyes... you've seen things down there, haven't you?",
+        "Maybe stay in the shallows today. Just... trust me.",
+        "They whisper about you now. The things below.",
+        "Here. Take this. *hands you something warm* ...Don't look at it too long.",
+        "The old ones are watching. I can smell it on you."
+    ],
+    afterRareCatch: [
+        "That thing you caught... we don't speak its name here.",
+        "I'll take it. I'll take it all. Just don't tell me where you found it.",
+        "My grandmother spoke of these. I didn't believe her.",
+        "The price I'm paying... it's not for the fish. It's to forget I saw it."
+    ],
+    selling: [
+        "Fair price for fair catch. Mostly fair, anyway.",
+        "I know a buyer in Innsmouth. Don't ask questions.",
+        "Gold for fish. Simple transaction. Nothing strange here.",
+        "The usual rate. Unless you want to... negotiate."
+    ],
+    buying: [
+        "Fine equipment. Treat it well.",
+        "This rod's seen things. Good things, I hope.",
+        "The bait's fresh. Fresher than you'd expect.",
+        "You're ready. Or as ready as anyone can be."
+    ],
+    idle: [
+        "*adjusts hat and stares at the horizon*",
+        "*mutters something in a language you don't recognize*",
+        "*the dog whimpers softly*",
+        "*scratches something into the dock with a knife*"
+    ]
 };
 
 // ============================================================
@@ -991,7 +1062,7 @@ function getTimePalette() {
 const game = {
     state: 'title',
     timeOfDay: 'dusk',
-    money: 0,
+    money: 50, // Start with some gold
     sanity: 100,
     depth: 0,
     targetDepth: 30,
@@ -1001,7 +1072,31 @@ const game = {
     currentCatch: null,
     caughtCreatures: [],
     fish: [],
-    layers: []
+    layers: [],
+
+    // Equipment
+    equipment: {
+        rod: 'bamboo',
+        lure: null,
+        boat: 'rowboat'
+    },
+
+    // Inventory (fish to sell)
+    inventory: [],
+    inventoryMax: 10, // Based on boat storage
+
+    // Shop state
+    shop: {
+        open: false,
+        tab: 'sell', // 'sell', 'rods', 'lures', 'boats'
+        selectedIndex: 0,
+        npcDialog: '',
+        dialogTimer: 0
+    },
+
+    // NPC interaction
+    nearDock: false,
+    lastRareCatch: false
 };
 
 // ============================================================
@@ -1365,6 +1460,483 @@ function drawCatchPopup() {
 }
 
 // ============================================================
+// NPC & SHOP SYSTEM
+// ============================================================
+
+function getRandomDialog(category) {
+    const dialogs = NPC_DIALOGS[category];
+    return dialogs[Math.floor(Math.random() * dialogs.length)];
+}
+
+function getCurrentRod() {
+    return SHOP.rods.find(r => r.id === game.equipment.rod);
+}
+
+function getCurrentBoat() {
+    return SHOP.boats.find(b => b.id === game.equipment.boat);
+}
+
+function getCurrentLure() {
+    if (!game.equipment.lure) return null;
+    return SHOP.lures.find(l => l.id === game.equipment.lure);
+}
+
+function drawDock() {
+    const dockX = CONFIG.dockX - game.cameraX * 0.4;
+    if (dockX < -150 || dockX > CONFIG.canvas.width + 50) return;
+
+    const palette = getTimePalette();
+
+    // Dock structure
+    ctx.fillStyle = '#3a2a20';
+    ctx.fillRect(dockX - 40, CONFIG.waterLine - 10, 80, 15);
+
+    // Support posts
+    ctx.fillStyle = '#2a1a15';
+    ctx.fillRect(dockX - 35, CONFIG.waterLine - 5, 8, 40);
+    ctx.fillRect(dockX + 27, CONFIG.waterLine - 5, 8, 40);
+
+    // Planks
+    ctx.strokeStyle = '#4a3a30';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+        ctx.beginPath();
+        ctx.moveTo(dockX - 38, CONFIG.waterLine - 8 + i * 3);
+        ctx.lineTo(dockX + 38, CONFIG.waterLine - 8 + i * 3);
+        ctx.stroke();
+    }
+
+    // Shop shack
+    ctx.fillStyle = '#2a2520';
+    ctx.fillRect(dockX - 30, CONFIG.waterLine - 55, 60, 45);
+
+    // Roof
+    ctx.fillStyle = '#1a1510';
+    ctx.beginPath();
+    ctx.moveTo(dockX - 35, CONFIG.waterLine - 55);
+    ctx.lineTo(dockX, CONFIG.waterLine - 75);
+    ctx.lineTo(dockX + 35, CONFIG.waterLine - 55);
+    ctx.closePath();
+    ctx.fill();
+
+    // Window (glowing)
+    const windowGlow = 0.3 + Math.sin(game.time * 0.02) * 0.1;
+    ctx.fillStyle = `rgba(255, 200, 120, ${windowGlow})`;
+    ctx.fillRect(dockX - 20, CONFIG.waterLine - 45, 15, 12);
+
+    // Door
+    ctx.fillStyle = '#1a1510';
+    ctx.fillRect(dockX + 5, CONFIG.waterLine - 40, 18, 30);
+
+    // Sign
+    ctx.fillStyle = '#3a3530';
+    ctx.fillRect(dockX + 40, CONFIG.waterLine - 50, 30, 20);
+    ctx.fillStyle = '#8a9a7a';
+    ctx.font = '10px VT323';
+    ctx.fillText('BAIT', dockX + 44, CONFIG.waterLine - 36);
+
+    // Draw Old Marsh if near
+    if (game.nearDock || game.shop.open) {
+        drawOldMarsh(dockX);
+    }
+
+    // Interaction prompt
+    if (game.nearDock && !game.shop.open && game.state === 'sailing') {
+        ctx.fillStyle = 'rgba(10, 15, 12, 0.8)';
+        ctx.fillRect(dockX - 60, CONFIG.waterLine - 100, 120, 25);
+        ctx.fillStyle = '#aaddaa';
+        ctx.font = '14px VT323';
+        ctx.fillText('[E] Talk to Marsh', dockX - 50, CONFIG.waterLine - 82);
+    }
+}
+
+function drawOldMarsh(dockX) {
+    const bob = Math.sin(game.time * 0.015) * 1;
+
+    // Body (hunched figure in coat)
+    ctx.fillStyle = '#1a1815';
+    ctx.beginPath();
+    ctx.ellipse(dockX - 5, CONFIG.waterLine - 25 + bob, 12, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Coat details
+    ctx.fillStyle = '#252520';
+    ctx.beginPath();
+    ctx.moveTo(dockX - 15, CONFIG.waterLine - 15 + bob);
+    ctx.lineTo(dockX - 12, CONFIG.waterLine - 35 + bob);
+    ctx.lineTo(dockX + 2, CONFIG.waterLine - 35 + bob);
+    ctx.lineTo(dockX + 5, CONFIG.waterLine - 15 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // Head
+    ctx.fillStyle = '#8a7a6a';
+    ctx.beginPath();
+    ctx.arc(dockX - 5, CONFIG.waterLine - 48 + bob, 10, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Sou'wester hat
+    ctx.fillStyle = '#3a3520';
+    ctx.beginPath();
+    ctx.ellipse(dockX - 5, CONFIG.waterLine - 55 + bob, 14, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(dockX - 10, CONFIG.waterLine - 62 + bob, 10, 8);
+
+    // Eyes (slightly unsettling)
+    ctx.fillStyle = '#2a3a3a';
+    const blink = Math.sin(game.time * 0.1) > 0.95 ? 0 : 1;
+    ctx.fillRect(dockX - 9, CONFIG.waterLine - 50 + bob, 3, 2 * blink);
+    ctx.fillRect(dockX - 3, CONFIG.waterLine - 50 + bob, 3, 2 * blink);
+
+    // Beard
+    ctx.fillStyle = '#5a5a5a';
+    ctx.beginPath();
+    ctx.moveTo(dockX - 10, CONFIG.waterLine - 42 + bob);
+    ctx.quadraticCurveTo(dockX - 5, CONFIG.waterLine - 35 + bob, dockX, CONFIG.waterLine - 42 + bob);
+    ctx.fill();
+
+    // Pipe (occasionally)
+    if (Math.sin(game.time * 0.005) > 0) {
+        ctx.strokeStyle = '#4a3a30';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(dockX, CONFIG.waterLine - 44 + bob);
+        ctx.lineTo(dockX + 12, CONFIG.waterLine - 48 + bob);
+        ctx.stroke();
+
+        // Smoke
+        ctx.fillStyle = 'rgba(150, 150, 140, 0.3)';
+        for (let i = 0; i < 3; i++) {
+            const smokeY = CONFIG.waterLine - 52 + bob - i * 8 - (game.time * 0.05) % 20;
+            const smokeX = dockX + 14 + Math.sin(game.time * 0.03 + i) * 3;
+            ctx.beginPath();
+            ctx.arc(smokeX, smokeY, 3 + i, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+}
+
+function drawShopUI() {
+    if (!game.shop.open) return;
+
+    const w = 700;
+    const h = 450;
+    const x = (CONFIG.canvas.width - w) / 2;
+    const y = (CONFIG.canvas.height - h) / 2 - 30;
+
+    // Background
+    ctx.fillStyle = 'rgba(5, 8, 10, 0.97)';
+    ctx.fillRect(x - 5, y - 5, w + 10, h + 10);
+    ctx.strokeStyle = '#4a6a5a';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x, y, w, h);
+
+    // Title
+    ctx.fillStyle = '#8aba9a';
+    ctx.font = '16px "Press Start 2P"';
+    ctx.fillText("OLD MARSH'S BAIT & TACKLE", x + 140, y + 35);
+
+    // NPC Dialog box
+    ctx.fillStyle = 'rgba(20, 30, 25, 0.9)';
+    ctx.fillRect(x + 20, y + 50, w - 40, 50);
+    ctx.strokeStyle = '#3a5a4a';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 20, y + 50, w - 40, 50);
+
+    ctx.fillStyle = '#7a9a8a';
+    ctx.font = '18px VT323';
+    const dialog = game.shop.npcDialog || getRandomDialog('greeting');
+    ctx.fillText(`"${dialog}"`, x + 35, y + 82);
+
+    // Tabs
+    const tabs = [
+        { id: 'sell', label: 'SELL FISH', icon: '🐟' },
+        { id: 'rods', label: 'RODS', icon: '🎣' },
+        { id: 'lures', label: 'LURES', icon: '🪱' },
+        { id: 'boats', label: 'BOATS', icon: '⛵' }
+    ];
+
+    tabs.forEach((tab, i) => {
+        const tx = x + 20 + i * 165;
+        const ty = y + 115;
+        const isActive = game.shop.tab === tab.id;
+
+        ctx.fillStyle = isActive ? '#2a4a3a' : '#1a2a25';
+        ctx.fillRect(tx, ty, 155, 30);
+        ctx.strokeStyle = isActive ? '#5a9a7a' : '#3a5a4a';
+        ctx.strokeRect(tx, ty, 155, 30);
+
+        ctx.fillStyle = isActive ? '#aaddaa' : '#6a8a7a';
+        ctx.font = '14px VT323';
+        ctx.fillText(`${tab.icon} ${tab.label}`, tx + 15, ty + 20);
+    });
+
+    // Content area
+    ctx.fillStyle = 'rgba(15, 25, 20, 0.8)';
+    ctx.fillRect(x + 20, y + 155, w - 40, h - 200);
+
+    // Draw content based on tab
+    switch (game.shop.tab) {
+        case 'sell':
+            drawSellTab(x + 30, y + 165, w - 60);
+            break;
+        case 'rods':
+            drawEquipmentTab(x + 30, y + 165, w - 60, SHOP.rods, 'rod');
+            break;
+        case 'lures':
+            drawLuresTab(x + 30, y + 165, w - 60);
+            break;
+        case 'boats':
+            drawEquipmentTab(x + 30, y + 165, w - 60, SHOP.boats, 'boat');
+            break;
+    }
+
+    // Gold display
+    ctx.fillStyle = '#d0c080';
+    ctx.font = '20px VT323';
+    ctx.fillText(`💰 ${game.money} gold`, x + w - 150, y + 35);
+
+    // Controls hint
+    ctx.fillStyle = '#5a6a5a';
+    ctx.font = '14px VT323';
+    ctx.fillText('[TAB] Switch | [↑↓] Select | [SPACE] Confirm | [ESC] Close', x + 150, y + h - 15);
+}
+
+function drawSellTab(x, y, w) {
+    ctx.fillStyle = '#8aba9a';
+    ctx.font = '16px VT323';
+    ctx.fillText(`Inventory: ${game.inventory.length}/${game.inventoryMax}`, x, y + 20);
+
+    if (game.inventory.length === 0) {
+        ctx.fillStyle = '#5a6a5a';
+        ctx.font = '18px VT323';
+        ctx.fillText("Your inventory is empty. Go catch some fish!", x, y + 60);
+        return;
+    }
+
+    // List inventory
+    game.inventory.forEach((fish, i) => {
+        const fy = y + 40 + i * 35;
+        const isSelected = game.shop.selectedIndex === i;
+
+        if (isSelected) {
+            ctx.fillStyle = 'rgba(90, 150, 120, 0.3)';
+            ctx.fillRect(x - 5, fy - 12, w, 32);
+        }
+
+        ctx.fillStyle = isSelected ? '#aaddaa' : '#7a9a8a';
+        ctx.font = '18px VT323';
+        ctx.fillText(`${fish.name}`, x + 10, fy + 8);
+
+        ctx.fillStyle = '#d0c080';
+        ctx.fillText(`💰 ${fish.value}`, x + w - 120, fy + 8);
+
+        if (isSelected) {
+            ctx.fillStyle = '#5a8a6a';
+            ctx.fillText('[SPACE] Sell', x + w - 200, fy + 8);
+        }
+    });
+
+    // Sell all button
+    if (game.inventory.length > 0) {
+        const allValue = game.inventory.reduce((sum, f) => sum + f.value, 0);
+        const by = y + 220;
+
+        ctx.strokeStyle = '#5a9a7a';
+        ctx.strokeRect(x + w/2 - 100, by, 200, 35);
+        ctx.fillStyle = '#7aba9a';
+        ctx.font = '16px VT323';
+        ctx.fillText(`[A] SELL ALL (💰 ${allValue})`, x + w/2 - 80, by + 23);
+    }
+}
+
+function drawEquipmentTab(x, y, w, items, type) {
+    items.forEach((item, i) => {
+        const iy = y + 10 + i * 60;
+        const isSelected = game.shop.selectedIndex === i;
+        const isEquipped = game.equipment[type] === item.id;
+        const canAfford = game.money >= item.price;
+
+        if (isSelected) {
+            ctx.fillStyle = 'rgba(90, 150, 120, 0.2)';
+            ctx.fillRect(x - 5, iy - 5, w, 55);
+        }
+
+        // Name
+        ctx.fillStyle = isEquipped ? '#aaddaa' : (isSelected ? '#8aba9a' : '#6a8a7a');
+        ctx.font = '18px VT323';
+        ctx.fillText(item.name + (isEquipped ? ' [EQUIPPED]' : ''), x + 10, iy + 15);
+
+        // Description
+        ctx.fillStyle = '#5a7a6a';
+        ctx.font = '14px VT323';
+        ctx.fillText(item.desc, x + 10, iy + 32);
+
+        // Stats
+        ctx.fillStyle = '#7a9a8a';
+        if (type === 'rod') {
+            ctx.fillText(`Depth: ${item.depthMax}m | Strength: ${'★'.repeat(item.strength)}`, x + 10, iy + 48);
+        } else if (type === 'boat') {
+            ctx.fillText(`Storage: ${item.storage} | Speed: ${'★'.repeat(Math.floor(item.speed))}`, x + 10, iy + 48);
+        }
+
+        // Price / status
+        if (item.owned) {
+            if (!isEquipped && isSelected) {
+                ctx.fillStyle = '#5a9a7a';
+                ctx.fillText('[SPACE] Equip', x + w - 120, iy + 15);
+            }
+        } else {
+            ctx.fillStyle = canAfford ? '#d0c080' : '#a06060';
+            ctx.fillText(`💰 ${item.price}`, x + w - 120, iy + 15);
+            if (isSelected && canAfford) {
+                ctx.fillStyle = '#5a9a7a';
+                ctx.fillText('[SPACE] Buy', x + w - 120, iy + 32);
+            }
+        }
+    });
+}
+
+function drawLuresTab(x, y, w) {
+    SHOP.lures.forEach((lure, i) => {
+        const iy = y + 10 + i * 55;
+        const isSelected = game.shop.selectedIndex === i;
+        const isEquipped = game.equipment.lure === lure.id;
+        const canAfford = game.money >= lure.price;
+
+        if (isSelected) {
+            ctx.fillStyle = 'rgba(90, 150, 120, 0.2)';
+            ctx.fillRect(x - 5, iy - 5, w, 50);
+        }
+
+        // Name and count
+        ctx.fillStyle = isEquipped ? '#aaddaa' : (isSelected ? '#8aba9a' : '#6a8a7a');
+        ctx.font = '18px VT323';
+        ctx.fillText(`${lure.name} (x${lure.count})` + (isEquipped ? ' [ACTIVE]' : ''), x + 10, iy + 15);
+
+        // Description
+        ctx.fillStyle = '#5a7a6a';
+        ctx.font = '14px VT323';
+        ctx.fillText(lure.desc, x + 10, iy + 32);
+
+        // Bonus info
+        ctx.fillStyle = '#7a9a8a';
+        ctx.fillText(`Best for: ${lure.bonus} | Bonus: +${Math.round((lure.multiplier - 1) * 100)}%`, x + 10, iy + 46);
+
+        // Price
+        ctx.fillStyle = canAfford ? '#d0c080' : '#a06060';
+        ctx.fillText(`💰 ${lure.price}`, x + w - 120, iy + 15);
+
+        if (isSelected) {
+            if (canAfford) {
+                ctx.fillStyle = '#5a9a7a';
+                ctx.fillText('[SPACE] Buy', x + w - 120, iy + 32);
+            }
+            if (lure.count > 0 && !isEquipped) {
+                ctx.fillStyle = '#5a9a7a';
+                ctx.fillText('[E] Equip', x + w - 120, iy + 46);
+            }
+        }
+    });
+}
+
+function openShop() {
+    game.shop.open = true;
+    game.shop.selectedIndex = 0;
+
+    // Pick appropriate greeting
+    if (game.sanity < 30) {
+        game.shop.npcDialog = getRandomDialog('lowSanity');
+    } else if (game.lastRareCatch) {
+        game.shop.npcDialog = getRandomDialog('afterRareCatch');
+        game.lastRareCatch = false;
+    } else {
+        game.shop.npcDialog = getRandomDialog('greeting');
+    }
+}
+
+function closeShop() {
+    game.shop.open = false;
+    game.shop.npcDialog = '';
+}
+
+function shopAction() {
+    const tab = game.shop.tab;
+    const idx = game.shop.selectedIndex;
+
+    switch (tab) {
+        case 'sell':
+            if (game.inventory.length > 0 && idx < game.inventory.length) {
+                const fish = game.inventory.splice(idx, 1)[0];
+                game.money += fish.value;
+                game.shop.npcDialog = getRandomDialog('selling');
+                if (idx >= game.inventory.length) {
+                    game.shop.selectedIndex = Math.max(0, game.inventory.length - 1);
+                }
+            }
+            break;
+
+        case 'rods':
+            const rod = SHOP.rods[idx];
+            if (rod.owned) {
+                game.equipment.rod = rod.id;
+                game.shop.npcDialog = "Good choice. That rod knows the waters.";
+            } else if (game.money >= rod.price) {
+                game.money -= rod.price;
+                rod.owned = true;
+                game.equipment.rod = rod.id;
+                game.shop.npcDialog = getRandomDialog('buying');
+            }
+            break;
+
+        case 'lures':
+            const lure = SHOP.lures[idx];
+            if (game.money >= lure.price) {
+                game.money -= lure.price;
+                lure.count++;
+                game.shop.npcDialog = getRandomDialog('buying');
+            }
+            break;
+
+        case 'boats':
+            const boat = SHOP.boats[idx];
+            if (boat.owned) {
+                game.equipment.boat = boat.id;
+                game.inventoryMax = boat.storage;
+                game.shop.npcDialog = "She'll treat you well. Treat her the same.";
+            } else if (game.money >= boat.price) {
+                game.money -= boat.price;
+                boat.owned = true;
+                game.equipment.boat = boat.id;
+                game.inventoryMax = boat.storage;
+                game.shop.npcDialog = getRandomDialog('buying');
+            }
+            break;
+    }
+}
+
+function sellAllFish() {
+    if (game.inventory.length === 0) return;
+
+    const totalValue = game.inventory.reduce((sum, f) => sum + f.value, 0);
+    game.money += totalValue;
+    game.inventory = [];
+    game.shop.selectedIndex = 0;
+    game.shop.npcDialog = `${totalValue} gold. Fair price for the lot of 'em.`;
+}
+
+function equipLure(idx) {
+    const lure = SHOP.lures[idx];
+    if (lure.count > 0) {
+        if (game.equipment.lure === lure.id) {
+            game.equipment.lure = null; // Unequip
+        } else {
+            game.equipment.lure = lure.id;
+        }
+    }
+}
+
+// ============================================================
 // MAIN GAME LOOP
 // ============================================================
 
@@ -1375,24 +1947,46 @@ let lastTime = 0;
 
 function update(deltaTime) {
     game.time++;
-    
+
     // Update camera to follow boat
     game.cameraX = game.boatX - CONFIG.canvas.width / 2;
-    
+
     // Update all parallax layers
     game.layers.forEach(layer => {
         layer.update(deltaTime, game.cameraX);
     });
-    
+
+    // Check if near dock
+    game.nearDock = Math.abs(game.boatX - CONFIG.dockX) < 80;
+
+    // Get current rod for depth limit
+    const currentRod = getCurrentRod();
+    const maxDepth = currentRod ? currentRod.depthMax : 30;
+
+    // Clamp target depth to rod limit
+    if (game.targetDepth > maxDepth) {
+        game.targetDepth = maxDepth;
+    }
+
     // Game logic
     if (game.state === 'waiting') {
-        const bite = 0.003 + (game.depth / 800);
-        if (Math.random() < bite) {
+        // Bite chance affected by lure
+        let biteChance = 0.003 + (game.depth / 800);
+        const lure = getCurrentLure();
+        if (lure) {
+            // Bonus for matching zone
+            const zone = game.depth < 20 ? 'surface' : game.depth < 55 ? 'mid' : game.depth < 90 ? 'deep' : 'abyss';
+            if (lure.bonus === zone) {
+                biteChance *= lure.multiplier;
+            }
+        }
+
+        if (Math.random() < biteChance) {
             game.state = 'reeling';
             document.getElementById('catch-display').textContent = '🐟 BITE! [SPACE]';
         }
     }
-    
+
     if (game.state === 'casting') {
         if (game.depth < game.targetDepth) {
             game.depth += 1.5;
@@ -1401,36 +1995,40 @@ function update(deltaTime) {
             document.getElementById('catch-display').textContent = 'Waiting...';
         }
     }
-    
+
     // Sanity recovery
     if (game.depth < 15 && game.sanity < 100 && game.state === 'sailing') {
         game.sanity = Math.min(100, game.sanity + 0.02);
     }
-    
+
     // Maintain fish
     if (game.fish.length < 15) game.fish.push(createFish());
-    
+
     updateUI();
 }
 
 function render() {
     ctx.clearRect(0, 0, CONFIG.canvas.width, CONFIG.canvas.height);
-    
+
     // Draw all layers in order
     game.layers.forEach(layer => {
         const fallback = FALLBACKS[layer.id];
         layer.draw(ctx, CONFIG.canvas.width, CONFIG.canvas.height, fallback);
     });
-    
+
+    // Draw dock (behind fish but in front of underwater)
+    drawDock();
+
     // Draw fish (between underwater layers and boat)
     drawFish();
-    
+
     // Draw boat and fishing
     drawBoat();
     drawFishingLine();
-    
-    // UI
+
+    // UI overlays
     if (game.currentCatch) drawCatchPopup();
+    if (game.shop.open) drawShopUI();
 }
 
 function gameLoop(timestamp) {
@@ -1448,9 +2046,32 @@ function gameLoop(timestamp) {
 function updateUI() {
     document.getElementById('money').textContent = game.money;
     document.getElementById('depth').textContent = Math.floor(game.depth);
-    
+
     const bars = Math.floor(game.sanity / 10);
-    document.getElementById('sanity').textContent = '█'.repeat(bars) + '░'.repeat(10 - bars);
+    const sanityEl = document.getElementById('sanity');
+    sanityEl.textContent = '█'.repeat(bars) + '░'.repeat(10 - bars);
+
+    // Color based on sanity
+    if (game.sanity < 20) {
+        sanityEl.style.color = '#a06060';
+    } else if (game.sanity < 50) {
+        sanityEl.style.color = '#a0a060';
+    } else {
+        sanityEl.style.color = '#60a080';
+    }
+
+    // Update inventory display
+    const inventoryEl = document.getElementById('inventory');
+    if (inventoryEl) {
+        inventoryEl.textContent = `${game.inventory.length}/${game.inventoryMax}`;
+    }
+
+    // Update rod display
+    const rodEl = document.getElementById('rod');
+    if (rodEl) {
+        const rod = getCurrentRod();
+        rodEl.textContent = rod ? rod.name : 'None';
+    }
 }
 
 // ============================================================
@@ -1459,13 +2080,31 @@ function updateUI() {
 
 document.addEventListener('keydown', (e) => {
     if (game.state === 'title') return;
-    
+
+    // Shop controls
+    if (game.shop.open) {
+        handleShopInput(e);
+        return;
+    }
+
     switch(e.code) {
         case 'Space':
             e.preventDefault();
             if (game.currentCatch) {
-                game.caughtCreatures.push(game.currentCatch);
-                game.money += game.currentCatch.value;
+                // Add to inventory instead of instant sell
+                if (game.inventory.length < game.inventoryMax) {
+                    game.inventory.push(game.currentCatch);
+                    game.caughtCreatures.push(game.currentCatch);
+
+                    // Mark rare catches for NPC dialog
+                    if (game.currentCatch.sanityLoss >= 30) {
+                        game.lastRareCatch = true;
+                    }
+                } else {
+                    // Inventory full - auto-sell at reduced price
+                    game.money += Math.floor(game.currentCatch.value * 0.5);
+                }
+
                 game.sanity = Math.max(0, game.sanity - game.currentCatch.sanityLoss);
                 game.currentCatch = null;
                 game.state = 'sailing';
@@ -1477,33 +2116,114 @@ document.addEventListener('keydown', (e) => {
             } else if (game.state === 'reeling') {
                 game.currentCatch = getCreature();
                 game.state = 'caught';
+
+                // Use up lure on catch
+                const lure = getCurrentLure();
+                if (lure && lure.count > 0) {
+                    lure.count--;
+                    if (lure.count === 0) {
+                        game.equipment.lure = null;
+                    }
+                }
             } else {
                 game.state = 'sailing';
                 game.depth = 0;
                 document.getElementById('catch-display').textContent = '';
             }
             break;
+
         case 'ArrowUp':
+            e.preventDefault();
+            const maxUp = getCurrentRod() ? getCurrentRod().depthMax : 30;
             game.targetDepth = Math.max(5, game.targetDepth - 5);
             break;
+
         case 'ArrowDown':
-            game.targetDepth = Math.min(120, game.targetDepth + 5);
+            e.preventDefault();
+            const maxDown = getCurrentRod() ? getCurrentRod().depthMax : 30;
+            game.targetDepth = Math.min(maxDown, game.targetDepth + 5);
             break;
+
         case 'ArrowLeft':
-            if (game.state === 'sailing') game.boatX = Math.max(150, game.boatX - 15);
+            if (game.state === 'sailing') {
+                const speed = getCurrentBoat() ? getCurrentBoat().speed : 1;
+                game.boatX = Math.max(100, game.boatX - 15 * speed);
+            }
             break;
+
         case 'ArrowRight':
-            if (game.state === 'sailing') game.boatX = Math.min(CONFIG.canvas.width - 150, game.boatX + 15);
+            if (game.state === 'sailing') {
+                const speed = getCurrentBoat() ? getCurrentBoat().speed : 1;
+                game.boatX = Math.min(CONFIG.canvas.width + 200, game.boatX + 15 * speed);
+            }
             break;
+
+        case 'KeyE':
+            // Open shop when near dock
+            if (game.nearDock && game.state === 'sailing') {
+                openShop();
+            }
+            break;
+
         case 'KeyT':
             cycleTime();
             break;
+
         case 'KeyD':
             CONFIG.showDebug = !CONFIG.showDebug;
             updateDebugPanel();
             break;
     }
 });
+
+function handleShopInput(e) {
+    const tabs = ['sell', 'rods', 'lures', 'boats'];
+    const currentTabIndex = tabs.indexOf(game.shop.tab);
+
+    switch(e.code) {
+        case 'Escape':
+            closeShop();
+            break;
+
+        case 'Tab':
+            e.preventDefault();
+            game.shop.tab = tabs[(currentTabIndex + 1) % tabs.length];
+            game.shop.selectedIndex = 0;
+            break;
+
+        case 'ArrowUp':
+            e.preventDefault();
+            game.shop.selectedIndex = Math.max(0, game.shop.selectedIndex - 1);
+            break;
+
+        case 'ArrowDown':
+            e.preventDefault();
+            let maxIndex = 0;
+            if (game.shop.tab === 'sell') maxIndex = Math.max(0, game.inventory.length - 1);
+            else if (game.shop.tab === 'rods') maxIndex = SHOP.rods.length - 1;
+            else if (game.shop.tab === 'lures') maxIndex = SHOP.lures.length - 1;
+            else if (game.shop.tab === 'boats') maxIndex = SHOP.boats.length - 1;
+            game.shop.selectedIndex = Math.min(maxIndex, game.shop.selectedIndex + 1);
+            break;
+
+        case 'Space':
+            e.preventDefault();
+            shopAction();
+            break;
+
+        case 'KeyA':
+            if (game.shop.tab === 'sell') {
+                sellAllFish();
+            }
+            break;
+
+        case 'KeyE':
+            if (game.shop.tab === 'lures') {
+                equipLure(game.shop.selectedIndex);
+            }
+            break;
+    }
+}
 
 function getCreature() {
     let pool;
