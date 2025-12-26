@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Deep Ones — Cozy Cosmic Fishing</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0a0a12;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'VT323', monospace;
+            overflow: hidden;
+        }
+        
+        #gameContainer {
+            position: relative;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        
+        #gameCanvas {
+            display: block;
+            border: 4px solid #1a1a2e;
+            box-shadow: 
+                0 0 0 2px #0f0f1a,
+                0 0 60px rgba(70, 130, 100, 0.2),
+                inset 0 0 100px rgba(0, 0, 0, 0.5);
+        }
+        
+        #ui {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #c4d4cc;
+            font-size: 18px;
+            text-shadow: 2px 2px 0 #0a0a12, -1px -1px 0 #0a0a12;
+            pointer-events: none;
+            background: rgba(10, 15, 20, 0.7);
+            padding: 12px 16px;
+            border-radius: 4px;
+            border: 1px solid rgba(100, 130, 120, 0.3);
+        }
+        
+        #ui div {
+            margin: 4px 0;
+        }
+        
+        #journal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(15, 20, 18, 0.95);
+            border: 2px solid #3a5a4a;
+            padding: 15px;
+            color: #8aaa9a;
+            font-size: 14px;
+            max-width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+            border-radius: 4px;
+        }
+        
+        #journal h3 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: #aaccbb;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #3a5a4a;
+            padding-bottom: 8px;
+        }
+        
+        #journal .entry {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(40, 70, 55, 0.3);
+            border-left: 3px solid #5a8a6a;
+            border-radius: 2px;
+        }
+        
+        #journal .entry strong {
+            color: #aaddbb;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            color: #7a9a8a;
+            font-size: 14px;
+            background: rgba(10, 15, 20, 0.7);
+            padding: 10px 14px;
+            border-radius: 4px;
+        }
+        
+        #title-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #1a1525 0%, #151a22 50%, #0a1015 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        #title-screen h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 32px;
+            color: #5a9a7a;
+            text-shadow: 
+                0 0 30px rgba(90, 154, 122, 0.5),
+                4px 4px 0 #1a2a25,
+                0 0 60px rgba(90, 154, 122, 0.3);
+            margin-bottom: 15px;
+            animation: titlePulse 4s ease-in-out infinite;
+        }
+        
+        #title-screen .subtitle {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: #3a6a5a;
+            margin-bottom: 30px;
+            letter-spacing: 2px;
+        }
+        
+        #title-screen p {
+            color: #4a6a5a;
+            font-size: 20px;
+            margin-bottom: 50px;
+            font-style: italic;
+        }
+        
+        #title-screen button {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            padding: 18px 50px;
+            background: transparent;
+            border: 2px solid #4a7a6a;
+            color: #7aba9a;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px;
+        }
+        
+        #title-screen button:hover {
+            background: #4a7a6a;
+            color: #0a0a12;
+            box-shadow: 0 0 40px rgba(90, 154, 122, 0.5);
+            transform: scale(1.05);
+        }
+        
+        .time-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .time-buttons button {
+            font-size: 10px;
+            padding: 12px 25px;
+        }
+        
+        @keyframes titlePulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(0.98); }
+        }
+        
+        .sanity-low {
+            animation: sanityPulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes sanityPulse {
+            0%, 100% { filter: hue-rotate(0deg) saturate(1); }
+            50% { filter: hue-rotate(15deg) saturate(1.3); }
+        }
+        
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="1000" height="650"></canvas>
+        
+        <div id="title-screen">
+            <h1>THE DEEP ONES</h1>
+            <div class="subtitle">A COZY COSMIC FISHING EXPERIENCE</div>
+            <p>"The fish bite back... in ways you can't forget."</p>
+            <button onclick="startGame('dusk')">🌅 CAST YOUR LINE</button>
+            <div class="time-buttons">
+                <button onclick="startGame('dawn')">🌄 Dawn</button>
+                <button onclick="startGame('day')">☀️ Day</button>
+                <button onclick="startGame('dusk')">🌅 Dusk</button>
+                <button onclick="startGame('night')">🌙 Night</button>
+            </div>
+        </div>
+        
+        <div id="ui">
+            <div>💰 <span id="money">0</span> gold</div>
+            <div>📏 Depth: <span id="depth">0</span>m</div>
+            <div>🧠 <span id="sanity-label">Sanity</span>: <span id="sanity">████████████</span></div>
+            <div id="catch-display"></div>
+        </div>
+        
+        <div id="journal">
+            <h3>📓 FISHER'S JOURNAL</h3>
+            <div id="journal-entries"></div>
+        </div>
+        
+        <div id="controls">
+            [SPACE] Cast/Reel | [↑↓] Depth | [←→] Move | [J] Journal | [T] Time
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const WATER_LINE = 280;
+        const PIXEL_SIZE = 2;
+        
+        const game = {
+            state: 'title',
+            timeOfDay: 'dusk',
+            money: 0,
+            sanity: 100,
+            depth: 0,
+            targetDepth: 30,
+            boatX: 500,
+            boatY: WATER_LINE - 25,
+            currentCatch: null,
+            caughtCreatures: [],
+            journalOpen: false,
+            time: 0,
+            windOffset: 0,
+            fish: [],
+            particles: [],
+            birds: [],
+            bubbles: []
+        };
+        
+        const timePalettes = {
+            dawn: {
+                sky: ['#2a2040', '#4a3a60', '#8a6080', '#d4a090', '#f0d0a0'],
+                skyGradientStops: [0, 0.3, 0.5, 0.7, 1],
+                clouds: 'rgba(200, 160, 140, 0.4)',
+                mountains: ['#1a1525', '#2a2035', '#3a3045'],
+                trees: ['#1a2520', '#253530', '#304540'],
+                water: ['#3a5060', '#2a4050', '#1a3040', '#0a2030', '#051520'],
+                waterHighlight: 'rgba(240, 200, 160, 0.15)',
+                underwater: ['#2a4555', '#1a3545', '#0a2535', '#051525'],
+                fog: 'rgba(180, 140, 120, 0.2)',
+                moon: null,
+                sun: { x: 850, y: 120, color: '#f0c080', glow: 'rgba(240, 180, 100, 0.4)' },
+                ambient: 0.8
+            },
+            day: {
+                sky: ['#4060a0', '#6090c0', '#90c0e0', '#b0e0f0', '#d0f0ff'],
+                skyGradientStops: [0, 0.3, 0.5, 0.7, 1],
+                clouds: 'rgba(255, 255, 255, 0.6)',
+                mountains: ['#3a5060', '#4a6070', '#5a7080'],
+                trees: ['#2a4a30', '#3a5a40', '#4a6a50'],
+                water: ['#4080a0', '#3070a0', '#2060a0', '#1050a0', '#0040a0'],
+                waterHighlight: 'rgba(255, 255, 255, 0.2)',
+                underwater: ['#306080', '#205070', '#104060', '#003050'],
+                fog: 'rgba(200, 220, 240, 0.15)',
+                moon: null,
+                sun: { x: 500, y: 80, color: '#ffffa0', glow: 'rgba(255, 255, 200, 0.3)' },
+                ambient: 1.0
+            },
+            dusk: {
+                sky: ['#1a1530', '#3a2545', '#6a4060', '#b06070', '#e0a070', '#f0c080'],
+                skyGradientStops: [0, 0.2, 0.4, 0.6, 0.8, 1],
+                clouds: 'rgba(180, 100, 80, 0.5)',
+                mountains: ['#1a1020', '#2a1530', '#3a2040'],
+                trees: ['#151a20', '#1a2025', '#202530'],
+                water: ['#4a5070', '#3a4060', '#2a3050', '#1a2040', '#0a1030'],
+                waterHighlight: 'rgba(240, 160, 100, 0.2)',
+                underwater: ['#3a4560', '#2a3550', '#1a2540', '#0a1530'],
+                fog: 'rgba(150, 80, 60, 0.25)',
+                moon: { x: 150, y: 100, phase: 0.7 },
+                sun: { x: 850, y: 200, color: '#f08050', glow: 'rgba(240, 100, 50, 0.5)' },
+                ambient: 0.7
+            },
+            night: {
+                sky: ['#0a0a15', '#101020', '#151530', '#1a1a40'],
+                skyGradientStops: [0, 0.3, 0.6, 1],
+                clouds: 'rgba(40, 40, 60, 0.4)',
+                mountains: ['#0a0a12', '#0f0f18', '#141420'],
+                trees: ['#080a10', '#0a0c12', '#0c0e14'],
+                water: ['#152535', '#102030', '#0a1525', '#05101a', '#020a10'],
+                waterHighlight: 'rgba(100, 120, 150, 0.1)',
+                underwater: ['#102030', '#0a1525', '#05101a', '#020a10'],
+                fog: 'rgba(30, 40, 50, 0.3)',
+                moon: { x: 750, y: 80, phase: 1.0 },
+                sun: null,
+                ambient: 0.4
+            }
+        };
+        
+        function getPalette() {
+            let palette = JSON.parse(JSON.stringify(timePalettes[game.timeOfDay]));
+            if (game.sanity < 70) palette.fog = 'rgba(80, 50, 90, 0.35)';
+            if (game.sanity < 40) {
+                palette.fog = 'rgba(100, 40, 80, 0.45)';
+                palette.waterHighlight = 'rgba(150, 80, 100, 0.2)';
+            }
+            return palette;
+        }
+        
+        function initFish() {
+            game.fish = [];
+            const fishCount = 15 + Math.floor(Math.random() * 10);
+            for (let i = 0; i < fishCount; i++) game.fish.push(createFish());
+        }
+        
+        function createFish() {
+            const depth = WATER_LINE + 50 + Math.random() * 300;
+            const isDeep = depth > WATER_LINE + 200;
+            const isAbyss = depth > WATER_LINE + 300;
+            return {
+                x: Math.random() * canvas.width,
+                y: depth,
+                size: isAbyss ? 8 + Math.random() * 12 : (isDeep ? 6 + Math.random() * 8 : 4 + Math.random() * 6),
+                speed: (0.3 + Math.random() * 0.7) * (Math.random() > 0.5 ? 1 : -1),
+                wobble: Math.random() * Math.PI * 2,
+                type: isAbyss ? 'abyss' : (isDeep ? 'deep' : 'normal'),
+                eyeCount: isAbyss ? Math.floor(Math.random() * 4) + 2 : (isDeep && game.sanity < 60 ? Math.floor(Math.random() * 3) + 1 : 1)
+            };
+        }
+        
+        function initBirds() {
+            game.birds = [];
+            if (game.timeOfDay === 'night') return;
+            const birdCount = 3 + Math.floor(Math.random() * 4);
+            for (let i = 0; i < birdCount; i++) {
+                game.birds.push({
+                    x: Math.random() * canvas.width,
+                    y: 50 + Math.random() * 80,
+                    speed: 0.5 + Math.random() * 1,
+                    wingPhase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+        
+        const creatures = {
+            surface: [
+                { name: "Harbor Cod", desc: "Looks normal. Looks. Normal.", value: 10, rarity: 0.5, sanityLoss: 0, color: '#8a9a70' },
+                { name: "Pale Flounder", desc: "Too many eyes on one side. They all blink separately.", value: 20, rarity: 0.3, sanityLoss: 3, color: '#a0a090' },
+                { name: "Whisper Eel", desc: "You heard it before you saw it. What did it say?", value: 35, rarity: 0.15, sanityLoss: 5, color: '#506060' },
+                { name: "Midnight Perch", desc: "Its scales absorb light. Looking at it hurts.", value: 50, rarity: 0.05, sanityLoss: 8, color: '#202030' }
+            ],
+            mid: [
+                { name: "Glass Squid", desc: "Transparent. You can see what it ate. That wasn't a fish.", value: 60, rarity: 0.4, sanityLoss: 10, color: '#80a0b0' },
+                { name: "Bone Angler", desc: "Its light is beautiful. Don't look at it. Don't.", value: 90, rarity: 0.3, sanityLoss: 15, color: '#d0d0a0' },
+                { name: "The Mimic", desc: "Looks like something you caught before. But bigger. Much bigger.", value: 120, rarity: 0.2, sanityLoss: 18, color: '#707070' },
+                { name: "Prophet Fish", desc: "It knows your name. It's always known.", value: 150, rarity: 0.1, sanityLoss: 22, color: '#6050a0' }
+            ],
+            deep: [
+                { name: "Congregation Fish", desc: "Several fish. Fused. They breathe in unison.", value: 180, rarity: 0.4, sanityLoss: 25, color: '#605050' },
+                { name: "The Listener", desc: "No eyes. It knows exactly where you are.", value: 220, rarity: 0.3, sanityLoss: 30, color: '#403040' },
+                { name: "Drowned Sailor's Friend", desc: "No one will tell you what this really is.", value: 280, rarity: 0.2, sanityLoss: 35, color: '#304050' },
+                { name: "Memory Leech", desc: "You forgot something important. What was it?", value: 350, rarity: 0.1, sanityLoss: 40, color: '#500030' }
+            ],
+            abyss: [
+                { name: "Dagon's Fingerling", desc: "'Fingerling' is a relative term.", value: 500, rarity: 0.5, sanityLoss: 45, color: '#203020' },
+                { name: "The Dreaming One", desc: "It sleeps. Do not wake it. DO NOT WAKE IT.", value: 800, rarity: 0.3, sanityLoss: 55, color: '#102010' },
+                { name: "Mother Hydra's Tear", desc: "Not a fish. A piece of something. Something vast.", value: 1200, rarity: 0.15, sanityLoss: 65, color: '#100520' },
+                { name: "The Unnamed", desc: "There are no words. There never were.", value: 2000, rarity: 0.05, sanityLoss: 80, color: '#050505' }
+            ]
+        };
+        
+        function drawSky() {
+            const palette = getPalette();
+            const gradient = ctx.createLinearGradient(0, 0, 0, WATER_LINE);
+            palette.sky.forEach((color, i) => gradient.addColorStop(palette.skyGradientStops[i], color));
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, WATER_LINE);
+            
+            if (game.timeOfDay === 'night' || game.timeOfDay === 'dusk') {
+                const starIntensity = game.timeOfDay === 'night' ? 1 : 0.4;
+                for (let i = 0; i < 100; i++) {
+                    const x = (i * 73 + game.time * 0.005) % canvas.width;
+                    const y = (i * 47) % (WATER_LINE - 50);
+                    const twinkle = Math.sin(game.time * 0.03 + i * 0.5) * 0.3 + 0.7;
+                    const size = (i % 5 === 0) ? 2 : 1;
+                    ctx.fillStyle = `rgba(255, 255, 240, ${starIntensity * twinkle * 0.8})`;
+                    ctx.fillRect(x, y, size, size);
+                }
+            }
+            
+            if (palette.sun) {
+                const sun = palette.sun;
+                const glowGradient = ctx.createRadialGradient(sun.x, sun.y, 0, sun.x, sun.y, 100);
+                glowGradient.addColorStop(0, sun.glow);
+                glowGradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = glowGradient;
+                ctx.fillRect(sun.x - 100, sun.y - 100, 200, 200);
+                ctx.fillStyle = sun.color;
+                ctx.beginPath();
+                ctx.arc(sun.x, sun.y, 30, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            if (palette.moon) {
+                const moon = palette.moon;
+                ctx.fillStyle = 'rgba(200, 210, 230, 0.15)';
+                ctx.beginPath();
+                ctx.arc(moon.x, moon.y, 50, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#e0e8f0';
+                ctx.beginPath();
+                ctx.arc(moon.x, moon.y, 25, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#c0c8d0';
+                ctx.beginPath();
+                ctx.arc(moon.x - 8, moon.y - 5, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(moon.x + 10, moon.y + 8, 4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                if (game.sanity < 25) {
+                    const faceAlpha = (25 - game.sanity) / 25;
+                    ctx.fillStyle = `rgba(30, 20, 40, ${faceAlpha})`;
+                    ctx.fillRect(moon.x - 10, moon.y - 8, 4, 4);
+                    ctx.fillRect(moon.x + 6, moon.y - 8, 4, 4);
+                    ctx.fillRect(moon.x - 8, moon.y + 10, 16, 3);
+                }
+            }
+        }
+        
+        function drawClouds() {
+            const palette = getPalette();
+            game.windOffset += 0.15;
+            const cloudData = [
+                { x: 100, y: 60, w: 120, h: 30 },
+                { x: 350, y: 90, w: 80, h: 25 },
+                { x: 600, y: 50, w: 150, h: 35 },
+                { x: 850, y: 80, w: 100, h: 28 }
+            ];
+            cloudData.forEach((cloud, i) => {
+                const x = ((cloud.x + game.windOffset * (0.5 + i * 0.1)) % (canvas.width + 200)) - 100;
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                drawCloudShape(x + 5, cloud.y + 5, cloud.w, cloud.h);
+                ctx.fillStyle = palette.clouds;
+                drawCloudShape(x, cloud.y, cloud.w, cloud.h);
+            });
+        }
+        
+        function drawCloudShape(x, y, w, h) {
+            ctx.beginPath();
+            ctx.ellipse(x, y, w * 0.5, h * 0.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(x - w * 0.3, y + h * 0.1, w * 0.3, h * 0.4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(x + w * 0.3, y + h * 0.15, w * 0.35, h * 0.35, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function drawMountains() {
+            const palette = getPalette();
+            ctx.fillStyle = palette.mountains[0];
+            ctx.beginPath();
+            ctx.moveTo(0, WATER_LINE);
+            ctx.lineTo(0, 180);
+            ctx.lineTo(100, 140);
+            ctx.lineTo(200, 170);
+            ctx.lineTo(350, 120);
+            ctx.lineTo(450, 160);
+            ctx.lineTo(550, 130);
+            ctx.lineTo(700, 150);
+            ctx.lineTo(850, 110);
+            ctx.lineTo(canvas.width, 140);
+            ctx.lineTo(canvas.width, WATER_LINE);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.fillStyle = palette.mountains[1];
+            ctx.beginPath();
+            ctx.moveTo(0, WATER_LINE);
+            ctx.lineTo(0, 200);
+            ctx.lineTo(150, 160);
+            ctx.lineTo(250, 190);
+            ctx.lineTo(400, 150);
+            ctx.lineTo(500, 180);
+            ctx.lineTo(650, 155);
+            ctx.lineTo(800, 175);
+            ctx.lineTo(canvas.width, 160);
+            ctx.lineTo(canvas.width, WATER_LINE);
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        function drawTrees() {
+            const palette = getPalette();
+            drawTreeCluster(50, WATER_LINE - 20, palette.trees, 8, 80);
+            drawTreeCluster(150, WATER_LINE - 10, palette.trees, 6, 60);
+            drawTreeCluster(800, WATER_LINE - 15, palette.trees, 10, 90);
+            drawTreeCluster(900, WATER_LINE - 25, palette.trees, 7, 70);
+            drawLighthouse(100, WATER_LINE - 10);
+            ctx.fillStyle = palette.mountains[2];
+            ctx.beginPath();
+            ctx.ellipse(700, WATER_LINE, 60, 15, 0, 0, Math.PI * 2);
+            ctx.fill();
+            drawTreeCluster(700, WATER_LINE - 25, palette.trees, 4, 40);
+        }
+        
+        function drawTreeCluster(x, y, colors, count, maxHeight) {
+            for (let i = 0; i < count; i++) {
+                const tx = x + (i - count/2) * 15 + Math.sin(i * 2) * 10;
+                const ty = y;
+                const height = maxHeight * (0.6 + Math.random() * 0.4);
+                const colorIndex = Math.min(colors.length - 1, Math.floor(i / 3));
+                ctx.fillStyle = '#1a1510';
+                ctx.fillRect(tx - 2, ty - height * 0.3, 4, height * 0.3);
+                ctx.fillStyle = colors[colorIndex];
+                ctx.beginPath();
+                ctx.moveTo(tx, ty - height);
+                ctx.lineTo(tx - 15, ty - height * 0.3);
+                ctx.lineTo(tx + 15, ty - height * 0.3);
+                ctx.closePath();
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(tx, ty - height * 0.8);
+                ctx.lineTo(tx - 20, ty - height * 0.1);
+                ctx.lineTo(tx + 20, ty - height * 0.1);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+        
+        function drawLighthouse(x, y) {
+            const palette = getPalette();
+            ctx.fillStyle = palette.mountains[1];
+            ctx.beginPath();
+            ctx.ellipse(x, y + 5, 40, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#e0d8d0';
+            ctx.beginPath();
+            ctx.moveTo(x - 12, y);
+            ctx.lineTo(x - 8, y - 70);
+            ctx.lineTo(x + 8, y - 70);
+            ctx.lineTo(x + 12, y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#a04040';
+            ctx.fillRect(x - 10, y - 35, 20, 15);
+            ctx.fillStyle = '#302520';
+            ctx.fillRect(x - 10, y - 75, 20, 8);
+            ctx.fillStyle = '#a04040';
+            ctx.beginPath();
+            ctx.moveTo(x, y - 85);
+            ctx.lineTo(x - 12, y - 75);
+            ctx.lineTo(x + 12, y - 75);
+            ctx.closePath();
+            ctx.fill();
+            
+            const lightIntensity = (Math.sin(game.time * 0.05) + 1) / 2;
+            const lightColor = game.timeOfDay === 'night' ? 
+                `rgba(255, 250, 200, ${0.6 + lightIntensity * 0.4})` :
+                `rgba(255, 250, 200, ${0.2 + lightIntensity * 0.2})`;
+            ctx.fillStyle = lightColor;
+            ctx.beginPath();
+            ctx.arc(x, y - 72, 5 + lightIntensity * 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            if (game.timeOfDay === 'night' || game.timeOfDay === 'dusk') {
+                const beamGradient = ctx.createLinearGradient(x, y - 72, x + 200, y - 72);
+                beamGradient.addColorStop(0, `rgba(255, 250, 200, ${0.3 * lightIntensity})`);
+                beamGradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = beamGradient;
+                ctx.beginPath();
+                ctx.moveTo(x + 5, y - 75);
+                ctx.lineTo(x + 250, y - 90);
+                ctx.lineTo(x + 250, y - 50);
+                ctx.lineTo(x + 5, y - 69);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+        
+        function drawReeds() {
+            const palette = getPalette();
+            for (let i = 0; i < 20; i++) {
+                const x = 20 + i * 8;
+                const y = WATER_LINE + 5;
+                const height = 30 + Math.sin(i) * 15;
+                const sway = Math.sin(game.time * 0.02 + i * 0.5) * 3;
+                ctx.strokeStyle = palette.trees[1];
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.quadraticCurveTo(x + sway, y - height/2, x + sway * 1.5, y - height);
+                ctx.stroke();
+            }
+            for (let i = 0; i < 15; i++) {
+                const x = canvas.width - 20 - i * 8;
+                const y = WATER_LINE + 5;
+                const height = 25 + Math.cos(i) * 12;
+                const sway = Math.sin(game.time * 0.02 + i * 0.7) * 3;
+                ctx.strokeStyle = palette.trees[1];
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.quadraticCurveTo(x + sway, y - height/2, x + sway * 1.5, y - height);
+                ctx.stroke();
+            }
+        }
+        
+        function drawWaterSurface() {
+            const palette = getPalette();
+            ctx.strokeStyle = palette.waterHighlight;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let x = 0; x < canvas.width; x += 4) {
+                const ripple = Math.sin(x * 0.02 + game.time * 0.03) * 2 + Math.sin(x * 0.05 + game.time * 0.05) * 1;
+                const y = WATER_LINE + ripple;
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            for (let i = 0; i < 30; i++) {
+                const x = (i * 67 + game.time * 0.3) % canvas.width;
+                const ripple = Math.sin(x * 0.02 + game.time * 0.03) * 2;
+                const y = WATER_LINE + ripple;
+                const width = 10 + Math.sin(i) * 5;
+                ctx.fillStyle = palette.waterHighlight;
+                ctx.fillRect(x, y - 1, width, 2);
+            }
+        }
+        
+        function drawUnderwater() {
+            const palette = getPalette();
+            const gradient = ctx.createLinearGradient(0, WATER_LINE, 0, canvas.height);
+            palette.underwater.forEach((color, i) => gradient.addColorStop(i / (palette.underwater.length - 1), color));
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, WATER_LINE, canvas.width, canvas.height - WATER_LINE);
+            drawUnderwaterTerrain();
+            drawLightRays();
+            drawUnderwaterParticles();
+            drawFish();
+            drawDeepShadows();
+        }
+        
+        function drawUnderwaterTerrain() {
+            ctx.fillStyle = 'rgba(10, 20, 25, 0.6)';
+            ctx.beginPath();
+            ctx.moveTo(0, WATER_LINE);
+            ctx.lineTo(0, canvas.height);
+            ctx.lineTo(200, canvas.height);
+            ctx.lineTo(100, WATER_LINE + 100);
+            ctx.lineTo(50, WATER_LINE);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(canvas.width, WATER_LINE);
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.lineTo(canvas.width - 150, canvas.height);
+            ctx.lineTo(canvas.width - 80, WATER_LINE + 80);
+            ctx.lineTo(canvas.width - 30, WATER_LINE);
+            ctx.closePath();
+            ctx.fill();
+            
+            for (let i = 0; i < 10; i++) {
+                const x = 30 + i * 20;
+                const baseY = WATER_LINE + 80 + i * 15;
+                const height = 40 + Math.random() * 30;
+                const sway = Math.sin(game.time * 0.015 + i * 0.8) * 8;
+                ctx.strokeStyle = `rgba(40, 80, 60, ${0.5 - i * 0.03})`;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(x, baseY);
+                ctx.quadraticCurveTo(x + sway/2, baseY - height/2, x + sway, baseY - height);
+                ctx.stroke();
+            }
+            
+            for (let i = 0; i < 8; i++) {
+                const x = canvas.width - 40 - i * 18;
+                const baseY = WATER_LINE + 70 + i * 12;
+                const height = 35 + Math.random() * 25;
+                const sway = Math.sin(game.time * 0.015 + i * 0.6) * 6;
+                ctx.strokeStyle = `rgba(40, 80, 60, ${0.4 - i * 0.03})`;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(x, baseY);
+                ctx.quadraticCurveTo(x + sway/2, baseY - height/2, x + sway, baseY - height);
+                ctx.stroke();
+            }
+            
+            ctx.fillStyle = 'rgba(15, 25, 30, 0.8)';
+            for (let i = 0; i < 8; i++) {
+                const x = 150 + i * 100;
+                const y = canvas.height - 20;
+                const w = 30 + Math.random() * 40;
+                const h = 15 + Math.random() * 20;
+                ctx.beginPath();
+                ctx.ellipse(x, y, w, h, 0, Math.PI, 0);
+                ctx.fill();
+            }
+        }
+        
+        function drawLightRays() {
+            if (game.timeOfDay === 'night') return;
+            const rayCount = game.timeOfDay === 'day' ? 8 : 5;
+            const intensity = game.timeOfDay === 'day' ? 0.08 : 0.04;
+            for (let i = 0; i < rayCount; i++) {
+                const x = 150 + i * 100 + Math.sin(game.time * 0.01 + i) * 20;
+                const gradient = ctx.createLinearGradient(x, WATER_LINE, x + 50, canvas.height);
+                gradient.addColorStop(0, `rgba(200, 220, 180, ${intensity})`);
+                gradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.moveTo(x, WATER_LINE);
+                ctx.lineTo(x - 20, canvas.height);
+                ctx.lineTo(x + 70, canvas.height);
+                ctx.lineTo(x + 30, WATER_LINE);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+        
+        function drawUnderwaterParticles() {
+            for (let i = 0; i < 40; i++) {
+                const x = (i * 37 + game.time * 0.2) % canvas.width;
+                const y = WATER_LINE + 30 + (i * 23 + Math.sin(game.time * 0.02 + i) * 20) % (canvas.height - WATER_LINE - 50);
+                const size = 1 + (i % 3);
+                const alpha = 0.2 + Math.sin(game.time * 0.03 + i) * 0.1;
+                ctx.fillStyle = `rgba(150, 180, 170, ${alpha})`;
+                ctx.fillRect(x, y, size, size);
+            }
+            
+            if (game.state === 'waiting' || game.state === 'casting') {
+                for (let i = 0; i < 5; i++) {
+                    const age = (game.time + i * 50) % 200;
+                    const x = game.boatX + 50 + Math.sin(age * 0.05 + i) * 10;
+                    const y = WATER_LINE + 20 + age;
+                    const size = 2 + Math.sin(i) * 1;
+                    if (y < WATER_LINE + game.depth * 3) {
+                        ctx.strokeStyle = 'rgba(180, 200, 210, 0.4)';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.arc(x, y, size, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+        
+        function drawFish() {
+            game.fish.forEach((fish, index) => {
+                fish.x += fish.speed;
+                fish.wobble += 0.05;
+                if (fish.x > canvas.width + 50) fish.x = -50;
+                if (fish.x < -50) fish.x = canvas.width + 50;
+                const wobbleY = Math.sin(fish.wobble) * 3;
+                const y = fish.y + wobbleY;
+                if (y < WATER_LINE) return;
+                
+                let fishColor;
+                if (fish.type === 'abyss') fishColor = game.sanity < 50 ? 'rgba(80, 40, 60, 0.8)' : 'rgba(40, 50, 60, 0.7)';
+                else if (fish.type === 'deep') fishColor = 'rgba(60, 80, 70, 0.6)';
+                else fishColor = 'rgba(140, 160, 120, 0.7)';
+                
+                const direction = fish.speed > 0 ? 1 : -1;
+                ctx.fillStyle = fishColor;
+                ctx.beginPath();
+                ctx.ellipse(fish.x, y, fish.size * 1.5, fish.size * 0.7, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(fish.x - fish.size * 1.5 * direction, y);
+                ctx.lineTo(fish.x - fish.size * 2.5 * direction, y - fish.size * 0.5);
+                ctx.lineTo(fish.x - fish.size * 2.5 * direction, y + fish.size * 0.5);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.fillStyle = 'rgba(200, 220, 180, 0.8)';
+                for (let e = 0; e < fish.eyeCount; e++) {
+                    const eyeX = fish.x + fish.size * 0.8 * direction + e * 3 * direction;
+                    const eyeY = y - 2 + (e % 2) * 4;
+                    ctx.beginPath();
+                    ctx.arc(eyeX, eyeY, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                if (fish.type === 'deep' || fish.type === 'abyss') {
+                    const glowIntensity = Math.sin(game.time * 0.05 + index) * 0.2 + 0.3;
+                    const glowColor = fish.type === 'abyss' ? `rgba(100, 150, 100, ${glowIntensity})` : `rgba(100, 180, 150, ${glowIntensity})`;
+                    ctx.fillStyle = glowColor;
+                    ctx.beginPath();
+                    ctx.arc(fish.x, y, fish.size * 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+        }
+        
+        function drawDeepShadows() {
+            if (game.sanity > 80) return;
+            const shadowCount = Math.floor((100 - game.sanity) / 20) + 1;
+            for (let i = 0; i < shadowCount; i++) {
+                const x = (game.time * 0.3 + i * 250) % (canvas.width + 200) - 100;
+                const y = canvas.height - 80 + Math.sin(game.time * 0.01 + i * 2) * 30;
+                const size = 60 + i * 20;
+                ctx.fillStyle = `rgba(5, 5, 10, ${0.4 - i * 0.1})`;
+                ctx.beginPath();
+                ctx.ellipse(x, y, size, size / 3, Math.sin(game.time * 0.005) * 0.2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                if (game.sanity < 40) {
+                    for (let t = 0; t < 3; t++) {
+                        const tx = x + Math.cos(t * 2 + game.time * 0.02) * size * 0.8;
+                        const ty = y + Math.sin(t * 2 + game.time * 0.02) * 20;
+                        ctx.strokeStyle = `rgba(5, 5, 10, ${0.3 - i * 0.08})`;
+                        ctx.lineWidth = 8 - t * 2;
+                        ctx.beginPath();
+                        ctx.moveTo(tx, ty);
+                        ctx.quadraticCurveTo(tx + Math.sin(game.time * 0.03 + t) * 30, ty + 40, tx + Math.sin(game.time * 0.02 + t) * 50, ty + 80);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+        
+        function drawReflections() {
+            const palette = getPalette();
+            ctx.save();
+            ctx.globalAlpha = 0.3;
+            ctx.scale(1, -1);
+            ctx.translate(0, -WATER_LINE * 2 - 20);
+            ctx.fillStyle = palette.mountains[0];
+            ctx.beginPath();
+            ctx.moveTo(0, WATER_LINE);
+            ctx.lineTo(100, 140);
+            ctx.lineTo(350, 120);
+            ctx.lineTo(550, 130);
+            ctx.lineTo(850, 110);
+            ctx.lineTo(canvas.width, 140);
+            ctx.lineTo(canvas.width, WATER_LINE);
+            ctx.lineTo(0, WATER_LINE);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+            
+            for (let y = WATER_LINE + 5; y < WATER_LINE + 100; y += 4) {
+                const distortion = Math.sin(y * 0.1 + game.time * 0.03) * 3;
+                const alpha = 0.1 - (y - WATER_LINE) * 0.001;
+                ctx.fillStyle = `rgba(100, 140, 160, ${Math.max(0, alpha)})`;
+                ctx.fillRect(distortion, y, canvas.width, 2);
+            }
+        }
+        
+        function drawBirds() {
+            if (game.timeOfDay === 'night') return;
+            game.birds.forEach((bird) => {
+                bird.x += bird.speed;
+                bird.wingPhase += 0.15;
+                if (bird.x > canvas.width + 50) bird.x = -50;
+                const wingY = Math.sin(bird.wingPhase) * 5;
+                ctx.strokeStyle = '#1a1a20';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(bird.x - 8, bird.y + wingY);
+                ctx.lineTo(bird.x, bird.y);
+                ctx.lineTo(bird.x + 8, bird.y + wingY);
+                ctx.stroke();
+            });
+        }
+        
+        function drawBoat() {
+            const bobAmount = Math.sin(game.time * 0.04) * 4;
+            const bx = game.boatX;
+            const by = WATER_LINE - 15 + bobAmount;
+            const tilt = Math.sin(game.time * 0.03) * 0.03;
+            
+            ctx.save();
+            ctx.translate(bx, by);
+            ctx.rotate(tilt);
+            ctx.globalAlpha = 0.3;
+            ctx.scale(1, -1);
+            ctx.translate(0, -50);
+            drawBoatShape(0, 0, true);
+            ctx.restore();
+            
+            ctx.save();
+            ctx.translate(bx, by);
+            ctx.rotate(tilt);
+            drawBoatShape(0, 0, false);
+            ctx.restore();
+        }
+        
+        function drawBoatShape(x, y, isReflection) {
+            ctx.fillStyle = isReflection ? '#2a2015' : '#4a3525';
+            ctx.beginPath();
+            ctx.moveTo(x - 45, y);
+            ctx.quadraticCurveTo(x - 50, y + 15, x - 35, y + 20);
+            ctx.lineTo(x + 35, y + 20);
+            ctx.quadraticCurveTo(x + 50, y + 15, x + 45, y);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.fillStyle = isReflection ? '#352515' : '#5a4535';
+            ctx.fillRect(x - 35, y + 5, 70, 4);
+            ctx.fillStyle = isReflection ? '#1a1510' : '#3a2a20';
+            ctx.beginPath();
+            ctx.ellipse(x, y + 8, 32, 8, 0, 0, Math.PI);
+            ctx.fill();
+            
+            if (!isReflection) {
+                ctx.fillStyle = '#1a1815';
+                ctx.fillRect(x - 8, y - 25, 16, 25);
+                ctx.beginPath();
+                ctx.arc(x, y - 32, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#3a3530';
+                ctx.fillRect(x - 10, y - 42, 20, 5);
+                ctx.fillRect(x - 6, y - 48, 12, 8);
+                
+                ctx.fillStyle = '#c0a080';
+                ctx.beginPath();
+                ctx.ellipse(x + 25, y - 5, 10, 7, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x + 32, y - 10, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(x + 28, y - 14, 3, 5, -0.3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#201510';
+                ctx.beginPath();
+                ctx.arc(x + 34, y - 11, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#c0a080';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(x + 16, y - 5);
+                ctx.quadraticCurveTo(x + 10, y - 15 + Math.sin(game.time * 0.2) * 5, x + 8, y - 20);
+                ctx.stroke();
+                
+                if (game.state !== 'sailing') {
+                    ctx.strokeStyle = '#5a4a30';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(x + 5, y - 20);
+                    ctx.lineTo(x + 55, y - 55);
+                    ctx.stroke();
+                    ctx.fillStyle = '#7a6a50';
+                    ctx.beginPath();
+                    ctx.arc(x + 55, y - 55, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                const lanternGlow = (Math.sin(game.time * 0.08) + 1) / 2;
+                const glowSize = 8 + lanternGlow * 4;
+                const lanternGradient = ctx.createRadialGradient(x - 30, y - 10, 0, x - 30, y - 10, glowSize * 2);
+                lanternGradient.addColorStop(0, `rgba(255, 200, 100, ${0.4 + lanternGlow * 0.2})`);
+                lanternGradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = lanternGradient;
+                ctx.beginPath();
+                ctx.arc(x - 30, y - 10, glowSize * 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#3a3025';
+                ctx.fillRect(x - 34, y - 5, 8, 12);
+                ctx.fillStyle = `rgba(255, 220, 150, ${0.7 + lanternGlow * 0.3})`;
+                ctx.fillRect(x - 33, y - 3, 6, 8);
+            }
+        }
+        
+        function drawFishingLine() {
+            if (game.state === 'sailing') return;
+            const bobAmount = Math.sin(game.time * 0.04) * 4;
+            const rodTipX = game.boatX + 55;
+            const rodTipY = WATER_LINE - 15 + bobAmount - 55;
+            const maxLineDepth = canvas.height - WATER_LINE - 50;
+            const lineDepthPixels = (game.depth / 120) * maxLineDepth;
+            const lineEndY = WATER_LINE + 20 + lineDepthPixels;
+            const lineEndX = game.boatX + 60 + Math.sin(game.time * 0.02) * 5;
+            
+            ctx.strokeStyle = 'rgba(200, 210, 200, 0.6)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(rodTipX, rodTipY);
+            ctx.lineTo(lineEndX, Math.min(lineEndY, canvas.height - 30));
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            const bobberY = WATER_LINE + 5 + Math.sin(game.time * 0.05) * 3;
+            const bobberWobble = game.state === 'reeling' ? Math.sin(game.time * 0.3) * 8 : 0;
+            ctx.fillStyle = '#cc3030';
+            ctx.beginPath();
+            ctx.ellipse(lineEndX + bobberWobble, bobberY, 5, 7, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#f0f0e0';
+            ctx.beginPath();
+            ctx.ellipse(lineEndX + bobberWobble, bobberY - 5, 5, 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            const hookY = Math.min(lineEndY, canvas.height - 30);
+            ctx.fillStyle = '#a0a090';
+            ctx.beginPath();
+            ctx.arc(lineEndX, hookY, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'rgba(200, 220, 210, 0.7)';
+            ctx.font = '14px VT323';
+            ctx.textAlign = 'left';
+            ctx.fillText(`${Math.floor(game.depth)}m`, lineEndX + 10, hookY);
+            ctx.fillStyle = 'rgba(150, 200, 180, 0.5)';
+            ctx.fillText(`→ ${game.targetDepth}m`, lineEndX + 10, hookY + 16);
+        }
+        
+        function drawCatchPopup() {
+            if (!game.currentCatch) return;
+            const creature = game.currentCatch;
+            const popupWidth = 350;
+            const popupHeight = 160;
+            const popupX = (canvas.width - popupWidth) / 2;
+            const popupY = 80 + Math.sin(game.time * 0.08) * 5;
+            
+            ctx.fillStyle = 'rgba(5, 10, 8, 0.95)';
+            ctx.fillRect(popupX - 5, popupY - 5, popupWidth + 10, popupHeight + 10);
+            ctx.strokeStyle = '#5a8a6a';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(popupX, popupY, popupWidth, popupHeight);
+            
+            const glowGradient = ctx.createLinearGradient(popupX, popupY, popupX, popupY + popupHeight);
+            glowGradient.addColorStop(0, 'rgba(90, 138, 106, 0.2)');
+            glowGradient.addColorStop(1, 'transparent');
+            ctx.fillStyle = glowGradient;
+            ctx.fillRect(popupX + 2, popupY + 2, popupWidth - 4, popupHeight - 4);
+            
+            ctx.fillStyle = creature.color || '#4a5a4a';
+            ctx.beginPath();
+            ctx.ellipse(popupX + 60, popupY + 70, 35, 20, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(popupX + 25, popupY + 70);
+            ctx.lineTo(popupX + 10, popupY + 55);
+            ctx.lineTo(popupX + 10, popupY + 85);
+            ctx.closePath();
+            ctx.fill();
+            
+            const eyeCount = creature.sanityLoss > 30 ? 3 : (creature.sanityLoss > 15 ? 2 : 1);
+            ctx.fillStyle = 'rgba(200, 220, 180, 0.9)';
+            for (let i = 0; i < eyeCount; i++) {
+                ctx.beginPath();
+                ctx.arc(popupX + 75 + i * 8, popupY + 65 + (i % 2) * 8, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            ctx.fillStyle = '#aaddaa';
+            ctx.font = '12px "Press Start 2P"';
+            ctx.fillText('CAUGHT!', popupX + 120, popupY + 35);
+            ctx.fillStyle = '#8aba9a';
+            ctx.font = '22px VT323';
+            ctx.fillText(creature.name, popupX + 120, popupY + 65);
+            ctx.fillStyle = '#d0d080';
+            ctx.font = '18px VT323';
+            ctx.fillText(`💰 ${creature.value} gold`, popupX + 120, popupY + 90);
+            
+            if (creature.sanityLoss > 20) {
+                ctx.fillStyle = '#a06060';
+                ctx.fillText(`🧠 -${creature.sanityLoss} sanity`, popupX + 230, popupY + 90);
+            }
+            
+            ctx.fillStyle = '#6a8a7a';
+            ctx.font = '16px VT323';
+            const words = creature.desc.split(' ');
+            let line = '';
+            let lineY = popupY + 115;
+            words.forEach(word => {
+                if ((line + word).length > 45) {
+                    ctx.fillText(line, popupX + 20, lineY);
+                    line = word + ' ';
+                    lineY += 18;
+                } else {
+                    line += word + ' ';
+                }
+            });
+            ctx.fillText(line, popupX + 20, lineY);
+            
+            ctx.fillStyle = '#5a6a5a';
+            ctx.font = '14px VT323';
+            ctx.fillText('[SPACE] to continue', popupX + popupWidth - 140, popupY + popupHeight - 10);
+        }
+        
+        function drawFog() {
+            const palette = getPalette();
+            for (let i = 0; i < 3; i++) {
+                const fogX = ((game.time * 0.1 * (i + 1)) % (canvas.width * 2)) - canvas.width;
+                const fogY = WATER_LINE - 30 + i * 20;
+                ctx.fillStyle = palette.fog;
+                ctx.beginPath();
+                ctx.ellipse(fogX, fogY, 300, 30, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(fogX + 400, fogY + 10, 250, 25, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        function updateUI() {
+            document.getElementById('money').textContent = game.money;
+            document.getElementById('depth').textContent = Math.floor(game.depth);
+            const sanityBars = Math.floor(game.sanity / 10);
+            const sanityDisplay = '█'.repeat(Math.max(0, sanityBars)) + '░'.repeat(Math.max(0, 10 - sanityBars));
+            document.getElementById('sanity').textContent = sanityDisplay;
+            
+            const sanityEl = document.getElementById('sanity');
+            const sanityLabel = document.getElementById('sanity-label');
+            if (game.sanity > 70) {
+                sanityEl.style.color = '#8aba9a';
+                sanityLabel.textContent = 'Sanity';
+            } else if (game.sanity > 40) {
+                sanityEl.style.color = '#baba6a';
+                sanityLabel.textContent = 'Sanity';
+            } else if (game.sanity > 20) {
+                sanityEl.style.color = '#ba8a6a';
+                sanityLabel.textContent = 'Grip';
+            } else {
+                sanityEl.style.color = '#ba6a6a';
+                sanityLabel.textContent = 'Reality';
+            }
+            
+            if (game.sanity < 30) canvas.classList.add('sanity-low');
+            else canvas.classList.remove('sanity-low');
+        }
+        
+        function getCreatureAtDepth(depth) {
+            let pool;
+            if (depth < 20) pool = creatures.surface;
+            else if (depth < 55) pool = creatures.mid;
+            else if (depth < 90) pool = creatures.deep;
+            else pool = creatures.abyss;
+            
+            const roll = Math.random();
+            let cumulative = 0;
+            for (const creature of pool) {
+                cumulative += creature.rarity;
+                if (roll <= cumulative) return {...creature};
+            }
+            return {...pool[0]};
+        }
+        
+        function update() {
+            game.time++;
+            if (game.state === 'waiting') {
+                const biteChance = 0.003 + (game.depth / 800) + (game.timeOfDay === 'night' ? 0.002 : 0);
+                if (Math.random() < biteChance) {
+                    game.state = 'reeling';
+                    document.getElementById('catch-display').textContent = '🐟 BITE! Press [SPACE] to reel!';
+                    canvas.classList.add('shake');
+                    setTimeout(() => canvas.classList.remove('shake'), 500);
+                }
+            }
+            if (game.state === 'casting') {
+                const castSpeed = 1.5;
+                if (game.depth < game.targetDepth) game.depth += castSpeed;
+                else {
+                    game.state = 'waiting';
+                    document.getElementById('catch-display').textContent = 'Waiting for a bite...';
+                }
+            }
+            if (game.depth < 15 && game.sanity < 100 && game.state === 'sailing') {
+                game.sanity = Math.min(100, game.sanity + 0.02);
+            }
+            if (game.fish.length < 15) game.fish.push(createFish());
+            updateUI();
+        }
+        
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawSky();
+            drawClouds();
+            drawMountains();
+            drawTrees();
+            drawBirds();
+            drawReeds();
+            drawUnderwater();
+            drawReflections();
+            drawWaterSurface();
+            drawFog();
+            drawBoat();
+            drawFishingLine();
+            if (game.currentCatch) drawCatchPopup();
+        }
+        
+        function gameLoop() {
+            if (game.state !== 'title') {
+                update();
+                render();
+            }
+            requestAnimationFrame(gameLoop);
+        }
+        
+        document.addEventListener('keydown', (e) => {
+            if (game.state === 'title') return;
+            switch(e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    if (game.currentCatch) {
+                        game.caughtCreatures.push(game.currentCatch);
+                        game.money += game.currentCatch.value;
+                        game.sanity = Math.max(0, game.sanity - game.currentCatch.sanityLoss);
+                        game.currentCatch = null;
+                        game.state = 'sailing';
+                        game.depth = 0;
+                        document.getElementById('catch-display').textContent = '';
+                        updateJournal();
+                    } else if (game.state === 'sailing') {
+                        game.state = 'casting';
+                        document.getElementById('catch-display').textContent = 'Casting...';
+                    } else if (game.state === 'reeling') {
+                        game.currentCatch = getCreatureAtDepth(game.depth);
+                        game.state = 'caught';
+                    } else if (game.state === 'waiting' || game.state === 'casting') {
+                        game.state = 'sailing';
+                        game.depth = 0;
+                        document.getElementById('catch-display').textContent = '';
+                    }
+                    break;
+                case 'ArrowUp':
+                    if (game.state === 'sailing' || game.state === 'waiting') {
+                        game.targetDepth = Math.max(5, game.targetDepth - 5);
+                        if (game.state === 'waiting') game.state = 'casting';
+                    }
+                    break;
+                case 'ArrowDown':
+                    if (game.state === 'sailing' || game.state === 'waiting') {
+                        game.targetDepth = Math.min(120, game.targetDepth + 5);
+                        if (game.state === 'waiting') game.state = 'casting';
+                    }
+                    break;
+                case 'ArrowLeft':
+                    if (game.state === 'sailing') game.boatX = Math.max(150, game.boatX - 15);
+                    break;
+                case 'ArrowRight':
+                    if (game.state === 'sailing') game.boatX = Math.min(canvas.width - 150, game.boatX + 15);
+                    break;
+                case 'KeyJ':
+                    toggleJournal();
+                    break;
+                case 'KeyT':
+                    cycleTimeOfDay();
+                    break;
+            }
+        });
+        
+        function toggleJournal() {
+            game.journalOpen = !game.journalOpen;
+            document.getElementById('journal').style.display = game.journalOpen ? 'block' : 'none';
+        }
+        
+        function updateJournal() {
+            const entriesEl = document.getElementById('journal-entries');
+            entriesEl.innerHTML = '';
+            const recent = game.caughtCreatures.slice(-8).reverse();
+            for (const creature of recent) {
+                const entry = document.createElement('div');
+                entry.className = 'entry';
+                entry.innerHTML = `<strong>${creature.name}</strong><br><em>"${creature.desc}"</em><br>💰 ${creature.value}`;
+                entriesEl.appendChild(entry);
+            }
+            if (recent.length === 0) {
+                entriesEl.innerHTML = '<div class="entry"><em>No entries yet.<br><br>Cast your line into the deep...<br><br>But be careful what you catch.</em></div>';
+            }
+        }
+        
+        function cycleTimeOfDay() {
+            const times = ['dawn', 'day', 'dusk', 'night'];
+            const currentIndex = times.indexOf(game.timeOfDay);
+            game.timeOfDay = times[(currentIndex + 1) % times.length];
+            initBirds();
+        }
+        
+        function startGame(time) {
+            document.getElementById('title-screen').style.display = 'none';
+            game.state = 'sailing';
+            game.timeOfDay = time || 'dusk';
+            initFish();
+            initBirds();
+            updateJournal();
+        }
+        
+        window.startGame = startGame;
+        gameLoop();
+    </script>
+</body>
+</html>

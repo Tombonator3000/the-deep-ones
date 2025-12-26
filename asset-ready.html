@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Deep Ones — Asset-Ready Build</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background: #0a0a12;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'VT323', monospace;
+            overflow: hidden;
+        }
+        
+        #gameContainer {
+            position: relative;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        
+        #gameCanvas {
+            display: block;
+            border: 4px solid #1a1a2e;
+            box-shadow: 0 0 60px rgba(70, 130, 100, 0.2);
+        }
+        
+        #ui {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #c4d4cc;
+            font-size: 18px;
+            text-shadow: 2px 2px 0 #0a0a12;
+            background: rgba(10, 15, 20, 0.8);
+            padding: 12px 16px;
+            border-radius: 4px;
+            border: 1px solid rgba(100, 130, 120, 0.3);
+        }
+        
+        #ui div { margin: 4px 0; }
+        
+        #debug {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            color: #6a8a7a;
+            font-size: 12px;
+            background: rgba(10, 15, 20, 0.8);
+            padding: 10px;
+            border-radius: 4px;
+            max-width: 250px;
+        }
+        
+        #debug h4 { color: #8aba9a; margin-bottom: 8px; }
+        #debug .loaded { color: #8aba9a; }
+        #debug .fallback { color: #baba6a; }
+        #debug .missing { color: #ba6a6a; }
+        
+        #controls {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            color: #7a9a8a;
+            font-size: 14px;
+            background: rgba(10, 15, 20, 0.7);
+            padding: 10px 14px;
+            border-radius: 4px;
+        }
+        
+        #title-screen {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(180deg, #1a1525 0%, #151a22 50%, #0a1015 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        #title-screen h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 32px;
+            color: #5a9a7a;
+            text-shadow: 0 0 30px rgba(90, 154, 122, 0.5), 4px 4px 0 #1a2a25;
+            margin-bottom: 15px;
+        }
+        
+        #title-screen .subtitle {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: #3a6a5a;
+            margin-bottom: 30px;
+        }
+        
+        #title-screen p {
+            color: #4a6a5a;
+            font-size: 20px;
+            margin-bottom: 50px;
+            font-style: italic;
+        }
+        
+        #title-screen button {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            padding: 15px 40px;
+            background: transparent;
+            border: 2px solid #4a7a6a;
+            color: #7aba9a;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 8px;
+        }
+        
+        #title-screen button:hover {
+            background: #4a7a6a;
+            color: #0a0a12;
+        }
+        
+        .time-buttons { display: flex; gap: 10px; margin-top: 20px; }
+        .time-buttons button { font-size: 10px; padding: 12px 20px; }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="1000" height="650"></canvas>
+        
+        <div id="title-screen">
+            <h1>THE DEEP ONES</h1>
+            <div class="subtitle">ASSET-READY BUILD</div>
+            <p>"Drop in your pixel art and watch it come alive."</p>
+            <button onclick="startGame('dusk')">🌅 START GAME</button>
+            <div class="time-buttons">
+                <button onclick="startGame('dawn')">🌄 Dawn</button>
+                <button onclick="startGame('day')">☀️ Day</button>
+                <button onclick="startGame('dusk')">🌅 Dusk</button>
+                <button onclick="startGame('night')">🌙 Night</button>
+            </div>
+        </div>
+        
+        <div id="ui">
+            <div>💰 <span id="money">0</span></div>
+            <div>📏 <span id="depth">0</span>m</div>
+            <div>🧠 <span id="sanity">██████████</span></div>
+            <div id="catch-display"></div>
+        </div>
+        
+        <div id="debug">
+            <h4>🖼️ ASSET STATUS</h4>
+            <div id="asset-status"></div>
+        </div>
+        
+        <div id="controls">
+            [SPACE] Cast/Reel | [↑↓] Depth | [←→] Move | [T] Time | [D] Debug
+        </div>
+    </div>
+
+<script>
+// ============================================================
+// CONFIGURATION - EDIT THIS TO ADD YOUR ASSETS
+// ============================================================
+
+const CONFIG = {
+    canvas: { width: 1000, height: 650 },
+    waterLine: 280,
+    
+    // Set to true when you have real assets
+    useSprites: false,
+    showDebug: true,
+    
+    // Asset base path
+    assetPath: 'assets/',
+};
+
+// ============================================================
+// PARALLAX LAYER SYSTEM
+// ============================================================
+// Each layer can be:
+// - A PNG image (sprite mode)
+// - A procedural draw function (fallback mode)
+// 
+// scrollSpeed: 0 = static, 1 = moves with camera, 0.5 = half speed (distant)
+// y: vertical position of the layer
+// repeatX: true = tile horizontally for infinite scrolling
+
+const PARALLAX_LAYERS = {
+    // ============ SKY LAYERS (above water) ============
+    sky: {
+        dawn: [
+            { id: 'sky-gradient', y: 0, scrollSpeed: 0, src: 'backgrounds/dawn/sky.png' },
+            { id: 'stars', y: 0, scrollSpeed: 0.02, src: 'backgrounds/dawn/stars.png' },
+            { id: 'sun', y: 80, scrollSpeed: 0.05, src: 'backgrounds/dawn/sun.png' },
+        ],
+        day: [
+            { id: 'sky-gradient', y: 0, scrollSpeed: 0, src: 'backgrounds/day/sky.png' },
+            { id: 'clouds-far', y: 30, scrollSpeed: 0.1, repeatX: true, src: 'backgrounds/day/clouds-far.png' },
+            { id: 'clouds-near', y: 60, scrollSpeed: 0.2, repeatX: true, src: 'backgrounds/day/clouds-near.png' },
+            { id: 'sun', y: 60, scrollSpeed: 0.05, src: 'backgrounds/day/sun.png' },
+        ],
+        dusk: [
+            { id: 'sky-gradient', y: 0, scrollSpeed: 0, src: 'backgrounds/dusk/sky.png' },
+            { id: 'stars', y: 0, scrollSpeed: 0.02, src: 'backgrounds/dusk/stars.png' },
+            { id: 'clouds', y: 50, scrollSpeed: 0.15, repeatX: true, src: 'backgrounds/dusk/clouds.png' },
+            { id: 'sun', y: 180, scrollSpeed: 0.05, src: 'backgrounds/dusk/sun.png' },
+            { id: 'moon', y: 80, scrollSpeed: 0.03, src: 'backgrounds/dusk/moon.png' },
+        ],
+        night: [
+            { id: 'sky-gradient', y: 0, scrollSpeed: 0, src: 'backgrounds/night/sky.png' },
+            { id: 'stars', y: 0, scrollSpeed: 0.02, src: 'backgrounds/night/stars.png' },
+            { id: 'moon', y: 60, scrollSpeed: 0.03, src: 'backgrounds/night/moon.png' },
+            { id: 'clouds', y: 70, scrollSpeed: 0.1, repeatX: true, src: 'backgrounds/night/clouds.png' },
+        ]
+    },
+    
+    // ============ LAND LAYERS (mountains, trees) ============
+    land: {
+        all: [
+            { id: 'mountains-far', y: 100, scrollSpeed: 0.1, repeatX: true, src: 'backgrounds/land/mountains-far.png' },
+            { id: 'mountains-mid', y: 140, scrollSpeed: 0.2, repeatX: true, src: 'backgrounds/land/mountains-mid.png' },
+            { id: 'mountains-near', y: 170, scrollSpeed: 0.3, repeatX: true, src: 'backgrounds/land/mountains-near.png' },
+            { id: 'trees-far', y: 200, scrollSpeed: 0.35, repeatX: true, src: 'backgrounds/land/trees-far.png' },
+            { id: 'trees-near', y: 220, scrollSpeed: 0.45, repeatX: true, src: 'backgrounds/land/trees-near.png' },
+            { id: 'lighthouse', y: 180, scrollSpeed: 0.4, src: 'backgrounds/land/lighthouse.png' },
+            { id: 'reeds-left', y: 250, scrollSpeed: 0.5, src: 'backgrounds/land/reeds.png' },
+        ]
+    },
+    
+    // ============ WATER SURFACE ============
+    water: {
+        all: [
+            { id: 'water-surface', y: 280, scrollSpeed: 0.6, repeatX: true, animated: true, frames: 4, fps: 8, src: 'backgrounds/water/surface.png' },
+            { id: 'water-reflection', y: 285, scrollSpeed: 0.5, repeatX: true, src: 'backgrounds/water/reflection.png' },
+        ]
+    },
+    
+    // ============ UNDERWATER LAYERS ============
+    underwater: {
+        all: [
+            { id: 'underwater-bg', y: 280, scrollSpeed: 0, src: 'backgrounds/underwater/gradient.png' },
+            { id: 'light-rays', y: 280, scrollSpeed: 0.1, src: 'backgrounds/underwater/lightrays.png' },
+            { id: 'rocks-far', y: 500, scrollSpeed: 0.15, repeatX: true, src: 'backgrounds/underwater/rocks-far.png' },
+            { id: 'seaweed-far', y: 400, scrollSpeed: 0.2, repeatX: true, animated: true, frames: 6, fps: 4, src: 'backgrounds/underwater/seaweed-far.png' },
+            { id: 'rocks-mid', y: 550, scrollSpeed: 0.3, repeatX: true, src: 'backgrounds/underwater/rocks-mid.png' },
+            { id: 'seaweed-near', y: 450, scrollSpeed: 0.4, repeatX: true, animated: true, frames: 6, fps: 4, src: 'backgrounds/underwater/seaweed-near.png' },
+            { id: 'particles', y: 300, scrollSpeed: 0.25, repeatX: true, animated: true, frames: 8, fps: 10, src: 'backgrounds/underwater/particles.png' },
+            { id: 'deep-shadows', y: 580, scrollSpeed: 0.1, repeatX: true, src: 'backgrounds/underwater/shadows.png' },
+        ]
+    }
+};
+
+// ============================================================
+// SPRITE DEFINITIONS
+// ============================================================
+
+const SPRITES = {
+    // Boat and characters
+    boat: {
+        src: 'sprites/boat/boat.png',
+        width: 90, height: 50,
+        anchor: { x: 45, y: 25 }
+    },
+    fisher: {
+        src: 'sprites/boat/fisher.png',
+        width: 32, height: 48,
+        anchor: { x: 16, y: 48 }
+    },
+    dog: {
+        src: 'sprites/boat/dog.png',
+        width: 24, height: 20,
+        animated: true, frames: 4, fps: 6, // Tail wag animation
+        anchor: { x: 12, y: 20 }
+    },
+    lantern: {
+        src: 'sprites/boat/lantern.png',
+        width: 16, height: 24,
+        animated: true, frames: 4, fps: 8, // Flicker animation
+        anchor: { x: 8, y: 24 }
+    },
+    rod: {
+        src: 'sprites/boat/rod.png',
+        width: 64, height: 64,
+        anchor: { x: 0, y: 64 }
+    },
+    bobber: {
+        src: 'sprites/fishing/bobber.png',
+        width: 12, height: 16,
+        anchor: { x: 6, y: 8 }
+    },
+    
+    // Fish sprites - each creature gets its own sprite
+    fish: {
+        'Harbor Cod': { src: 'sprites/fish/harbor-cod.png', width: 32, height: 16, frames: 4, fps: 6 },
+        'Pale Flounder': { src: 'sprites/fish/pale-flounder.png', width: 36, height: 20, frames: 4, fps: 5 },
+        'Whisper Eel': { src: 'sprites/fish/whisper-eel.png', width: 48, height: 12, frames: 6, fps: 8 },
+        'Midnight Perch': { src: 'sprites/fish/midnight-perch.png', width: 28, height: 18, frames: 4, fps: 6 },
+        'Glass Squid': { src: 'sprites/fish/glass-squid.png', width: 40, height: 32, frames: 6, fps: 7 },
+        'Bone Angler': { src: 'sprites/fish/bone-angler.png', width: 44, height: 28, frames: 4, fps: 5 },
+        'The Mimic': { src: 'sprites/fish/mimic.png', width: 48, height: 24, frames: 4, fps: 4 },
+        'Prophet Fish': { src: 'sprites/fish/prophet-fish.png', width: 36, height: 24, frames: 6, fps: 6 },
+        'Congregation Fish': { src: 'sprites/fish/congregation.png', width: 56, height: 32, frames: 4, fps: 3 },
+        'The Listener': { src: 'sprites/fish/listener.png', width: 52, height: 28, frames: 4, fps: 4 },
+        'Drowned Sailor\'s Friend': { src: 'sprites/fish/drowned-friend.png', width: 48, height: 36, frames: 4, fps: 5 },
+        'Memory Leech': { src: 'sprites/fish/memory-leech.png', width: 40, height: 20, frames: 6, fps: 8 },
+        'Dagon\'s Fingerling': { src: 'sprites/fish/dagon-fingerling.png', width: 64, height: 40, frames: 4, fps: 4 },
+        'The Dreaming One': { src: 'sprites/fish/dreaming-one.png', width: 72, height: 48, frames: 4, fps: 2 },
+        'Mother Hydra\'s Tear': { src: 'sprites/fish/hydra-tear.png', width: 80, height: 56, frames: 6, fps: 3 },
+        'The Unnamed': { src: 'sprites/fish/unnamed.png', width: 96, height: 64, frames: 4, fps: 2 },
+    },
+    
+    // UI elements
+    ui: {
+        catchPopup: { src: 'sprites/ui/catch-popup.png', width: 350, height: 160 },
+        journal: { src: 'sprites/ui/journal-bg.png', width: 300, height: 400 },
+    }
+};
+
+// ============================================================
+// ASSET LOADER
+// ============================================================
+
+const loadedAssets = {
+    images: {},
+    status: {} // 'loaded', 'failed', 'loading'
+};
+
+async function loadImage(path) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error(`Failed to load: ${path}`));
+        img.src = CONFIG.assetPath + path;
+    });
+}
+
+async function loadAllAssets() {
+    const toLoad = [];
+    
+    // Collect all layer images
+    Object.values(PARALLAX_LAYERS).forEach(category => {
+        Object.values(category).forEach(layers => {
+            layers.forEach(layer => {
+                if (layer.src) toLoad.push({ id: layer.id, src: layer.src });
+            });
+        });
+    });
+    
+    // Collect sprite images
+    Object.entries(SPRITES).forEach(([key, sprite]) => {
+        if (sprite.src) {
+            toLoad.push({ id: `sprite-${key}`, src: sprite.src });
+        } else if (typeof sprite === 'object') {
+            Object.entries(sprite).forEach(([subKey, subSprite]) => {
+                if (subSprite.src) {
+                    toLoad.push({ id: `sprite-${key}-${subKey}`, src: subSprite.src });
+                }
+            });
+        }
+    });
+    
+    // Load all
+    for (const asset of toLoad) {
+        loadedAssets.status[asset.id] = 'loading';
+        try {
+            loadedAssets.images[asset.id] = await loadImage(asset.src);
+            loadedAssets.status[asset.id] = 'loaded';
+        } catch (e) {
+            loadedAssets.status[asset.id] = 'failed';
+            console.log(`Using fallback for: ${asset.id}`);
+        }
+    }
+    
+    updateDebugPanel();
+}
+
+function updateDebugPanel() {
+    if (!CONFIG.showDebug) {
+        document.getElementById('debug').style.display = 'none';
+        return;
+    }
+    
+    const statusEl = document.getElementById('asset-status');
+    let html = '';
+    
+    let loaded = 0, failed = 0;
+    Object.entries(loadedAssets.status).forEach(([id, status]) => {
+        if (status === 'loaded') loaded++;
+        else if (status === 'failed') failed++;
+    });
+    
+    html += `<div class="loaded">✓ Loaded: ${loaded}</div>`;
+    html += `<div class="fallback">⚠ Fallback: ${failed}</div>`;
+    html += `<br><small>Press [D] to toggle</small>`;
+    html += `<br><small>Using: ${CONFIG.useSprites ? 'SPRITES' : 'PROCEDURAL'}</small>`;
+    
+    statusEl.innerHTML = html;
+}
+
+// ============================================================
+// PARALLAX RENDERER
+// ============================================================
+
+class ParallaxLayer {
+    constructor(config) {
+        this.id = config.id;
+        this.y = config.y || 0;
+        this.scrollSpeed = config.scrollSpeed || 0;
+        this.repeatX = config.repeatX || false;
+        this.src = config.src;
+        this.animated = config.animated || false;
+        this.frames = config.frames || 1;
+        this.fps = config.fps || 10;
+        this.currentFrame = 0;
+        this.frameTimer = 0;
+        this.offset = 0;
+    }
+    
+    update(deltaTime, cameraX) {
+        // Update animation frame
+        if (this.animated) {
+            this.frameTimer += deltaTime;
+            if (this.frameTimer >= 1000 / this.fps) {
+                this.currentFrame = (this.currentFrame + 1) % this.frames;
+                this.frameTimer = 0;
+            }
+        }
+        
+        // Update parallax offset
+        this.offset = cameraX * this.scrollSpeed;
+    }
+    
+    draw(ctx, canvasWidth, canvasHeight, fallbackFn) {
+        const img = loadedAssets.images[this.id];
+        
+        if (img && CONFIG.useSprites) {
+            // Draw sprite
+            if (this.animated) {
+                const frameWidth = img.width / this.frames;
+                const sx = this.currentFrame * frameWidth;
+                
+                if (this.repeatX) {
+                    this.drawRepeating(ctx, img, canvasWidth, sx, frameWidth);
+                } else {
+                    ctx.drawImage(img, sx, 0, frameWidth, img.height, -this.offset, this.y, frameWidth, img.height);
+                }
+            } else {
+                if (this.repeatX) {
+                    this.drawRepeating(ctx, img, canvasWidth);
+                } else {
+                    ctx.drawImage(img, -this.offset, this.y);
+                }
+            }
+        } else if (fallbackFn) {
+            // Use procedural fallback
+            fallbackFn(ctx, this.offset, this.y, canvasWidth, canvasHeight, this);
+        }
+    }
+    
+    drawRepeating(ctx, img, canvasWidth, sx = 0, frameWidth = null) {
+        const w = frameWidth || img.width;
+        const h = img.height;
+        const startX = -(this.offset % w) - w;
+        
+        for (let x = startX; x < canvasWidth + w; x += w) {
+            if (frameWidth) {
+                ctx.drawImage(img, sx, 0, frameWidth, h, x, this.y, frameWidth, h);
+            } else {
+                ctx.drawImage(img, x, this.y);
+            }
+        }
+    }
+}
+
+// ============================================================
+// PROCEDURAL FALLBACKS
+// ============================================================
+// These draw the graphics when sprites aren't loaded
+
+const FALLBACKS = {
+    // Sky fallbacks
+    'sky-gradient': (ctx, offset, y, w, h, layer) => {
+        const palette = getTimePalette();
+        const gradient = ctx.createLinearGradient(0, 0, 0, CONFIG.waterLine);
+        palette.sky.forEach((color, i) => {
+            gradient.addColorStop(palette.skyStops[i], color);
+        });
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, w, CONFIG.waterLine);
+    },
+    
+    'stars': (ctx, offset, y, w, h, layer) => {
+        if (game.timeOfDay !== 'night' && game.timeOfDay !== 'dusk') return;
+        const intensity = game.timeOfDay === 'night' ? 1 : 0.4;
+        for (let i = 0; i < 100; i++) {
+            const x = (i * 73 + offset * 0.5 + game.time * 0.01) % w;
+            const sy = (i * 47) % (CONFIG.waterLine - 50);
+            const twinkle = Math.sin(game.time * 0.03 + i * 0.5) * 0.3 + 0.7;
+            ctx.fillStyle = `rgba(255, 255, 240, ${intensity * twinkle * 0.8})`;
+            ctx.fillRect(x, sy, (i % 5 === 0) ? 2 : 1, (i % 5 === 0) ? 2 : 1);
+        }
+    },
+    
+    'sun': (ctx, offset, y, w, h, layer) => {
+        const palette = getTimePalette();
+        if (!palette.sun) return;
+        const sun = palette.sun;
+        const x = sun.x - offset;
+        
+        // Glow
+        const glow = ctx.createRadialGradient(x, sun.y, 0, x, sun.y, 100);
+        glow.addColorStop(0, sun.glow);
+        glow.addColorStop(1, 'transparent');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(x, sun.y, 100, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Body
+        ctx.fillStyle = sun.color;
+        ctx.beginPath();
+        ctx.arc(x, sun.y, 30, 0, Math.PI * 2);
+        ctx.fill();
+    },
+    
+    'moon': (ctx, offset, y, w, h, layer) => {
+        const palette = getTimePalette();
+        if (!palette.moon) return;
+        const x = palette.moon.x - offset;
+        
+        ctx.fillStyle = 'rgba(200, 210, 230, 0.15)';
+        ctx.beginPath();
+        ctx.arc(x, y, 50, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = '#e0e8f0';
+        ctx.beginPath();
+        ctx.arc(x, y, 25, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Craters
+        ctx.fillStyle = '#c0c8d0';
+        ctx.beginPath();
+        ctx.arc(x - 8, y - 5, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + 10, y + 8, 4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Face at low sanity
+        if (game.sanity < 25) {
+            const alpha = (25 - game.sanity) / 25;
+            ctx.fillStyle = `rgba(30, 20, 40, ${alpha})`;
+            ctx.fillRect(x - 10, y - 8, 4, 4);
+            ctx.fillRect(x + 6, y - 8, 4, 4);
+            ctx.fillRect(x - 8, y + 10, 16, 3);
+        }
+    },
+    
+    'clouds-far': (ctx, offset, y, w, h, layer) => {
+        const palette = getTimePalette();
+        ctx.fillStyle = palette.clouds;
+        for (let i = 0; i < 5; i++) {
+            const x = ((i * 250 - offset) % (w + 200)) - 100;
+            drawCloud(ctx, x, y + Math.sin(i * 2) * 15, 80 + i * 20, 25);
+        }
+    },
+    
+    'clouds-near': (ctx, offset, y, w, h, layer) => {
+        const palette = getTimePalette();
+        ctx.fillStyle = palette.clouds;
+        for (let i = 0; i < 4; i++) {
+            const x = ((i * 300 - offset * 1.5) % (w + 200)) - 100;
+            drawCloud(ctx, x, y + Math.cos(i * 1.5) * 10, 100 + i * 15, 30);
+        }
+    },
+    
+    'clouds': (ctx, offset, y, w, h, layer) => {
+        const palette = getTimePalette();
+        ctx.fillStyle = palette.clouds;
+        for (let i = 0; i < 4; i++) {
+            const x = ((i * 280 - offset) % (w + 200)) - 100;
+            drawCloud(ctx, x, y + Math.sin(i) * 20, 90, 28);
+        }
+    },
+    
+    // Mountain fallbacks
+    'mountains-far': (ctx, offset, y, w, h, layer) => {
+        const palette = getTimePalette();
+        ctx.fillStyle = palette.mountains[0];
+        ctx.beginPath();
+        ctx.moveTo(-offset % 400 - 400, CONFIG.waterLine);
+        for (let x = -400; x < w + 400; x += 200) {
+            const px = x - (offset % 400);
+            const py = y + Math.sin(x * 0.005) * 30 + 40;
+            ctx.lineTo(px, py);
+        }
+        ctx.lineTo(w + 100, CONFIG.waterLine);
+        ctx.closePath();
+        ctx.fill();
+    },
+    
+    'mountains-mid': (ctx, offset, y, w, h, layer) => {
+        const palette = getTimePalette();
+        ctx.fillStyle = palette.mountains[1];
+        ctx.beginPath();
+        ctx.moveTo(-offset % 300 - 300, CONFIG.waterLine);
+        for (let x = -300; x < w + 300; x += 150) {
+            const px = x - (offset % 300);
+            const py = y + Math.sin(x * 0.008 + 1) * 25 + 30;
+            ctx.lineTo(px, py);
+        }
+        ctx.lineTo(w + 100, CONFIG.waterLine);
+        ctx.closePath();
+        ctx.fill();
+    },
+    
+    'mountains-near': (ctx, offset, y, w, h, layer) => {
+        const palette = getTimePalette();
+        ctx.fillStyle = palette.mountains[2] || palette.mountains[1];
+        ctx.beginPath();
+        ctx.moveTo(-offset % 250 - 250, CONFIG.waterLine);
+        for (let x = -250; x < w + 250; x += 100) {
+            const px = x - (offset % 250);
+            const py = y + Math.sin(x * 0.01 + 2) * 20 + 25;
+            ctx.lineTo(px, py);
+        }
+        ctx.lineTo(w + 100, CONFIG.waterLine);
+        ctx.closePath();
+        ctx.fill();
+    },
+    
+    'trees-far': (ctx, offset, y, w, h, layer) => {
+        const palette = getTimePalette();
+        for (let i = 0; i < 30; i++) {
+            const x = ((i * 80 - offset) % (w + 200)) - 100;
+            drawTree(ctx, x, y + 50, 40 + (i % 3) * 10, palette.trees[0]);
+        }
+    },
+    
+    'trees-near': (ctx, offset, y, w, h, layer) => {
+        const palette = getTimePalette();
+        for (let i = 0; i < 20; i++) {
+            const x = ((i * 120 - offset) % (w + 200)) - 100;
+            drawTree(ctx, x, y + 40, 55 + (i % 4) * 8, palette.trees[1]);
+        }
+    },
+    
+    'lighthouse': (ctx, offset, y, w, h, layer) => {
+        const x = 150 - offset;
+        if (x < -50 || x > w + 50) return;
+        
+        const palette = getTimePalette();
+        
+        // Base rock
+        ctx.fillStyle = palette.mountains[1];
+        ctx.beginPath();
+        ctx.ellipse(x, y + 70, 40, 12, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Tower
+        ctx.fillStyle = '#e0d8d0';
+        ctx.beginPath();
+        ctx.moveTo(x - 12, y + 65);
+        ctx.lineTo(x - 8, y);
+        ctx.lineTo(x + 8, y);
+        ctx.lineTo(x + 12, y + 65);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Red stripe
+        ctx.fillStyle = '#a04040';
+        ctx.fillRect(x - 10, y + 30, 20, 15);
+        
+        // Top
+        ctx.fillStyle = '#302520';
+        ctx.fillRect(x - 10, y - 5, 20, 8);
+        
+        // Roof
+        ctx.fillStyle = '#a04040';
+        ctx.beginPath();
+        ctx.moveTo(x, y - 15);
+        ctx.lineTo(x - 12, y - 5);
+        ctx.lineTo(x + 12, y - 5);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Light
+        const intensity = (Math.sin(game.time * 0.05) + 1) / 2;
+        ctx.fillStyle = `rgba(255, 250, 200, ${0.4 + intensity * 0.4})`;
+        ctx.beginPath();
+        ctx.arc(x, y - 2, 5 + intensity * 3, 0, Math.PI * 2);
+        ctx.fill();
+    },
+    
+    'reeds-left': (ctx, offset, y, w, h, layer) => {
+        const palette = getTimePalette();
+        ctx.strokeStyle = palette.trees[1];
+        ctx.lineWidth = 2;
+        
+        for (let i = 0; i < 20; i++) {
+            const x = ((i * 8 - offset * 0.5) % 200);
+            const height = 30 + Math.sin(i) * 15;
+            const sway = Math.sin(game.time * 0.02 + i * 0.5) * 3;
+            
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.quadraticCurveTo(x + sway, y - height/2, x + sway * 1.5, y - height);
+            ctx.stroke();
+        }
+    },
+    
+    // Water fallbacks
+    'water-surface': (ctx, offset, y, w, h, layer) => {
+        const palette = getTimePalette();
+        
+        // Surface line
+        ctx.strokeStyle = palette.waterHighlight;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let x = 0; x < w; x += 4) {
+            const ripple = Math.sin((x + offset) * 0.02 + game.time * 0.03) * 2;
+            if (x === 0) ctx.moveTo(x, y + ripple);
+            else ctx.lineTo(x, y + ripple);
+        }
+        ctx.stroke();
+        
+        // Highlights
+        for (let i = 0; i < 30; i++) {
+            const x = (i * 67 + game.time * 0.3 + offset) % w;
+            const ripple = Math.sin(x * 0.02 + game.time * 0.03) * 2;
+            ctx.fillStyle = palette.waterHighlight;
+            ctx.fillRect(x, y + ripple - 1, 10 + Math.sin(i) * 5, 2);
+        }
+    },
+    
+    'water-reflection': (ctx, offset, y, w, h, layer) => {
+        const palette = getTimePalette();
+        ctx.globalAlpha = 0.2;
+        
+        // Distorted reflection lines
+        for (let ry = y; ry < y + 80; ry += 4) {
+            const distort = Math.sin(ry * 0.1 + game.time * 0.03 + offset * 0.01) * 3;
+            ctx.fillStyle = palette.mountains[0];
+            ctx.fillRect(distort, ry, w, 2);
+        }
+        
+        ctx.globalAlpha = 1;
+    },
+    
+    // Underwater fallbacks
+    'underwater-bg': (ctx, offset, y, w, h, layer) => {
+        const palette = getTimePalette();
+        const gradient = ctx.createLinearGradient(0, y, 0, h);
+        palette.underwater.forEach((color, i) => {
+            gradient.addColorStop(i / (palette.underwater.length - 1), color);
+        });
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, y, w, h - y);
+    },
+    
+    'light-rays': (ctx, offset, y, w, h, layer) => {
+        if (game.timeOfDay === 'night') return;
+        const intensity = game.timeOfDay === 'day' ? 0.08 : 0.04;
+        
+        for (let i = 0; i < 6; i++) {
+            const x = (150 + i * 150 - offset * 0.3) % (w + 100);
+            const gradient = ctx.createLinearGradient(x, y, x + 50, h);
+            gradient.addColorStop(0, `rgba(200, 220, 180, ${intensity})`);
+            gradient.addColorStop(1, 'transparent');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - 20, h);
+            ctx.lineTo(x + 70, h);
+            ctx.lineTo(x + 30, y);
+            ctx.closePath();
+            ctx.fill();
+        }
+    },
+    
+    'rocks-far': (ctx, offset, y, w, h, layer) => {
+        ctx.fillStyle = 'rgba(15, 25, 30, 0.6)';
+        for (let i = 0; i < 10; i++) {
+            const x = ((i * 150 - offset) % (w + 200)) - 100;
+            const rw = 40 + (i % 3) * 20;
+            const rh = 20 + (i % 2) * 10;
+            ctx.beginPath();
+            ctx.ellipse(x, y + 50, rw, rh, 0, Math.PI, 0);
+            ctx.fill();
+        }
+    },
+    
+    'rocks-mid': (ctx, offset, y, w, h, layer) => {
+        ctx.fillStyle = 'rgba(10, 20, 25, 0.8)';
+        for (let i = 0; i < 8; i++) {
+            const x = ((i * 180 - offset) % (w + 200)) - 100;
+            const rw = 50 + (i % 4) * 15;
+            const rh = 25 + (i % 3) * 8;
+            ctx.beginPath();
+            ctx.ellipse(x, y + 30, rw, rh, 0, Math.PI, 0);
+            ctx.fill();
+        }
+    },
+    
+    'seaweed-far': (ctx, offset, y, w, h, layer) => {
+        ctx.strokeStyle = 'rgba(40, 80, 60, 0.4)';
+        ctx.lineWidth = 3;
+        
+        for (let i = 0; i < 15; i++) {
+            const x = ((i * 100 - offset) % (w + 200)) - 100;
+            const baseY = y + 100 + (i % 3) * 30;
+            const height = 50 + (i % 4) * 15;
+            const sway = Math.sin(game.time * 0.015 + i * 0.8 + layer.currentFrame * 0.5) * 10;
+            
+            ctx.beginPath();
+            ctx.moveTo(x, baseY);
+            ctx.quadraticCurveTo(x + sway/2, baseY - height/2, x + sway, baseY - height);
+            ctx.stroke();
+        }
+    },
+    
+    'seaweed-near': (ctx, offset, y, w, h, layer) => {
+        ctx.strokeStyle = 'rgba(50, 100, 70, 0.5)';
+        ctx.lineWidth = 4;
+        
+        for (let i = 0; i < 12; i++) {
+            const x = ((i * 130 - offset) % (w + 200)) - 100;
+            const baseY = y + 130 + (i % 2) * 20;
+            const height = 60 + (i % 3) * 20;
+            const sway = Math.sin(game.time * 0.015 + i * 0.6 + layer.currentFrame * 0.5) * 12;
+            
+            ctx.beginPath();
+            ctx.moveTo(x, baseY);
+            ctx.quadraticCurveTo(x + sway/2, baseY - height/2, x + sway, baseY - height);
+            ctx.stroke();
+        }
+    },
+    
+    'particles': (ctx, offset, y, w, h, layer) => {
+        for (let i = 0; i < 40; i++) {
+            const x = (i * 37 + game.time * 0.2 + offset * 0.3) % w;
+            const py = y + 20 + (i * 23 + Math.sin(game.time * 0.02 + i) * 20) % (h - y - 50);
+            const alpha = 0.2 + Math.sin(game.time * 0.03 + i) * 0.1;
+            ctx.fillStyle = `rgba(150, 180, 170, ${alpha})`;
+            ctx.fillRect(x, py, 1 + (i % 3), 1 + (i % 3));
+        }
+    },
+    
+    'deep-shadows': (ctx, offset, y, w, h, layer) => {
+        if (game.sanity > 80) return;
+        const count = Math.floor((100 - game.sanity) / 20) + 1;
+        
+        for (let i = 0; i < count; i++) {
+            const x = (game.time * 0.3 + i * 300 - offset * 0.2) % (w + 200) - 100;
+            const sy = y + Math.sin(game.time * 0.01 + i * 2) * 20;
+            const size = 60 + i * 25;
+            
+            ctx.fillStyle = `rgba(5, 5, 10, ${0.4 - i * 0.1})`;
+            ctx.beginPath();
+            ctx.ellipse(x, sy, size, size / 3, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Tentacles at low sanity
+            if (game.sanity < 40) {
+                for (let t = 0; t < 3; t++) {
+                    ctx.strokeStyle = `rgba(5, 5, 10, ${0.3 - i * 0.08})`;
+                    ctx.lineWidth = 8 - t * 2;
+                    ctx.beginPath();
+                    const tx = x + Math.cos(t * 2 + game.time * 0.02) * size * 0.7;
+                    const ty = sy + Math.sin(t * 2 + game.time * 0.02) * 15;
+                    ctx.moveTo(tx, ty);
+                    ctx.quadraticCurveTo(
+                        tx + Math.sin(game.time * 0.03 + t) * 25,
+                        ty + 35,
+                        tx + Math.sin(game.time * 0.02 + t) * 40,
+                        ty + 70
+                    );
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+};
+
+// Helper functions for fallbacks
+function drawCloud(ctx, x, y, w, h) {
+    ctx.beginPath();
+    ctx.ellipse(x, y, w * 0.5, h * 0.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x - w * 0.3, y + h * 0.1, w * 0.3, h * 0.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x + w * 0.3, y + h * 0.15, w * 0.35, h * 0.35, 0, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function drawTree(ctx, x, y, height, color) {
+    // Trunk
+    ctx.fillStyle = '#1a1510';
+    ctx.fillRect(x - 2, y - height * 0.3, 4, height * 0.3);
+    
+    // Foliage
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x, y - height);
+    ctx.lineTo(x - 15, y - height * 0.3);
+    ctx.lineTo(x + 15, y - height * 0.3);
+    ctx.closePath();
+    ctx.fill();
+    
+    ctx.beginPath();
+    ctx.moveTo(x, y - height * 0.8);
+    ctx.lineTo(x - 20, y - height * 0.1);
+    ctx.lineTo(x + 20, y - height * 0.1);
+    ctx.closePath();
+    ctx.fill();
+}
+
+// ============================================================
+// TIME PALETTES
+// ============================================================
+
+const TIME_PALETTES = {
+    dawn: {
+        sky: ['#2a2040', '#4a3a60', '#8a6080', '#d4a090', '#f0d0a0'],
+        skyStops: [0, 0.3, 0.5, 0.7, 1],
+        clouds: 'rgba(200, 160, 140, 0.4)',
+        mountains: ['#1a1525', '#2a2035', '#3a3045'],
+        trees: ['#1a2520', '#253530'],
+        water: ['#3a5060', '#2a4050', '#1a3040', '#0a2030'],
+        waterHighlight: 'rgba(240, 200, 160, 0.15)',
+        underwater: ['#2a4555', '#1a3545', '#0a2535', '#051525'],
+        sun: { x: 850, y: 120, color: '#f0c080', glow: 'rgba(240, 180, 100, 0.4)' },
+        moon: null
+    },
+    day: {
+        sky: ['#4060a0', '#6090c0', '#90c0e0', '#b0e0f0', '#d0f0ff'],
+        skyStops: [0, 0.3, 0.5, 0.7, 1],
+        clouds: 'rgba(255, 255, 255, 0.6)',
+        mountains: ['#3a5060', '#4a6070', '#5a7080'],
+        trees: ['#2a4a30', '#3a5a40'],
+        water: ['#4080a0', '#3070a0', '#2060a0', '#1050a0'],
+        waterHighlight: 'rgba(255, 255, 255, 0.2)',
+        underwater: ['#306080', '#205070', '#104060', '#003050'],
+        sun: { x: 500, y: 80, color: '#ffffa0', glow: 'rgba(255, 255, 200, 0.3)' },
+        moon: null
+    },
+    dusk: {
+        sky: ['#1a1530', '#3a2545', '#6a4060', '#b06070', '#e0a070', '#f0c080'],
+        skyStops: [0, 0.2, 0.4, 0.6, 0.8, 1],
+        clouds: 'rgba(180, 100, 80, 0.5)',
+        mountains: ['#1a1020', '#2a1530', '#3a2040'],
+        trees: ['#151a20', '#1a2025'],
+        water: ['#4a5070', '#3a4060', '#2a3050', '#1a2040'],
+        waterHighlight: 'rgba(240, 160, 100, 0.2)',
+        underwater: ['#3a4560', '#2a3550', '#1a2540', '#0a1530'],
+        sun: { x: 900, y: 220, color: '#f08050', glow: 'rgba(240, 100, 50, 0.5)' },
+        moon: { x: 150, y: 100 }
+    },
+    night: {
+        sky: ['#0a0a15', '#101020', '#151530', '#1a1a40'],
+        skyStops: [0, 0.3, 0.6, 1],
+        clouds: 'rgba(40, 40, 60, 0.4)',
+        mountains: ['#0a0a12', '#0f0f18', '#141420'],
+        trees: ['#080a10', '#0a0c12'],
+        water: ['#152535', '#102030', '#0a1525', '#05101a'],
+        waterHighlight: 'rgba(100, 120, 150, 0.1)',
+        underwater: ['#102030', '#0a1525', '#05101a', '#020a10'],
+        sun: null,
+        moon: { x: 750, y: 80 }
+    }
+};
+
+function getTimePalette() {
+    return TIME_PALETTES[game.timeOfDay];
+}
+
+// ============================================================
+// GAME STATE
+// ============================================================
+
+const game = {
+    state: 'title',
+    timeOfDay: 'dusk',
+    money: 0,
+    sanity: 100,
+    depth: 0,
+    targetDepth: 30,
+    boatX: 500,
+    cameraX: 0,
+    time: 0,
+    currentCatch: null,
+    caughtCreatures: [],
+    fish: [],
+    layers: []
+};
+
+// ============================================================
+// INITIALIZE LAYERS
+// ============================================================
+
+function initLayers() {
+    game.layers = [];
+    
+    // Sky layers (time-specific)
+    const skyLayers = PARALLAX_LAYERS.sky[game.timeOfDay] || [];
+    skyLayers.forEach(config => {
+        game.layers.push(new ParallaxLayer(config));
+    });
+    
+    // Land layers
+    PARALLAX_LAYERS.land.all.forEach(config => {
+        game.layers.push(new ParallaxLayer(config));
+    });
+    
+    // Water layers
+    PARALLAX_LAYERS.water.all.forEach(config => {
+        game.layers.push(new ParallaxLayer(config));
+    });
+    
+    // Underwater layers
+    PARALLAX_LAYERS.underwater.all.forEach(config => {
+        game.layers.push(new ParallaxLayer(config));
+    });
+}
+
+// ============================================================
+// FISH SYSTEM
+// ============================================================
+
+const CREATURES = {
+    surface: [
+        { name: "Harbor Cod", desc: "Looks normal. Looks. Normal.", value: 10, rarity: 0.5, sanityLoss: 0 },
+        { name: "Pale Flounder", desc: "Too many eyes. They all blink separately.", value: 20, rarity: 0.3, sanityLoss: 3 },
+        { name: "Whisper Eel", desc: "You heard it before you saw it.", value: 35, rarity: 0.15, sanityLoss: 5 },
+        { name: "Midnight Perch", desc: "Its scales absorb light.", value: 50, rarity: 0.05, sanityLoss: 8 }
+    ],
+    mid: [
+        { name: "Glass Squid", desc: "You can see what it ate. That wasn't a fish.", value: 60, rarity: 0.4, sanityLoss: 10 },
+        { name: "Bone Angler", desc: "Its light is beautiful. Don't look.", value: 90, rarity: 0.3, sanityLoss: 15 },
+        { name: "The Mimic", desc: "It looks familiar. Too familiar.", value: 120, rarity: 0.2, sanityLoss: 18 },
+        { name: "Prophet Fish", desc: "It knows your name.", value: 150, rarity: 0.1, sanityLoss: 22 }
+    ],
+    deep: [
+        { name: "Congregation Fish", desc: "Several fish. Fused. Breathing in unison.", value: 180, rarity: 0.4, sanityLoss: 25 },
+        { name: "The Listener", desc: "No eyes. It knows where you are.", value: 220, rarity: 0.3, sanityLoss: 30 },
+        { name: "Drowned Sailor's Friend", desc: "No one will say what this is.", value: 280, rarity: 0.2, sanityLoss: 35 },
+        { name: "Memory Leech", desc: "You forgot something. What was it?", value: 350, rarity: 0.1, sanityLoss: 40 }
+    ],
+    abyss: [
+        { name: "Dagon's Fingerling", desc: "'Fingerling' is relative.", value: 500, rarity: 0.5, sanityLoss: 45 },
+        { name: "The Dreaming One", desc: "It sleeps. DO NOT WAKE IT.", value: 800, rarity: 0.3, sanityLoss: 55 },
+        { name: "Mother Hydra's Tear", desc: "A piece of something vast.", value: 1200, rarity: 0.15, sanityLoss: 65 },
+        { name: "The Unnamed", desc: "There are no words.", value: 2000, rarity: 0.05, sanityLoss: 80 }
+    ]
+};
+
+function initFish() {
+    game.fish = [];
+    for (let i = 0; i < 20; i++) {
+        game.fish.push(createFish());
+    }
+}
+
+function createFish() {
+    const depth = CONFIG.waterLine + 50 + Math.random() * 300;
+    const isDeep = depth > CONFIG.waterLine + 200;
+    const isAbyss = depth > CONFIG.waterLine + 300;
+    
+    // Pick a random creature type for this fish
+    let pool;
+    if (isAbyss) pool = CREATURES.abyss;
+    else if (isDeep) pool = CREATURES.deep;
+    else if (depth > CONFIG.waterLine + 100) pool = CREATURES.mid;
+    else pool = CREATURES.surface;
+    
+    const creature = pool[Math.floor(Math.random() * pool.length)];
+    
+    return {
+        x: Math.random() * CONFIG.canvas.width,
+        y: depth,
+        type: creature.name,
+        size: isAbyss ? 12 : (isDeep ? 8 : 5),
+        speed: (0.3 + Math.random() * 0.7) * (Math.random() > 0.5 ? 1 : -1),
+        frame: 0,
+        frameTimer: 0
+    };
+}
+
+function drawFish() {
+    game.fish.forEach((fish, i) => {
+        // Update position
+        fish.x += fish.speed;
+        if (fish.x > CONFIG.canvas.width + 50) fish.x = -50;
+        if (fish.x < -50) fish.x = CONFIG.canvas.width + 50;
+        
+        // Update animation
+        fish.frameTimer++;
+        if (fish.frameTimer > 10) {
+            fish.frame = (fish.frame + 1) % 4;
+            fish.frameTimer = 0;
+        }
+        
+        const spriteConfig = SPRITES.fish[fish.type];
+        const img = loadedAssets.images[`sprite-fish-${fish.type}`];
+        
+        if (img && CONFIG.useSprites && spriteConfig) {
+            // Draw sprite
+            const frameWidth = spriteConfig.width;
+            const sx = fish.frame * frameWidth;
+            
+            ctx.save();
+            if (fish.speed < 0) {
+                ctx.scale(-1, 1);
+                ctx.drawImage(img, sx, 0, frameWidth, spriteConfig.height,
+                    -fish.x - frameWidth/2, fish.y - spriteConfig.height/2,
+                    frameWidth, spriteConfig.height);
+            } else {
+                ctx.drawImage(img, sx, 0, frameWidth, spriteConfig.height,
+                    fish.x - frameWidth/2, fish.y - spriteConfig.height/2,
+                    frameWidth, spriteConfig.height);
+            }
+            ctx.restore();
+        } else {
+            // Procedural fallback
+            drawFishProcedural(fish);
+        }
+    });
+}
+
+function drawFishProcedural(fish) {
+    const dir = fish.speed > 0 ? 1 : -1;
+    const wobble = Math.sin(game.time * 0.1 + fish.y) * 2;
+    
+    // Body
+    ctx.fillStyle = fish.y > CONFIG.waterLine + 250 ? 'rgba(60, 80, 70, 0.6)' : 'rgba(140, 160, 120, 0.7)';
+    ctx.beginPath();
+    ctx.ellipse(fish.x, fish.y + wobble, fish.size * 1.5, fish.size * 0.7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Tail
+    ctx.beginPath();
+    ctx.moveTo(fish.x - fish.size * 1.5 * dir, fish.y + wobble);
+    ctx.lineTo(fish.x - fish.size * 2.5 * dir, fish.y + wobble - fish.size * 0.5);
+    ctx.lineTo(fish.x - fish.size * 2.5 * dir, fish.y + wobble + fish.size * 0.5);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Eye
+    ctx.fillStyle = 'rgba(200, 220, 180, 0.8)';
+    ctx.beginPath();
+    ctx.arc(fish.x + fish.size * 0.8 * dir, fish.y + wobble - 1, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Bioluminescence for deep fish
+    if (fish.y > CONFIG.waterLine + 200) {
+        const glow = Math.sin(game.time * 0.05 + fish.x) * 0.2 + 0.3;
+        ctx.fillStyle = `rgba(100, 180, 150, ${glow})`;
+        ctx.beginPath();
+        ctx.arc(fish.x, fish.y + wobble, fish.size * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+// ============================================================
+// BOAT & FISHING
+// ============================================================
+
+function drawBoat() {
+    const bob = Math.sin(game.time * 0.04) * 4;
+    const x = game.boatX;
+    const y = CONFIG.waterLine - 15 + bob;
+    const tilt = Math.sin(game.time * 0.03) * 0.03;
+    
+    const boatImg = loadedAssets.images['sprite-boat'];
+    
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(tilt);
+    
+    if (boatImg && CONFIG.useSprites) {
+        ctx.drawImage(boatImg, -SPRITES.boat.anchor.x, -SPRITES.boat.anchor.y);
+    } else {
+        drawBoatProcedural(0, 0);
+    }
+    
+    ctx.restore();
+}
+
+function drawBoatProcedural(x, y) {
+    // Hull
+    ctx.fillStyle = '#4a3525';
+    ctx.beginPath();
+    ctx.moveTo(x - 45, y);
+    ctx.quadraticCurveTo(x - 50, y + 15, x - 35, y + 20);
+    ctx.lineTo(x + 35, y + 20);
+    ctx.quadraticCurveTo(x + 50, y + 15, x + 45, y);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Detail
+    ctx.fillStyle = '#5a4535';
+    ctx.fillRect(x - 35, y + 5, 70, 4);
+    
+    // Inside
+    ctx.fillStyle = '#3a2a20';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 8, 32, 8, 0, 0, Math.PI);
+    ctx.fill();
+    
+    // Fisher
+    ctx.fillStyle = '#1a1815';
+    ctx.fillRect(x - 8, y - 25, 16, 25);
+    ctx.beginPath();
+    ctx.arc(x, y - 32, 8, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Hat
+    ctx.fillStyle = '#3a3530';
+    ctx.fillRect(x - 10, y - 42, 20, 5);
+    ctx.fillRect(x - 6, y - 48, 12, 8);
+    
+    // Dog
+    ctx.fillStyle = '#c0a080';
+    ctx.beginPath();
+    ctx.ellipse(x + 25, y - 5, 10, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + 32, y - 10, 6, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Dog eye
+    ctx.fillStyle = '#201510';
+    ctx.beginPath();
+    ctx.arc(x + 34, y - 11, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Wagging tail
+    ctx.strokeStyle = '#c0a080';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(x + 16, y - 5);
+    ctx.quadraticCurveTo(x + 10, y - 15 + Math.sin(game.time * 0.2) * 5, x + 8, y - 20);
+    ctx.stroke();
+    
+    // Rod (if fishing)
+    if (game.state !== 'sailing') {
+        ctx.strokeStyle = '#5a4a30';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x + 5, y - 20);
+        ctx.lineTo(x + 55, y - 55);
+        ctx.stroke();
+    }
+    
+    // Lantern
+    const glow = (Math.sin(game.time * 0.08) + 1) / 2;
+    const lanternGrad = ctx.createRadialGradient(x - 30, y - 10, 0, x - 30, y - 10, 20);
+    lanternGrad.addColorStop(0, `rgba(255, 200, 100, ${0.4 + glow * 0.2})`);
+    lanternGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = lanternGrad;
+    ctx.beginPath();
+    ctx.arc(x - 30, y - 10, 20, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.fillStyle = '#3a3025';
+    ctx.fillRect(x - 34, y - 5, 8, 12);
+    ctx.fillStyle = `rgba(255, 220, 150, ${0.7 + glow * 0.3})`;
+    ctx.fillRect(x - 33, y - 3, 6, 8);
+}
+
+function drawFishingLine() {
+    if (game.state === 'sailing') return;
+    
+    const bob = Math.sin(game.time * 0.04) * 4;
+    const rodTipX = game.boatX + 55;
+    const rodTipY = CONFIG.waterLine - 15 + bob - 55;
+    
+    const maxDepth = CONFIG.canvas.height - CONFIG.waterLine - 50;
+    const lineY = CONFIG.waterLine + 20 + (game.depth / 120) * maxDepth;
+    const lineX = game.boatX + 60 + Math.sin(game.time * 0.02) * 5;
+    
+    // Line
+    ctx.strokeStyle = 'rgba(200, 210, 200, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(rodTipX, rodTipY);
+    ctx.lineTo(lineX, Math.min(lineY, CONFIG.canvas.height - 30));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Bobber
+    const bobberY = CONFIG.waterLine + 5 + Math.sin(game.time * 0.05) * 3;
+    const wobble = game.state === 'reeling' ? Math.sin(game.time * 0.3) * 8 : 0;
+    
+    ctx.fillStyle = '#cc3030';
+    ctx.beginPath();
+    ctx.ellipse(lineX + wobble, bobberY, 5, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f0f0e0';
+    ctx.beginPath();
+    ctx.ellipse(lineX + wobble, bobberY - 5, 5, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Hook
+    const hookY = Math.min(lineY, CONFIG.canvas.height - 30);
+    ctx.fillStyle = '#a0a090';
+    ctx.beginPath();
+    ctx.arc(lineX, hookY, 3, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Depth label
+    ctx.fillStyle = 'rgba(200, 220, 210, 0.7)';
+    ctx.font = '14px VT323';
+    ctx.fillText(`${Math.floor(game.depth)}m → ${game.targetDepth}m`, lineX + 10, hookY);
+}
+
+function drawCatchPopup() {
+    if (!game.currentCatch) return;
+    
+    const c = game.currentCatch;
+    const px = (CONFIG.canvas.width - 350) / 2;
+    const py = 100;
+    
+    ctx.fillStyle = 'rgba(5, 10, 8, 0.95)';
+    ctx.fillRect(px - 5, py - 5, 360, 170);
+    ctx.strokeStyle = '#5a8a6a';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(px, py, 350, 160);
+    
+    ctx.fillStyle = '#aaddaa';
+    ctx.font = '12px "Press Start 2P"';
+    ctx.fillText('CAUGHT!', px + 120, py + 30);
+    
+    ctx.fillStyle = '#8aba9a';
+    ctx.font = '22px VT323';
+    ctx.fillText(c.name, px + 20, py + 60);
+    
+    ctx.fillStyle = '#d0d080';
+    ctx.font = '18px VT323';
+    ctx.fillText(`💰 ${c.value} gold`, px + 20, py + 90);
+    
+    if (c.sanityLoss > 15) {
+        ctx.fillStyle = '#a06060';
+        ctx.fillText(`🧠 -${c.sanityLoss}`, px + 150, py + 90);
+    }
+    
+    ctx.fillStyle = '#6a8a7a';
+    ctx.font = '16px VT323';
+    ctx.fillText(c.desc, px + 20, py + 120);
+    
+    ctx.fillStyle = '#5a6a5a';
+    ctx.font = '14px VT323';
+    ctx.fillText('[SPACE] continue', px + 220, py + 150);
+}
+
+// ============================================================
+// MAIN GAME LOOP
+// ============================================================
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let lastTime = 0;
+
+function update(deltaTime) {
+    game.time++;
+    
+    // Update camera to follow boat
+    game.cameraX = game.boatX - CONFIG.canvas.width / 2;
+    
+    // Update all parallax layers
+    game.layers.forEach(layer => {
+        layer.update(deltaTime, game.cameraX);
+    });
+    
+    // Game logic
+    if (game.state === 'waiting') {
+        const bite = 0.003 + (game.depth / 800);
+        if (Math.random() < bite) {
+            game.state = 'reeling';
+            document.getElementById('catch-display').textContent = '🐟 BITE! [SPACE]';
+        }
+    }
+    
+    if (game.state === 'casting') {
+        if (game.depth < game.targetDepth) {
+            game.depth += 1.5;
+        } else {
+            game.state = 'waiting';
+            document.getElementById('catch-display').textContent = 'Waiting...';
+        }
+    }
+    
+    // Sanity recovery
+    if (game.depth < 15 && game.sanity < 100 && game.state === 'sailing') {
+        game.sanity = Math.min(100, game.sanity + 0.02);
+    }
+    
+    // Maintain fish
+    if (game.fish.length < 15) game.fish.push(createFish());
+    
+    updateUI();
+}
+
+function render() {
+    ctx.clearRect(0, 0, CONFIG.canvas.width, CONFIG.canvas.height);
+    
+    // Draw all layers in order
+    game.layers.forEach(layer => {
+        const fallback = FALLBACKS[layer.id];
+        layer.draw(ctx, CONFIG.canvas.width, CONFIG.canvas.height, fallback);
+    });
+    
+    // Draw fish (between underwater layers and boat)
+    drawFish();
+    
+    // Draw boat and fishing
+    drawBoat();
+    drawFishingLine();
+    
+    // UI
+    if (game.currentCatch) drawCatchPopup();
+}
+
+function gameLoop(timestamp) {
+    const deltaTime = timestamp - lastTime;
+    lastTime = timestamp;
+    
+    if (game.state !== 'title') {
+        update(deltaTime);
+        render();
+    }
+    
+    requestAnimationFrame(gameLoop);
+}
+
+function updateUI() {
+    document.getElementById('money').textContent = game.money;
+    document.getElementById('depth').textContent = Math.floor(game.depth);
+    
+    const bars = Math.floor(game.sanity / 10);
+    document.getElementById('sanity').textContent = '█'.repeat(bars) + '░'.repeat(10 - bars);
+}
+
+// ============================================================
+// INPUT
+// ============================================================
+
+document.addEventListener('keydown', (e) => {
+    if (game.state === 'title') return;
+    
+    switch(e.code) {
+        case 'Space':
+            e.preventDefault();
+            if (game.currentCatch) {
+                game.caughtCreatures.push(game.currentCatch);
+                game.money += game.currentCatch.value;
+                game.sanity = Math.max(0, game.sanity - game.currentCatch.sanityLoss);
+                game.currentCatch = null;
+                game.state = 'sailing';
+                game.depth = 0;
+                document.getElementById('catch-display').textContent = '';
+            } else if (game.state === 'sailing') {
+                game.state = 'casting';
+                document.getElementById('catch-display').textContent = 'Casting...';
+            } else if (game.state === 'reeling') {
+                game.currentCatch = getCreature();
+                game.state = 'caught';
+            } else {
+                game.state = 'sailing';
+                game.depth = 0;
+                document.getElementById('catch-display').textContent = '';
+            }
+            break;
+        case 'ArrowUp':
+            game.targetDepth = Math.max(5, game.targetDepth - 5);
+            break;
+        case 'ArrowDown':
+            game.targetDepth = Math.min(120, game.targetDepth + 5);
+            break;
+        case 'ArrowLeft':
+            if (game.state === 'sailing') game.boatX = Math.max(150, game.boatX - 15);
+            break;
+        case 'ArrowRight':
+            if (game.state === 'sailing') game.boatX = Math.min(CONFIG.canvas.width - 150, game.boatX + 15);
+            break;
+        case 'KeyT':
+            cycleTime();
+            break;
+        case 'KeyD':
+            CONFIG.showDebug = !CONFIG.showDebug;
+            updateDebugPanel();
+            break;
+    }
+});
+
+function getCreature() {
+    let pool;
+    if (game.depth < 20) pool = CREATURES.surface;
+    else if (game.depth < 55) pool = CREATURES.mid;
+    else if (game.depth < 90) pool = CREATURES.deep;
+    else pool = CREATURES.abyss;
+    
+    const roll = Math.random();
+    let sum = 0;
+    for (const c of pool) {
+        sum += c.rarity;
+        if (roll <= sum) return {...c};
+    }
+    return {...pool[0]};
+}
+
+function cycleTime() {
+    const times = ['dawn', 'day', 'dusk', 'night'];
+    const i = times.indexOf(game.timeOfDay);
+    game.timeOfDay = times[(i + 1) % times.length];
+    initLayers();
+}
+
+function startGame(time) {
+    document.getElementById('title-screen').style.display = 'none';
+    game.state = 'sailing';
+    game.timeOfDay = time || 'dusk';
+    initLayers();
+    initFish();
+    loadAllAssets();
+}
+
+window.startGame = startGame;
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
