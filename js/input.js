@@ -66,6 +66,41 @@ function handleLoreViewerInput(e) {
     return false;
 }
 
+function handleJournalInput(e) {
+    if (!game.journal.open) return false;
+
+    if (e.key === 'ArrowLeft') {
+        game.journal.page = Math.max(0, game.journal.page - 1);
+        return true;
+    } else if (e.key === 'ArrowRight') {
+        game.journal.page = Math.min(3, game.journal.page + 1); // 4 zones
+        return true;
+    } else if (e.key === 'Escape' || e.key.toLowerCase() === 'j') {
+        closeJournal();
+        return true;
+    }
+    return false;
+}
+
+function handleVillageMenuInput(e) {
+    if (!game.villageMenu.open) return false;
+
+    if (e.key === 'ArrowUp') {
+        game.villageMenu.selectedIndex = Math.max(0, game.villageMenu.selectedIndex - 1);
+        return true;
+    } else if (e.key === 'ArrowDown') {
+        game.villageMenu.selectedIndex = Math.min(3, game.villageMenu.selectedIndex + 1);
+        return true;
+    } else if (e.key === ' ' || e.key === 'Enter') {
+        villageMenuAction();
+        return true;
+    } else if (e.key === 'Escape') {
+        closeVillageMenu();
+        return true;
+    }
+    return false;
+}
+
 function setupInputHandlers() {
     document.addEventListener('keydown', (e) => {
         // Handle lore popup first
@@ -79,6 +114,12 @@ function setupInputHandlers() {
         // Handle lore viewer
         if (handleLoreViewerInput(e)) return;
 
+        // Handle journal input
+        if (handleJournalInput(e)) return;
+
+        // Handle village menu input
+        if (handleVillageMenuInput(e)) return;
+
         // Handle minigame input
         if (handleMinigameInput(e)) return;
 
@@ -88,6 +129,16 @@ function setupInputHandlers() {
         // Lore viewer toggle
         if (e.key.toLowerCase() === 'l' && game.state !== 'title') {
             game.loreViewer.open = !game.loreViewer.open;
+            return;
+        }
+
+        // Journal toggle
+        if (e.key.toLowerCase() === 'j' && game.state !== 'title') {
+            if (game.journal.open) {
+                closeJournal();
+            } else {
+                openJournal();
+            }
             return;
         }
 
@@ -157,6 +208,12 @@ function setupInputHandlers() {
                     const c = game.currentCatch;
                     game.sanity = Math.max(0, game.sanity - c.sanityLoss);
 
+                    // Track sanity lost for transformation
+                    game.transformation.totalSanityLost += c.sanityLoss;
+
+                    // Add to journal
+                    addToJournal(c);
+
                     if (game.inventory.length < game.inventoryMax) {
                         game.inventory.push(c);
                     } else {
@@ -165,6 +222,9 @@ function setupInputHandlers() {
 
                     game.caughtCreatures.push(c);
                     if (c.rarity < 0.15) game.lastRareCatch = true;
+
+                    // Track story flags
+                    if (c.name === "The Unnamed") game.storyFlags.caughtUnnamed = true;
 
                     game.currentCatch = null;
                     game.state = 'sailing';
@@ -177,8 +237,8 @@ function setupInputHandlers() {
                 break;
             case 'e':
             case 'E':
-                if (game.nearDock && !game.shop.open) {
-                    openShop();
+                if (game.nearDock && !game.shop.open && !game.villageMenu.open) {
+                    openVillageMenu();
                 }
                 break;
             case 'p':

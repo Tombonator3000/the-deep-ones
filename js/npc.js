@@ -68,12 +68,12 @@ function drawDock() {
 
     if (game.nearDock || game.shop.open) drawOldMarsh(dockX);
 
-    if (game.nearDock && !game.shop.open && game.state === 'sailing') {
+    if (game.nearDock && !game.shop.open && !game.villageMenu.open && game.state === 'sailing') {
         ctx.fillStyle = 'rgba(10, 15, 12, 0.8)';
-        ctx.fillRect(dockX - 60, CONFIG.waterLine - 100, 120, 25);
+        ctx.fillRect(dockX - 70, CONFIG.waterLine - 100, 140, 25);
         ctx.fillStyle = '#aaddaa';
         ctx.font = '14px VT323';
-        ctx.fillText('[E] Talk to Marsh', dockX - 50, CONFIG.waterLine - 82);
+        ctx.fillText('[E] Innsmouth Harbor', dockX - 60, CONFIG.waterLine - 82);
     }
 }
 
