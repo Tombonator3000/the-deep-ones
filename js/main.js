@@ -124,6 +124,7 @@ function update(deltaTime) {
     }
 
     updateUI();
+    updateTouchActionButton();
 }
 
 function render() {
@@ -268,6 +269,7 @@ function initTitleScreen() {
 // Initialize
 window.onload = function() {
     setupInputHandlers();
+    setupTouchControls();
     initTitleScreen();
     requestAnimationFrame(gameLoop);
 };

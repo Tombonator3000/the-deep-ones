@@ -796,6 +796,70 @@ Komplett Game Design Document basert på Cast n Chill + Deep Regrets inspirasjon
 
 ---
 
+## 2024-12-27 — Touch Controls & Mobile Support
+
+### Gjort
+
+#### 1. Touch/Mobil-kontroller
+- On-screen D-pad for bevegelse (venstre, høyre, opp, ned)
+- Action-knapp som endrer tekst basert på game state (CAST/REEL/PULL/OK)
+- Snarveisknapper for Pet Dog (🐕), Harbor (⚓), og Journal (📖)
+- Automatisk deteksjon av touch-enheter
+- Hold-to-move funksjonalitet for kontinuerlig bevegelse
+- Fungerer også med mus for testing på desktop
+
+#### 2. Mobil-optimalisering
+- Viewport meta tag med user-scalable=no for å hindre zoom
+- CSS media queries for touch devices (pointer: coarse)
+- Skjuler tastatur-hints på mobil
+- Landscape-optimalisert layout for mindre skjermer
+- Touch events forhindrer default scroll/zoom oppførsel
+
+#### 3. Responsiv UI
+- Touch-knapper tilpasser seg skjermstørrelse
+- Landskapsmodus har mindre knapper for bedre spillplass
+- Semi-transparente knapper som ikke blokkerer spillet
+
+### Endringer
+
+**game.html:**
+- Oppdatert viewport meta tag
+- Lagt til ~100 linjer CSS for touch-kontroller
+- Lagt til touch-controls div med D-pad og action-knapper
+- Versjon oppdatert til 0.9
+
+**js/input.js:**
+- Lagt til touchState objekt for touch-tilstand
+- Lagt til setupTouchControls() funksjon
+- Lagt til handleTouchKeyDown() for å simulere tastaturtrykk
+- Lagt til startHoldAction() og stopHoldAction() for kontinuerlig bevegelse
+- Lagt til updateTouchActionButton() for dynamisk knappetekst
+
+**js/main.js:**
+- Integrert setupTouchControls() i window.onload
+- Integrert updateTouchActionButton() i game loop
+
+**js/save.js:**
+- Versjon oppdatert til 0.9
+
+### Tekniske beslutninger
+- Touch-kontroller simulerer keyboard events for gjenbruk av eksisterende input-håndtering
+- CSS media queries (pointer: coarse) brukes for touch-deteksjon
+- Hold-intervall på 50ms gir jevn bevegelse uten å overbelaste
+- Action-knapp oppdateres hver frame for responsiv feedback
+
+### Neste prioritet
+- [ ] Lyd/musikk system
+- [ ] Claude API-integrasjon for dynamisk NPC-dialog
+- [ ] Fullscreen-modus for mobil
+
+### Notater
+- Touch-kontroller fungerer også med mus for testing
+- D-pad inkluderer alle 4 retninger (opp/ned for dybde, venstre/høyre for bevegelse)
+- Landscape-modus optimalisert for telefoner
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown

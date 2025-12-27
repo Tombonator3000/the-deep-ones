@@ -43,7 +43,7 @@ Bruk conventional commits:
 
 ## Nåværende Status
 
-**Versjon:** 0.8 (Endings, Achievements & Location-Based Creatures)
+**Versjon:** 0.9 (Touch Controls & Mobile Support)
 
 **Ferdig:**
 - [x] Parallax layer system
@@ -80,6 +80,7 @@ Bruk conventional commits:
 - [x] Lokasjonsbaserte creatures (weighted spawning)
 - [x] Achievements-system (20 achievements)
 - [x] Achievements viewer ([A] keybind)
+- [x] Touch/mobil-kontroller med on-screen buttons
 
 **Neste prioritet:**
 - [ ] Claude API-integrasjon for dynamisk NPC-dialog

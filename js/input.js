@@ -329,3 +329,150 @@ function cycleTime() {
     game.timeOfDay = times[(idx + 1) % 4];
     initLayers();
 }
+
+// ============================================================
+// TOUCH CONTROLS
+// ============================================================
+
+const touchState = {
+    activeKeys: new Set(),
+    holdIntervals: {},
+    isTouchDevice: false
+};
+
+function setupTouchControls() {
+    // Detect touch device
+    touchState.isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+    const touchControls = document.getElementById('touch-controls');
+    if (!touchControls) return;
+
+    // Show/hide touch controls based on device
+    if (touchState.isTouchDevice) {
+        touchControls.classList.add('visible');
+    }
+
+    // Get all touch buttons
+    const touchButtons = document.querySelectorAll('.touch-btn');
+
+    touchButtons.forEach(btn => {
+        const key = btn.dataset.key;
+        if (!key) return;
+
+        // Touch start - simulate key press
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            btn.classList.add('pressed');
+            handleTouchKeyDown(key);
+
+            // For movement keys, enable continuous movement
+            if (key === 'ArrowLeft' || key === 'ArrowRight' || key === 'ArrowUp' || key === 'ArrowDown') {
+                startHoldAction(key);
+            }
+        }, { passive: false });
+
+        // Touch end - simulate key release
+        btn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            btn.classList.remove('pressed');
+            stopHoldAction(key);
+        }, { passive: false });
+
+        // Touch cancel
+        btn.addEventListener('touchcancel', (e) => {
+            btn.classList.remove('pressed');
+            stopHoldAction(key);
+        });
+
+        // Mouse events for testing on desktop
+        btn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            btn.classList.add('pressed');
+            handleTouchKeyDown(key);
+
+            if (key === 'ArrowLeft' || key === 'ArrowRight' || key === 'ArrowUp' || key === 'ArrowDown') {
+                startHoldAction(key);
+            }
+        });
+
+        btn.addEventListener('mouseup', (e) => {
+            btn.classList.remove('pressed');
+            stopHoldAction(key);
+        });
+
+        btn.addEventListener('mouseleave', (e) => {
+            btn.classList.remove('pressed');
+            stopHoldAction(key);
+        });
+    });
+
+    // Prevent default touch behaviors on game canvas
+    const canvas = document.getElementById('gameCanvas');
+    if (canvas) {
+        canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+        canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+    }
+}
+
+function handleTouchKeyDown(key) {
+    // Create a fake keyboard event and pass it through the normal input system
+    const fakeEvent = {
+        key: key,
+        shiftKey: false,
+        preventDefault: () => {}
+    };
+
+    // Trigger the same handlers as keyboard
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: key }));
+}
+
+function startHoldAction(key) {
+    // Clear any existing interval for this key
+    stopHoldAction(key);
+
+    touchState.activeKeys.add(key);
+
+    // For continuous movement, repeat the action
+    touchState.holdIntervals[key] = setInterval(() => {
+        if (touchState.activeKeys.has(key)) {
+            handleTouchKeyDown(key);
+        }
+    }, 50); // 20 FPS for smooth movement
+}
+
+function stopHoldAction(key) {
+    touchState.activeKeys.delete(key);
+
+    if (touchState.holdIntervals[key]) {
+        clearInterval(touchState.holdIntervals[key]);
+        delete touchState.holdIntervals[key];
+    }
+}
+
+// Update touch action button text based on game state
+function updateTouchActionButton() {
+    const actionBtn = document.getElementById('touch-action');
+    if (!actionBtn) return;
+
+    switch (game.state) {
+        case 'sailing':
+            actionBtn.textContent = 'CAST';
+            break;
+        case 'waiting':
+            actionBtn.textContent = 'REEL';
+            break;
+        case 'reeling':
+            actionBtn.textContent = 'PULL';
+            break;
+        case 'caught':
+            actionBtn.textContent = 'OK';
+            break;
+        default:
+            actionBtn.textContent = 'CAST';
+    }
+}
+
+// Check if device is touch-capable
+function isTouchDevice() {
+    return touchState.isTouchDevice;
+}
