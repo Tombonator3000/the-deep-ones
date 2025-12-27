@@ -1,0 +1,197 @@
+// ============================================================
+// THE DEEP ONES - INPUT HANDLING
+// ============================================================
+
+function handleMinigameInput(e) {
+    if (!game.minigame.active) return false;
+
+    if (e.key === 'ArrowLeft') {
+        game.minigame.playerZone = Math.max(0, game.minigame.playerZone - 0.03);
+        return true;
+    } else if (e.key === 'ArrowRight') {
+        game.minigame.playerZone = Math.min(1, game.minigame.playerZone + 0.03);
+        return true;
+    }
+    return false;
+}
+
+function handleShopInput(e) {
+    if (!game.shop.open) return false;
+
+    if (e.key === 'Tab') {
+        e.preventDefault();
+        const tabs = ['sell', 'rods', 'lures', 'boats'];
+        const idx = tabs.indexOf(game.shop.tab);
+        game.shop.tab = tabs[(idx + 1) % tabs.length];
+        game.shop.selectedIndex = 0;
+        return true;
+    } else if (e.key === 'ArrowUp') {
+        game.shop.selectedIndex = Math.max(0, game.shop.selectedIndex - 1);
+        return true;
+    } else if (e.key === 'ArrowDown') {
+        let maxIdx = 0;
+        if (game.shop.tab === 'sell') maxIdx = Math.max(0, game.inventory.length - 1);
+        else if (game.shop.tab === 'rods') maxIdx = SHOP.rods.length - 1;
+        else if (game.shop.tab === 'lures') maxIdx = SHOP.lures.length - 1;
+        else if (game.shop.tab === 'boats') maxIdx = SHOP.boats.length - 1;
+        game.shop.selectedIndex = Math.min(maxIdx, game.shop.selectedIndex + 1);
+        return true;
+    } else if (e.key === ' ' || e.key === 'Enter') {
+        shopAction();
+        return true;
+    } else if (e.key === 'Escape' || e.key.toLowerCase() === 'e') {
+        closeShop();
+        return true;
+    } else if (e.key.toLowerCase() === 'a' && game.shop.tab === 'sell') {
+        sellAllFish();
+        return true;
+    }
+    return false;
+}
+
+function handleLoreViewerInput(e) {
+    if (!game.loreViewer.open) return false;
+
+    if (e.key === 'ArrowLeft') {
+        game.loreViewer.page = Math.max(0, game.loreViewer.page - 1);
+        return true;
+    } else if (e.key === 'ArrowRight') {
+        const totalPages = Math.ceil(LORE_FRAGMENTS.length / game.loreViewer.itemsPerPage);
+        game.loreViewer.page = Math.min(totalPages - 1, game.loreViewer.page + 1);
+        return true;
+    } else if (e.key === 'Escape' || e.key.toLowerCase() === 'l') {
+        game.loreViewer.open = false;
+        return true;
+    }
+    return false;
+}
+
+function setupInputHandlers() {
+    document.addEventListener('keydown', (e) => {
+        // Handle lore popup first
+        if (game.currentLore) {
+            if (e.key === ' ') {
+                game.currentLore = null;
+            }
+            return;
+        }
+
+        // Handle lore viewer
+        if (handleLoreViewerInput(e)) return;
+
+        // Handle minigame input
+        if (handleMinigameInput(e)) return;
+
+        // Handle shop input
+        if (handleShopInput(e)) return;
+
+        // Lore viewer toggle
+        if (e.key.toLowerCase() === 'l' && game.state !== 'title') {
+            game.loreViewer.open = !game.loreViewer.open;
+            return;
+        }
+
+        // Save game
+        if (e.key === 'S' && e.shiftKey) {
+            saveGame();
+            return;
+        }
+
+        // Time controls
+        if (e.key === 'T' && e.shiftKey) {
+            game.timePaused = !game.timePaused;
+            return;
+        }
+
+        // Debug toggle
+        if (e.key.toLowerCase() === 'd') {
+            CONFIG.showDebug = !CONFIG.showDebug;
+            updateDebugPanel();
+            return;
+        }
+
+        // Sprite toggle
+        if (e.key.toLowerCase() === 's' && !e.shiftKey) {
+            CONFIG.useSprites = !CONFIG.useSprites;
+            updateDebugPanel();
+            return;
+        }
+
+        // Game state controls
+        if (game.state === 'title') return;
+
+        const rod = getCurrentRod();
+        const boat = getCurrentBoat();
+        const speed = (boat ? boat.speed : 1) * 3;
+
+        switch (e.key) {
+            case 'ArrowLeft':
+                if (game.state === 'sailing') {
+                    game.boatX = Math.max(CONFIG.worldMinX, game.boatX - speed);
+                }
+                break;
+            case 'ArrowRight':
+                if (game.state === 'sailing') {
+                    game.boatX = Math.min(CONFIG.worldMaxX, game.boatX + speed);
+                }
+                break;
+            case 'ArrowUp':
+                if (game.state === 'waiting' || game.state === 'reeling') {
+                    const maxDepth = rod ? rod.depthMax : 30;
+                    game.targetDepth = Math.min(maxDepth, game.targetDepth + 5);
+                }
+                break;
+            case 'ArrowDown':
+                if (game.state === 'waiting' || game.state === 'reeling') {
+                    game.targetDepth = Math.max(0, game.targetDepth - 5);
+                }
+                break;
+            case ' ':
+                if (game.state === 'sailing') {
+                    game.state = 'waiting';
+                    game.targetDepth = 30;
+                } else if (game.state === 'waiting') {
+                    game.state = 'sailing';
+                    game.depth = 0;
+                } else if (game.state === 'caught') {
+                    const c = game.currentCatch;
+                    game.sanity = Math.max(0, game.sanity - c.sanityLoss);
+
+                    if (game.inventory.length < game.inventoryMax) {
+                        game.inventory.push(c);
+                    } else {
+                        game.money += Math.floor(c.value * 0.5);
+                    }
+
+                    game.caughtCreatures.push(c);
+                    if (c.rarity < 0.15) game.lastRareCatch = true;
+
+                    game.currentCatch = null;
+                    game.state = 'sailing';
+                    game.depth = 0;
+                    autoSave();
+                }
+                break;
+            case 't':
+                if (!e.shiftKey) cycleTime();
+                break;
+            case 'e':
+            case 'E':
+                if (game.nearDock && !game.shop.open) {
+                    openShop();
+                }
+                break;
+            case 'p':
+            case 'P':
+                petDog();
+                break;
+        }
+    });
+}
+
+function cycleTime() {
+    const times = ['dawn', 'day', 'dusk', 'night'];
+    const idx = times.indexOf(game.timeOfDay);
+    game.timeOfDay = times[(idx + 1) % 4];
+    initLayers();
+}

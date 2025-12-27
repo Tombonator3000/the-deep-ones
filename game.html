@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Deep Ones — Modular Build v0.6</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0a0a12;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'VT323', monospace;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            position: relative;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        #gameCanvas {
+            display: block;
+            border: 4px solid #1a1a2e;
+            box-shadow: 0 0 60px rgba(70, 130, 100, 0.2);
+        }
+
+        #ui {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #c4d4cc;
+            font-size: 18px;
+            text-shadow: 2px 2px 0 #0a0a12;
+            background: rgba(10, 15, 20, 0.8);
+            padding: 12px 16px;
+            border-radius: 4px;
+            border: 1px solid rgba(100, 130, 120, 0.3);
+        }
+
+        #ui div { margin: 4px 0; }
+
+        #debug {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            color: #6a8a7a;
+            font-size: 12px;
+            background: rgba(10, 15, 20, 0.8);
+            padding: 10px;
+            border-radius: 4px;
+            max-width: 250px;
+        }
+
+        #debug h4 { color: #8aba9a; margin-bottom: 8px; }
+        #debug .loaded { color: #8aba9a; }
+        #debug .fallback { color: #baba6a; }
+        #debug .missing { color: #ba6a6a; }
+
+        #controls {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            color: #7a9a8a;
+            font-size: 14px;
+            background: rgba(10, 15, 20, 0.7);
+            padding: 10px 14px;
+            border-radius: 4px;
+        }
+
+        #title-screen {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(180deg, #1a1525 0%, #151a22 50%, #0a1015 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        #title-screen h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 32px;
+            color: #5a9a7a;
+            text-shadow: 0 0 30px rgba(90, 154, 122, 0.5), 4px 4px 0 #1a2a25;
+            margin-bottom: 15px;
+        }
+
+        #title-screen .subtitle {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: #3a6a5a;
+            margin-bottom: 30px;
+        }
+
+        #title-screen p {
+            color: #4a6a5a;
+            font-size: 20px;
+            margin-bottom: 50px;
+            font-style: italic;
+        }
+
+        #title-screen button {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            padding: 15px 40px;
+            background: transparent;
+            border: 2px solid #4a7a6a;
+            color: #7aba9a;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 8px;
+        }
+
+        #title-screen button:hover {
+            background: #4a7a6a;
+            color: #0a0a12;
+        }
+
+        .time-buttons { display: flex; gap: 10px; margin-top: 20px; }
+        .time-buttons button { font-size: 10px; padding: 12px 20px; }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="1000" height="650"></canvas>
+
+        <div id="title-screen">
+            <h1>THE DEEP ONES</h1>
+            <div class="subtitle">MODULAR BUILD v0.6</div>
+            <p>"Drop in your pixel art and watch it come alive."</p>
+            <button onclick="startGame('dusk')">NEW GAME</button>
+            <button id="continue-btn" onclick="continueGame()" style="display: none;">CONTINUE</button>
+            <div id="save-info" style="color: #5a7a6a; font-size: 14px; margin-top: 10px;"></div>
+            <div class="time-buttons">
+                <button onclick="startGame('dawn')">Dawn</button>
+                <button onclick="startGame('day')">Day</button>
+                <button onclick="startGame('dusk')">Dusk</button>
+                <button onclick="startGame('night')">Night</button>
+            </div>
+        </div>
+
+        <div id="ui">
+            <div>Gold: <span id="money">0</span></div>
+            <div>Depth: <span id="depth">0</span>m</div>
+            <div>Sanity: <span id="sanity">##########</span></div>
+            <div>Inv: <span id="inventory">0/10</span></div>
+            <div>Rod: <span id="rod">Old Bamboo</span></div>
+            <div id="catch-display"></div>
+        </div>
+
+        <div id="debug">
+            <h4>ASSET STATUS</h4>
+            <div id="asset-status"></div>
+        </div>
+
+        <div id="controls">
+            [SPACE] Cast/Reel | [Arrows] Move/Depth | [E] Shop | [P] Pet Dog | [L] Lore | [Shift+S] Save
+        </div>
+    </div>
+
+    <!-- Load modules in order -->
+    <script src="js/config.js"></script>
+    <script src="js/palettes.js"></script>
+    <script src="js/game-state.js"></script>
+    <script src="js/creatures.js"></script>
+    <script src="js/assets.js"></script>
+    <script src="js/fallbacks.js"></script>
+    <script src="js/systems.js"></script>
+    <script src="js/npc.js"></script>
+    <script src="js/rendering.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/save.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
