@@ -280,15 +280,81 @@ function openShop() {
     game.shop.open = true;
     game.shop.tab = 'sell';
     game.shop.selectedIndex = 0;
+    game.shop.visitCount = (game.shop.visitCount || 0) + 1;
 
-    if (game.sanity < 30) {
-        game.shop.npcDialog = getRandomDialog('lowSanity');
-    } else if (game.lastRareCatch) {
-        game.shop.npcDialog = getRandomDialog('afterRareCatch');
-        game.lastRareCatch = false;
-    } else {
-        game.shop.npcDialog = getRandomDialog('greeting');
+    // Determine dialog based on context
+    game.shop.npcDialog = getContextualDialog();
+}
+
+function getContextualDialog() {
+    // Priority 1: Special catches
+    if (game.storyFlags.caughtUnnamed && Math.random() < 0.3) {
+        return getRandomDialog('afterUnnamed');
     }
+
+    // Check for abyss creature in inventory
+    const hasAbyssCreature = game.inventory.some(c => c.value >= 500);
+    if (hasAbyssCreature && Math.random() < 0.4) {
+        return getRandomDialog('afterAbyssCreature');
+    }
+
+    // Priority 2: Low sanity
+    if (game.sanity < 30) {
+        return getRandomDialog('lowSanity');
+    }
+
+    // Priority 3: Rare catch
+    if (game.lastRareCatch) {
+        game.lastRareCatch = false;
+        return getRandomDialog('afterRareCatch');
+    }
+
+    // Priority 4: First visit
+    if (!game.storyFlags.metMarsh) {
+        game.storyFlags.metMarsh = true;
+        return getRandomDialog('firstVisit');
+    }
+
+    // Priority 5: Veteran visit (every 10 visits)
+    if (game.shop.visitCount % 10 === 0) {
+        return getRandomDialog('veteranVisit');
+    }
+
+    // Priority 6: Time of day specific
+    const timeDialogs = {
+        'night': 'nightVisit',
+        'dawn': 'dawnVisit',
+        'dusk': 'duskVisit'
+    };
+    if (timeDialogs[game.timeOfDay] && Math.random() < 0.3) {
+        return getRandomDialog(timeDialogs[game.timeOfDay]);
+    }
+
+    // Priority 7: Weather specific
+    if (game.weather.current === 'storm' && Math.random() < 0.4) {
+        return getRandomDialog('stormVisit');
+    }
+
+    // Priority 8: Achievement milestones
+    const achievementCount = game.achievements.unlocked.length;
+    if (achievementCount >= 10 && Math.random() < 0.2) {
+        return getRandomDialog('manyAchievements');
+    } else if (achievementCount === 1) {
+        return getRandomDialog('afterFirstAchievement');
+    }
+
+    // Priority 9: Fishing hints (occasional)
+    if (Math.random() < 0.15) {
+        return getRandomDialog('fishingHints');
+    }
+
+    // Priority 10: Lore hints (occasional, if not all lore found)
+    if (game.loreFound.length < LORE_FRAGMENTS.length && Math.random() < 0.1) {
+        return getRandomDialog('loreHints');
+    }
+
+    // Default greeting
+    return getRandomDialog('greeting');
 }
 
 function closeShop() {

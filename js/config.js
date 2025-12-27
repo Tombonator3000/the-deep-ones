@@ -40,21 +40,43 @@ const WEATHER = {
 };
 
 const LORE_FRAGMENTS = [
-    { id: 1, title: "Driftwood Message", text: "STAY IN THE SHALLOWS. THE DEEP ONES WATCH. -Unknown", found: false, location: 'sandbank' },
-    { id: 2, title: "Marsh's Journal, Page 1", text: "Day 47. The fish are different now. Their eyes... they follow.", found: false, location: 'shallows' },
-    { id: 3, title: "Sunset Lover's Note", text: "We used to watch the sunset here. Before the changes. Before she started swimming at night.", found: false, location: 'sunsetCove' },
-    { id: 4, title: "Torn Letter", text: "Dearest Sarah, I've seen things in the deep. Don't come looking for me. -Your Father", found: false, location: 'reef' },
-    { id: 5, title: "Ship's Log (SS Dagon)", text: "Captain's Log: The crew won't sleep. They say the water sings to them at night.", found: false, location: 'shipwreck' },
-    { id: 6, title: "Carved Stone Tablet", text: "PH'NGLUI MGLW'NAFH... The rest is worn away. You feel sick looking at it.", found: false, location: 'shipwreck' },
-    { id: 7, title: "Child's Drawing", text: "A crude drawing of a fish. It has too many fins. 'My friend' is written below.", found: false, location: 'shallows' },
-    { id: 8, title: "Marsh's Journal, Page 23", text: "The old ones remember. Before the ice. Before the land. They wait.", found: false, location: 'trench' },
-    { id: 9, title: "Waterlogged Bible", text: "Someone has crossed out 'God' and written 'DAGON' throughout. The pages stick together.", found: false, location: 'shipwreck' },
-    { id: 10, title: "Photograph", text: "A fishing crew, circa 1920. Their faces are scratched out. One figure in back has no face.", found: false, location: 'reef' },
-    { id: 11, title: "Final Transmission", text: "MAYDAY. SS DAGON. COORDINATES [ILLEGIBLE]. THEY'RE COMING UP. THEY'RE COMING UP. THEY'RE C-", found: false, location: 'trench' },
-    { id: 12, title: "The Naming", text: "When you name a thing, you give it power. Some things should remain unnamed.", found: false, location: 'void' },
-    { id: 13, title: "Marsh's Journal, Final Entry", text: "I understand now. The fish don't fear us. They pity us. We are so small. So brief.", found: false, location: 'void' },
-    { id: 14, title: "Mother Hydra's Promise", text: "THOSE WHO SERVE SHALL NOT DIE. THOSE WHO SERVE SHALL DREAM FOREVER.", found: false, location: 'void' }
+    { id: 1, title: "Driftwood Message", text: "STAY IN THE SHALLOWS. THE DEEP ONES WATCH. -Unknown", found: false, location: 'sandbank', hint: null },
+    { id: 2, title: "Marsh's Journal, Page 1", text: "Day 47. The fish are different now. Their eyes... they follow.", found: false, location: 'shallows', hint: "The Midnight Perch only shows itself after dark." },
+    { id: 3, title: "Sunset Lover's Note", text: "We used to watch the sunset here. Before the changes. Before she started swimming at night.", found: false, location: 'sunsetCove', hint: "Prophet Fish emerge at dusk, when the veil is thin." },
+    { id: 4, title: "Torn Letter", text: "Dearest Sarah, I've seen things in the deep. Don't come looking for me. -Your Father", found: false, location: 'reef', hint: null },
+    { id: 5, title: "Ship's Log (SS Dagon)", text: "Captain's Log: The crew won't sleep. They say the water sings to them at night.", found: false, location: 'shipwreck', hint: "The Drowned Sailor's Friend surfaces in storms." },
+    { id: 6, title: "Carved Stone Tablet", text: "PH'NGLUI MGLW'NAFH... The rest is worn away. You feel sick looking at it.", found: false, location: 'shipwreck', hint: null },
+    { id: 7, title: "Child's Drawing", text: "A crude drawing of a fish. It has too many fins. 'My friend' is written below.", found: false, location: 'shallows', hint: "The Mimic appears in the fog. It knows what you fear." },
+    { id: 8, title: "Marsh's Journal, Page 23", text: "The old ones remember. Before the ice. Before the land. They wait.", found: false, location: 'trench', hint: null },
+    { id: 9, title: "Waterlogged Bible", text: "Someone has crossed out 'God' and written 'DAGON' throughout. The pages stick together.", found: false, location: 'shipwreck', hint: "Dawn brings the Skipjack. Blink and you'll miss it." },
+    { id: 10, title: "Photograph", text: "A fishing crew, circa 1920. Their faces are scratched out. One figure in back has no face.", found: false, location: 'reef', hint: null },
+    { id: 11, title: "Final Transmission", text: "MAYDAY. SS DAGON. COORDINATES [ILLEGIBLE]. THEY'RE COMING UP. THEY'RE COMING UP. THEY'RE C-", found: false, location: 'trench', hint: "The Unnamed only surfaces in night storms. Pray you never find it." },
+    { id: 12, title: "The Naming", text: "When you name a thing, you give it power. Some things should remain unnamed.", found: false, location: 'void', hint: null },
+    { id: 13, title: "Marsh's Journal, Final Entry", text: "I understand now. The fish don't fear us. They pity us. We are so small. So brief.", found: false, location: 'void', hint: "The Fog Phantom exists only when you can't see it." },
+    { id: 14, title: "Mother Hydra's Promise", text: "THOSE WHO SERVE SHALL NOT DIE. THOSE WHO SERVE SHALL DREAM FOREVER.", found: false, location: 'void', hint: "Mother Hydra's Tears fall only during the greatest storms." }
 ];
+
+// Secret creature info unlocked by lore
+const SECRET_CREATURE_INFO = {
+    "Midnight Perch": { loreId: 2, secret: "Its scales can be used to see in complete darkness." },
+    "Prophet Fish": { loreId: 3, secret: "Some say it can predict the manner of your death." },
+    "Drowned Sailor's Friend": { loreId: 5, secret: "The sailors it 'befriended' are still with it. Inside." },
+    "The Mimic": { loreId: 7, secret: "It takes the form of what you most desire. Then devours it." },
+    "Dawn Skipjack": { loreId: 9, secret: "Ancient sailors believed catching one brought a year of luck." },
+    "The Unnamed": { loreId: 11, secret: "To speak its true name is to summon it. Even thinking it..." },
+    "Fog Phantom": { loreId: 13, secret: "It exists in the spaces between moments. Neither real nor unreal." },
+    "Mother Hydra's Tear": { loreId: 14, secret: "A piece of an Old One. It still feels. It still dreams." }
+};
+
+// Get secret info for a creature if lore is found
+function getSecretCreatureInfo(creatureName) {
+    const info = SECRET_CREATURE_INFO[creatureName];
+    if (!info) return null;
+    if (game.loreFound.includes(info.loreId)) {
+        return info.secret;
+    }
+    return null;
+}
 
 // Transformation stages
 const TRANSFORMATION = {
@@ -199,5 +221,73 @@ const NPC_DIALOGS = {
         "*mutters something in a language you don't recognize*",
         "*the dog whimpers softly*",
         "*scratches something into the dock with a knife*"
+    ],
+    // Context-specific dialogs
+    firstVisit: [
+        "New here, ain't ya? The name's Marsh. Old Marsh, they call me now.",
+        "Welcome to Innsmouth Harbor. Don't let the locals spook you.",
+        "First time fishing these waters? Stick to the shallows. For now."
+    ],
+    veteranVisit: [
+        "Ten times now. You're becoming one of us, friend.",
+        "I remember when you first came here. You've changed.",
+        "The regulars are talking about you. Not all bad, mind you."
+    ],
+    nightVisit: [
+        "Fishing at night? Bold. Or foolish. Same thing sometimes.",
+        "The moon's full. They're more active when the moon's full.",
+        "Can't sleep either? The sea keeps you up too, doesn't it?"
+    ],
+    stormVisit: [
+        "Storm's brewing. The big ones come up in storms.",
+        "Most fishers stay home in weather like this. Not you.",
+        "Lightning on the water... beautiful and terrible."
+    ],
+    dawnVisit: [
+        "Up before the sun. My kind of fisher.",
+        "Dawn's the best time. The fish are still dreaming.",
+        "The world between night and day... things slip through."
+    ],
+    duskVisit: [
+        "End of another day. Or just the beginning, for some.",
+        "Sunset Cove's beautiful this time. Stay away from it.",
+        "The dying light plays tricks. Or maybe it reveals truths."
+    ],
+    // Achievement-related
+    afterFirstAchievement: [
+        "Getting the hang of it, I see. Keep at it.",
+        "Progress. That's what I like to see.",
+        "Every fisher has their first milestone. This is yours."
+    ],
+    manyAchievements: [
+        "Quite the collection you've built. Impressive.",
+        "You've done things I've only heard whispers about.",
+        "The sea has marked you as one of its own."
+    ],
+    // Specific creature reactions
+    afterUnnamed: [
+        "You... you caught THAT? How are you still standing?",
+        "I've heard legends. Never thought I'd see proof.",
+        "Take my advice: forget you ever saw it. If you can."
+    ],
+    afterAbyssCreature: [
+        "That came from... down there? What else is waiting?",
+        "The abyss gives up its secrets reluctantly.",
+        "Each of these brings us closer to understanding. Or madness."
+    ],
+    // Weather hints
+    fishingHints: [
+        "Some fish only come out at night. The shy ones.",
+        "Storm weather brings the big catches. And the dangerous ones.",
+        "Fog's good for the strange ones. The ones that hide.",
+        "Dawn skipjacks only bite at first light. Beautiful things.",
+        "The Prophet Fish comes at dusk. It knows things."
+    ],
+    // Lore hints
+    loreHints: [
+        "There are bottles floating out there. Messages from... before.",
+        "The Wreck holds secrets. Terrible secrets.",
+        "Someone carved words into the Void rocks. Warnings.",
+        "I found a journal once. Burned it. You should too."
     ]
 };

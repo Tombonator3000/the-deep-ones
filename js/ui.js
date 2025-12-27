@@ -183,3 +183,128 @@ function updateUI() {
     const rod = getCurrentRod();
     document.getElementById('rod').textContent = rod ? rod.name : 'None';
 }
+
+// Hotkey help overlay
+function drawHotkeyHelp() {
+    const w = 400, h = 450;
+    const x = (CONFIG.canvas.width - w) / 2;
+    const y = (CONFIG.canvas.height - h) / 2;
+
+    // Background
+    ctx.fillStyle = 'rgba(10, 15, 20, 0.95)';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = '#5a7a8a';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, w, h);
+
+    // Title
+    ctx.font = '16px "Press Start 2P"';
+    ctx.fillStyle = '#8ab0c0';
+    ctx.textAlign = 'center';
+    ctx.fillText('CONTROLS', x + w/2, y + 35);
+
+    // Hotkeys list
+    const hotkeys = [
+        { key: 'ARROW KEYS', desc: 'Move boat / Navigate menus' },
+        { key: 'SPACE', desc: 'Cast line / Confirm / Continue' },
+        { key: 'E', desc: 'Open Innsmouth Harbor menu' },
+        { key: 'P', desc: 'Pet your dog (+3 sanity)' },
+        { key: 'J', desc: 'Open Fishing Journal' },
+        { key: 'L', desc: 'Open Lore Collection' },
+        { key: 'A', desc: 'Open Achievements' },
+        { key: 'H', desc: 'Toggle this help screen' },
+        { key: 'T', desc: 'Cycle time of day' },
+        { key: 'SHIFT+T', desc: 'Pause/resume time' },
+        { key: 'SHIFT+S', desc: 'Save game' },
+        { key: 'D', desc: 'Toggle debug info' },
+        { key: 'S', desc: 'Toggle sprites' },
+        { key: 'ESC', desc: 'Close menus / Return' }
+    ];
+
+    ctx.textAlign = 'left';
+    hotkeys.forEach((hk, i) => {
+        const itemY = y + 70 + i * 26;
+
+        ctx.fillStyle = '#6a9aaa';
+        ctx.font = '14px VT323';
+        ctx.fillText(`[${hk.key}]`, x + 25, itemY);
+
+        ctx.fillStyle = '#a0b0c0';
+        ctx.font = '13px VT323';
+        ctx.fillText(hk.desc, x + 140, itemY);
+    });
+
+    // Footer
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#5a7a8a';
+    ctx.font = '12px VT323';
+    ctx.fillText('Press [H] or [ESC] to close', x + w/2, y + h - 15);
+    ctx.textAlign = 'left';
+}
+
+// Tutorial system
+function drawTutorial() {
+    if (!game.tutorial.shown && game.state !== 'title' && game.caughtCreatures.length < 3) {
+        // Check which tutorial step to show
+        let currentTip = null;
+
+        if (game.caughtCreatures.length === 0 && game.state === 'sailing') {
+            currentTip = "Press [SPACE] to cast your line!";
+        } else if (game.state === 'waiting' && game.depth < 10) {
+            currentTip = "Use [UP/DOWN] to adjust fishing depth";
+        } else if (game.nearDock && game.inventory.length > 0) {
+            currentTip = "Press [E] to visit the harbor and sell fish";
+        } else if (game.sanity < 50 && game.achievements.stats.petCount < 3) {
+            currentTip = "Press [P] to pet your dog for sanity!";
+        }
+
+        if (currentTip) {
+            const tipWidth = ctx.measureText(currentTip).width + 40;
+            const tipX = (CONFIG.canvas.width - tipWidth) / 2;
+            const tipY = CONFIG.canvas.height - 140;
+
+            // Background with subtle animation
+            const pulse = (Math.sin(game.time * 0.005) + 1) / 2;
+            ctx.fillStyle = `rgba(30, 50, 60, ${0.85 + pulse * 0.1})`;
+            ctx.fillRect(tipX, tipY, tipWidth, 35);
+            ctx.strokeStyle = `rgba(100, 160, 180, ${0.5 + pulse * 0.3})`;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(tipX, tipY, tipWidth, 35);
+
+            // Tip text
+            ctx.fillStyle = '#c0e0f0';
+            ctx.font = '14px VT323';
+            ctx.textAlign = 'center';
+            ctx.fillText(currentTip, CONFIG.canvas.width / 2, tipY + 23);
+            ctx.textAlign = 'left';
+
+            // Small indicator
+            ctx.fillStyle = '#80c0d0';
+            ctx.font = '10px VT323';
+            ctx.textAlign = 'center';
+            ctx.fillText('TIP', tipX + 20, tipY + 22);
+            ctx.textAlign = 'left';
+        }
+    }
+}
+
+// Stats display for achievements viewer (extended)
+function drawStatsPanel() {
+    const stats = game.achievements.stats;
+    const x = 15, y = CONFIG.canvas.height - 120;
+
+    ctx.fillStyle = 'rgba(10, 15, 20, 0.7)';
+    ctx.fillRect(x, y, 180, 100);
+
+    ctx.fillStyle = '#8a9a8a';
+    ctx.font = '11px VT323';
+    ctx.fillText(`Fish caught: ${stats.totalFishCaught}`, x + 10, y + 20);
+    ctx.fillText(`Gold earned: ${stats.totalGoldEarned}`, x + 10, y + 35);
+    ctx.fillText(`Night catches: ${stats.nightCatches}`, x + 10, y + 50);
+    ctx.fillText(`Storm catches: ${stats.stormCatches}`, x + 10, y + 65);
+    ctx.fillText(`Dog pets: ${stats.petCount}`, x + 10, y + 80);
+
+    const minutes = Math.floor(stats.timePlayed / 60);
+    const seconds = Math.floor(stats.timePlayed % 60);
+    ctx.fillText(`Time: ${minutes}m ${seconds}s`, x + 10, y + 95);
+}

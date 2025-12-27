@@ -117,6 +117,10 @@ function drawBoat() {
 }
 
 function drawBoatProcedural(x, y) {
+    // Get transformation visuals for fisher
+    const transVis = getTransformationVisuals();
+
+    // Boat hull
     ctx.fillStyle = '#4a3525';
     ctx.beginPath();
     ctx.moveTo(x - 45, y);
@@ -134,36 +138,94 @@ function drawBoatProcedural(x, y) {
     ctx.ellipse(x, y + 8, 32, 8, 0, 0, Math.PI);
     ctx.fill();
 
+    // Fisher body - changes with transformation
     ctx.fillStyle = '#1a1815';
     ctx.fillRect(x - 8, y - 25, 16, 25);
+
+    // Fisher head - skin color changes with transformation
+    ctx.fillStyle = transVis.skinColor;
     ctx.beginPath();
     ctx.arc(x, y - 32, 8, 0, Math.PI * 2);
     ctx.fill();
 
+    // Transformation glow effect
+    if (transVis.glowIntensity > 0) {
+        const glowGrad = ctx.createRadialGradient(x, y - 32, 0, x, y - 32, 15);
+        glowGrad.addColorStop(0, `rgba(100, 180, 160, ${transVis.glowIntensity * 0.3})`);
+        glowGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = glowGrad;
+        ctx.beginPath();
+        ctx.arc(x, y - 32, 15, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Hat
     ctx.fillStyle = '#3a3530';
     ctx.fillRect(x - 10, y - 42, 20, 5);
     ctx.fillRect(x - 6, y - 48, 12, 8);
 
+    // Eyes - get bigger with transformation
+    const eyeSize = 1.5 * transVis.eyeSize;
+    ctx.fillStyle = game.transformation.stage >= 3 ? '#60a0a0' : '#2a3a3a';
+    const blink = Math.sin(game.time * 0.1) > 0.95 ? 0 : 1;
+    ctx.beginPath();
+    ctx.arc(x - 4, y - 33, eyeSize * blink, 0, Math.PI * 2);
+    ctx.arc(x + 4, y - 33, eyeSize * blink, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Gills (visible at stage 3+)
+    if (transVis.hasGills) {
+        ctx.strokeStyle = `rgba(80, 140, 130, ${0.6 + Math.sin(game.time * 0.05) * 0.2})`;
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.moveTo(x - 8, y - 28 + i * 3);
+            ctx.lineTo(x - 12, y - 27 + i * 3);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x + 8, y - 28 + i * 3);
+            ctx.lineTo(x + 12, y - 27 + i * 3);
+            ctx.stroke();
+        }
+    }
+
+    // Webbed hands (visible at stage 2+)
+    if (transVis.hasWebbing) {
+        ctx.fillStyle = `rgba(100, 160, 140, 0.5)`;
+        ctx.beginPath();
+        ctx.moveTo(x - 12, y - 15);
+        ctx.lineTo(x - 18, y - 20);
+        ctx.lineTo(x - 15, y - 10);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    // Dog - body
     ctx.fillStyle = '#c0a080';
     ctx.beginPath();
     ctx.ellipse(x + 25, y - 5, 10, 7, 0, 0, Math.PI * 2);
     ctx.fill();
+    // Dog - head
     ctx.beginPath();
     ctx.arc(x + 32, y - 10, 6, 0, Math.PI * 2);
     ctx.fill();
 
+    // Dog - eye
     ctx.fillStyle = '#201510';
     ctx.beginPath();
     ctx.arc(x + 34, y - 11, 1.5, 0, Math.PI * 2);
     ctx.fill();
 
+    // Dog - tail animation
+    const tailWag = game.dog.animation === 'wag' ? Math.sin(game.time * 0.3) * 8 : 0;
     ctx.strokeStyle = '#c0a080';
     ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.moveTo(x + 16, y - 5);
-    ctx.quadraticCurveTo(x + 10, y - 15 + Math.sin(game.time * 0.2) * 5, x + 8, y - 20);
+    ctx.quadraticCurveTo(x + 10, y - 15 + Math.sin(game.time * 0.2) * 5 + tailWag, x + 8, y - 20);
     ctx.stroke();
 
+    // Fishing rod when not sailing
     if (game.state !== 'sailing') {
         ctx.strokeStyle = '#5a4a30';
         ctx.lineWidth = 3;
@@ -173,6 +235,7 @@ function drawBoatProcedural(x, y) {
         ctx.stroke();
     }
 
+    // Lantern glow
     const glow = (Math.sin(game.time * 0.08) + 1) / 2;
     const lanternGrad = ctx.createRadialGradient(x - 30, y - 10, 0, x - 30, y - 10, 20);
     lanternGrad.addColorStop(0, `rgba(255, 200, 100, ${0.4 + glow * 0.2})`);
@@ -182,6 +245,7 @@ function drawBoatProcedural(x, y) {
     ctx.arc(x - 30, y - 10, 20, 0, Math.PI * 2);
     ctx.fill();
 
+    // Lantern body
     ctx.fillStyle = '#3a3025';
     ctx.fillRect(x - 34, y - 5, 8, 12);
     ctx.fillStyle = `rgba(255, 220, 150, ${0.7 + glow * 0.3})`;
