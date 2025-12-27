@@ -34,6 +34,18 @@ function update(deltaTime) {
     updateMinigame(deltaTime);
     updateTransformation();
     updateAchievementNotification();
+    updateSoundEffects();
+
+    // Update stats
+    game.achievements.stats.timePlayed += deltaTime / 1000;
+
+    // Random ambient sounds
+    if (game.weather.current === 'storm' && Math.random() < 0.001) {
+        triggerWaveSound();
+    }
+    if (game.state === 'sailing' && Math.random() < 0.0005) {
+        triggerCreakSound();
+    }
 
     // Check endings
     checkEnding();
@@ -187,6 +199,17 @@ function render() {
     // Draw notifications
     drawSaveNotification();
     drawAchievementNotification();
+
+    // Draw sound effects
+    drawSoundEffects();
+
+    // Draw hotkey help if open
+    if (game.hotkeyHelp.open) {
+        drawHotkeyHelp();
+    }
+
+    // Draw tutorial if active
+    drawTutorial();
 }
 
 function gameLoop(timestamp) {

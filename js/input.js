@@ -255,6 +255,7 @@ function setupInputHandlers() {
                 if (game.state === 'sailing') {
                     game.state = 'waiting';
                     game.targetDepth = 30;
+                    triggerSplashSound();
                 } else if (game.state === 'waiting') {
                     game.state = 'sailing';
                     game.depth = 0;
@@ -267,6 +268,13 @@ function setupInputHandlers() {
 
                     // Add to journal
                     addToJournal(c);
+
+                    // Track total fish caught and biggest catch
+                    game.achievements.stats.totalFishCaught++;
+                    const zone = c.value >= 500 ? 'abyss' : c.value >= 180 ? 'deep' : c.value >= 60 ? 'mid' : 'surface';
+                    if (c.value > game.achievements.stats.biggestCatch[zone]) {
+                        game.achievements.stats.biggestCatch[zone] = c.value;
+                    }
 
                     if (game.inventory.length < game.inventoryMax) {
                         game.inventory.push(c);
@@ -293,6 +301,10 @@ function setupInputHandlers() {
                     game.depth = 0;
                     autoSave();
                 }
+                break;
+            case 'h':
+            case 'H':
+                game.hotkeyHelp.open = !game.hotkeyHelp.open;
                 break;
             case 't':
                 if (!e.shiftKey) cycleTime();

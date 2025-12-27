@@ -43,7 +43,8 @@ const game = {
         next: 'clear',
         transitionProgress: 0,
         timeUntilChange: 30000,
-        intensity: 0
+        intensity: 0,
+        lightningFlash: 0
     },
 
     dayProgress: 0.5,
@@ -155,10 +156,36 @@ const game = {
             totalGoldEarned: 50,
             petCount: 0,
             nightCatches: 0,
-            stormCatches: 0
+            stormCatches: 0,
+            totalFishCaught: 0,
+            timePlayed: 0,
+            longestSanityStreak: 0,
+            currentSanityStreak: 0,
+            biggestCatch: { surface: 0, mid: 0, deep: 0, abyss: 0 }
         },
         notification: null,  // { achievement: obj, timer: number }
         viewerOpen: false,
         viewerPage: 0
+    },
+
+    // Sound effect text system
+    soundEffects: [],  // Array of { text: string, x: number, y: number, timer: number, color: string }
+
+    // Hotkey help overlay
+    hotkeyHelp: {
+        open: false
+    },
+
+    // Tutorial system
+    tutorial: {
+        shown: false,
+        step: 0,
+        steps: [
+            { text: "Welcome to Innsmouth! Use ARROW KEYS to sail.", trigger: 'start' },
+            { text: "Press SPACE to cast your line.", trigger: 'sailing' },
+            { text: "Use UP/DOWN to adjust depth while fishing.", trigger: 'fishing' },
+            { text: "Visit the dock [E] to sell fish and buy gear.", trigger: 'nearDock' },
+            { text: "Press [P] to pet your dog for sanity!", trigger: 'lowSanity' }
+        ]
     }
 };

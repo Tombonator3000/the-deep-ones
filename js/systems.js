@@ -2,6 +2,128 @@
 // THE DEEP ONES - GAME SYSTEMS
 // ============================================================
 
+// ============================================================
+// SOUND EFFECT TEXT SYSTEM
+// ============================================================
+
+function addSoundEffect(text, x, y, options = {}) {
+    const effect = {
+        text: text,
+        x: x || CONFIG.canvas.width / 2,
+        y: y || CONFIG.canvas.height / 2,
+        timer: options.duration || 60,
+        maxTimer: options.duration || 60,
+        color: options.color || '#c0d0c0',
+        size: options.size || 14,
+        rise: options.rise !== false,  // Default to rising
+        italic: options.italic || false
+    };
+    game.soundEffects.push(effect);
+}
+
+function updateSoundEffects() {
+    game.soundEffects = game.soundEffects.filter(effect => {
+        effect.timer--;
+        if (effect.rise) {
+            effect.y -= 0.5;
+        }
+        return effect.timer > 0;
+    });
+}
+
+function drawSoundEffects() {
+    game.soundEffects.forEach(effect => {
+        const alpha = Math.min(1, effect.timer / 20);
+        ctx.fillStyle = effect.color.replace(')', `, ${alpha})`).replace('rgb', 'rgba');
+        if (effect.color.startsWith('#')) {
+            // Convert hex to rgba
+            const hex = effect.color.slice(1);
+            const r = parseInt(hex.slice(0, 2), 16);
+            const g = parseInt(hex.slice(2, 4), 16);
+            const b = parseInt(hex.slice(4, 6), 16);
+            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+        ctx.font = `${effect.italic ? 'italic ' : ''}${effect.size}px VT323`;
+        ctx.textAlign = 'center';
+        ctx.fillText(effect.text, effect.x, effect.y);
+        ctx.textAlign = 'left';
+    });
+}
+
+// Trigger sound effects based on game events
+function triggerSplashSound() {
+    const boatScreenX = game.boatX - game.cameraX;
+    addSoundEffect('*splash*', boatScreenX + 60, CONFIG.waterLine + 30, {
+        color: '#80b0c0',
+        duration: 45,
+        size: 12
+    });
+}
+
+function triggerCreakSound() {
+    const boatScreenX = game.boatX - game.cameraX;
+    addSoundEffect('*creak*', boatScreenX, CONFIG.waterLine - 30, {
+        color: '#8a7a6a',
+        duration: 40,
+        size: 11,
+        italic: true
+    });
+}
+
+function triggerBiteSound() {
+    const boatScreenX = game.boatX - game.cameraX;
+    addSoundEffect('*BITE!*', boatScreenX + 60, CONFIG.waterLine + 50, {
+        color: '#f0a060',
+        duration: 50,
+        size: 16
+    });
+}
+
+function triggerReelSound() {
+    const boatScreenX = game.boatX - game.cameraX;
+    addSoundEffect('*whirrrr*', boatScreenX + 30, CONFIG.waterLine - 40, {
+        color: '#a0a080',
+        duration: 30,
+        size: 10,
+        italic: true
+    });
+}
+
+function triggerCatchSound(isRare) {
+    const boatScreenX = game.boatX - game.cameraX;
+    if (isRare) {
+        addSoundEffect('*CAUGHT!*', boatScreenX, CONFIG.waterLine - 60, {
+            color: '#ffd700',
+            duration: 60,
+            size: 18
+        });
+    } else {
+        addSoundEffect('*caught!*', boatScreenX, CONFIG.waterLine - 50, {
+            color: '#80c080',
+            duration: 50,
+            size: 14
+        });
+    }
+}
+
+function triggerThunderSound() {
+    addSoundEffect('*KRAKA-BOOM*', CONFIG.canvas.width / 2, 80, {
+        color: '#e0e0ff',
+        duration: 80,
+        size: 20,
+        rise: false
+    });
+}
+
+function triggerWaveSound() {
+    addSoundEffect('*whoosh*', 100 + Math.random() * 800, CONFIG.waterLine + 10, {
+        color: '#6090a0',
+        duration: 35,
+        size: 10,
+        italic: true
+    });
+}
+
 // Weather System
 function updateWeather(deltaTime) {
     game.weather.timeUntilChange -= deltaTime;
@@ -49,6 +171,7 @@ function updateWeather(deltaTime) {
 }
 
 function drawWeatherEffects() {
+    // Rain and storm effects
     if (game.weather.current === 'rain' || game.weather.current === 'storm') {
         ctx.strokeStyle = game.weather.current === 'storm' ? 'rgba(180, 200, 255, 0.4)' : 'rgba(150, 180, 220, 0.3)';
         ctx.lineWidth = game.weather.current === 'storm' ? 2 : 1;
@@ -64,21 +187,121 @@ function drawWeatherEffects() {
             ctx.lineTo(x - 2, y + len);
             ctx.stroke();
         }
+
+        // Rain ripples on water surface
+        for (let i = 0; i < 15; i++) {
+            const rippleX = (i * 73 + game.time * 0.5) % CONFIG.canvas.width;
+            const ripplePhase = (game.time * 0.01 + i * 0.5) % 1;
+            const rippleSize = ripplePhase * 8;
+            const rippleAlpha = (1 - ripplePhase) * 0.3;
+
+            ctx.strokeStyle = `rgba(200, 220, 255, ${rippleAlpha})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.ellipse(rippleX, CONFIG.waterLine + 5, rippleSize, rippleSize * 0.3, 0, 0, Math.PI * 2);
+            ctx.stroke();
+        }
     }
 
+    // Rolling fog effect
     if (game.weather.current === 'fog') {
-        const gradient = ctx.createLinearGradient(0, 0, 0, CONFIG.canvas.height);
-        gradient.addColorStop(0, 'rgba(180, 190, 200, 0.6)');
-        gradient.addColorStop(0.5, 'rgba(160, 170, 180, 0.4)');
-        gradient.addColorStop(1, 'rgba(140, 150, 160, 0.3)');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, CONFIG.canvas.width, CONFIG.canvas.height);
+        // Multiple fog layers moving at different speeds
+        for (let layer = 0; layer < 3; layer++) {
+            const layerOffset = (game.time * 0.01 * (layer + 1)) % CONFIG.canvas.width;
+            const layerAlpha = 0.15 + layer * 0.1;
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, CONFIG.canvas.height);
+            gradient.addColorStop(0, `rgba(180, 190, 200, ${layerAlpha})`);
+            gradient.addColorStop(0.5, `rgba(160, 170, 180, ${layerAlpha * 0.7})`);
+            gradient.addColorStop(1, `rgba(140, 150, 160, ${layerAlpha * 0.5})`);
+
+            // Wavy fog shapes
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.moveTo(0, CONFIG.waterLine * 0.3);
+            for (let x = 0; x <= CONFIG.canvas.width; x += 50) {
+                const waveY = CONFIG.waterLine * 0.3 + Math.sin((x + layerOffset) * 0.01) * 30 + layer * 40;
+                ctx.lineTo(x, waveY);
+            }
+            ctx.lineTo(CONFIG.canvas.width, CONFIG.canvas.height);
+            ctx.lineTo(0, CONFIG.canvas.height);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Fog at water level
+        const waterFogGrad = ctx.createLinearGradient(0, CONFIG.waterLine - 30, 0, CONFIG.waterLine + 50);
+        waterFogGrad.addColorStop(0, 'transparent');
+        waterFogGrad.addColorStop(0.5, 'rgba(180, 190, 200, 0.4)');
+        waterFogGrad.addColorStop(1, 'rgba(160, 170, 180, 0.2)');
+        ctx.fillStyle = waterFogGrad;
+        ctx.fillRect(0, CONFIG.waterLine - 30, CONFIG.canvas.width, 80);
     }
 
-    if (game.weather.current === 'storm' && Math.random() < 0.002) {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.fillRect(0, 0, CONFIG.canvas.width, CONFIG.canvas.height);
+    // Enhanced lightning effect for storms
+    if (game.weather.current === 'storm') {
+        // Random lightning flashes
+        if (Math.random() < 0.003) {
+            game.weather.lightningFlash = 1;
+            triggerThunderSound();
+        }
+
+        if (game.weather.lightningFlash > 0) {
+            // Bright flash
+            ctx.fillStyle = `rgba(255, 255, 255, ${game.weather.lightningFlash * 0.4})`;
+            ctx.fillRect(0, 0, CONFIG.canvas.width, CONFIG.canvas.height);
+
+            // Lightning bolt
+            if (game.weather.lightningFlash > 0.8) {
+                drawLightningBolt();
+            }
+
+            game.weather.lightningFlash -= 0.05;
+        }
     }
+}
+
+// Draw a procedural lightning bolt
+function drawLightningBolt() {
+    const startX = 100 + Math.random() * (CONFIG.canvas.width - 200);
+    let x = startX;
+    let y = 0;
+
+    ctx.strokeStyle = 'rgba(255, 255, 220, 0.9)';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = 'rgba(200, 220, 255, 0.8)';
+    ctx.shadowBlur = 10;
+
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+
+    while (y < CONFIG.waterLine - 50) {
+        y += 20 + Math.random() * 30;
+        x += (Math.random() - 0.5) * 40;
+        ctx.lineTo(x, y);
+
+        // Branch occasionally
+        if (Math.random() < 0.3) {
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+
+            // Draw branch
+            let bx = x, by = y;
+            for (let i = 0; i < 3; i++) {
+                bx += (Math.random() - 0.5) * 30 + (Math.random() > 0.5 ? 15 : -15);
+                by += 15 + Math.random() * 20;
+                ctx.lineTo(bx, by);
+            }
+            ctx.stroke();
+
+            // Continue main bolt
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
 }
 
 // Time Progression
@@ -189,8 +412,50 @@ function updateLoreBottles() {
 }
 
 // Minigame System
+// Minigame types for different zones
+const MINIGAME_TYPES = {
+    surface: {
+        name: 'standard',
+        description: 'Keep the marker in the zone!',
+        staminaDrain: 0.5,
+        tensionGain: 0.3
+    },
+    mid: {
+        name: 'erratic',
+        description: 'The fish moves unpredictably!',
+        staminaDrain: 0.4,
+        tensionGain: 0.35,
+        erraticChance: 0.05  // Chance to suddenly change direction
+    },
+    deep: {
+        name: 'tugOfWar',
+        description: 'Fight against the pull!',
+        staminaDrain: 0.35,
+        tensionGain: 0.4,
+        pullStrength: 0.02  // Constant pull on player zone
+    },
+    abyss: {
+        name: 'tentacles',
+        description: 'Avoid the interference!',
+        staminaDrain: 0.3,
+        tensionGain: 0.5,
+        interferenceChance: 0.03  // Chance to obscure part of the bar
+    }
+};
+
+function getMinigameType(creature) {
+    // Determine minigame type based on creature value
+    if (creature.value >= 500) return MINIGAME_TYPES.abyss;
+    if (creature.value >= 180) return MINIGAME_TYPES.deep;
+    if (creature.value >= 60) return MINIGAME_TYPES.mid;
+    return MINIGAME_TYPES.surface;
+}
+
 function startMinigame(creature) {
+    const mgType = getMinigameType(creature);
+
     game.minigame.active = true;
+    game.minigame.type = mgType.name;
     game.minigame.targetZone = 0.5;
     game.minigame.playerZone = 0.5;
     game.minigame.tension = 0;
@@ -199,7 +464,14 @@ function startMinigame(creature) {
     game.minigame.zoneSize = Math.max(0.08, 0.2 - game.minigame.difficulty * 0.1);
     game.minigame.speed = 0.015 + game.minigame.difficulty * 0.02;
     game.minigame.direction = Math.random() > 0.5 ? 1 : -1;
+    game.minigame.staminaDrain = mgType.staminaDrain;
+    game.minigame.tensionGain = mgType.tensionGain;
+    game.minigame.interference = null;  // For abyss type
+    game.minigame.pull = 0;  // For deep type
     game.pendingCatch = creature;
+
+    // Trigger bite sound
+    triggerBiteSound();
 }
 
 function updateMinigame(deltaTime) {
@@ -207,15 +479,56 @@ function updateMinigame(deltaTime) {
 
     const mg = game.minigame;
 
+    // Base movement
     mg.targetZone += mg.direction * mg.speed;
     if (mg.targetZone > 0.9 || mg.targetZone < 0.1) mg.direction *= -1;
-    if (Math.random() < 0.02) mg.direction *= -1;
+
+    // Type-specific behaviors
+    switch (mg.type) {
+        case 'erratic':
+            // More frequent direction changes
+            if (Math.random() < 0.05) mg.direction *= -1;
+            // Occasional speed bursts
+            if (Math.random() < 0.02) {
+                mg.targetZone += mg.direction * 0.1;
+                mg.targetZone = Math.max(0.1, Math.min(0.9, mg.targetZone));
+            }
+            break;
+
+        case 'tugOfWar':
+            // Constant pull towards center or edge
+            mg.pull = Math.sin(game.time * 0.003) * 0.015;
+            mg.playerZone += mg.pull;
+            mg.playerZone = Math.max(0, Math.min(1, mg.playerZone));
+            break;
+
+        case 'tentacles':
+            // Create interference zones that block visibility
+            if (!mg.interference && Math.random() < 0.02) {
+                mg.interference = {
+                    position: Math.random(),
+                    size: 0.15 + Math.random() * 0.1,
+                    timer: 60
+                };
+            }
+            if (mg.interference) {
+                mg.interference.timer--;
+                if (mg.interference.timer <= 0) mg.interference = null;
+            }
+            break;
+
+        default:
+            // Standard: occasional direction change
+            if (Math.random() < 0.02) mg.direction *= -1;
+    }
 
     const inZone = Math.abs(mg.playerZone - mg.targetZone) < mg.zoneSize;
 
     if (inZone) {
-        mg.fishStamina -= 0.5;
-        mg.tension = Math.min(100, mg.tension + 0.3);
+        mg.fishStamina -= mg.staminaDrain;
+        mg.tension = Math.min(100, mg.tension + mg.tensionGain);
+        // Occasional reel sound
+        if (Math.random() < 0.03) triggerReelSound();
     } else {
         mg.fishStamina = Math.min(100, mg.fishStamina + 0.1);
         mg.tension = Math.max(0, mg.tension - 0.5);
@@ -232,6 +545,22 @@ function endMinigame(success) {
         game.currentCatch = game.pendingCatch;
         game.state = 'caught';
 
+        // Trigger catch sound
+        triggerCatchSound(game.pendingCatch.rarity < 0.15);
+
+        // Check for creature interactions
+        const interaction = checkCreatureInteraction(game.pendingCatch);
+        if (interaction) {
+            game.pendingInteraction = interaction;
+            // Show interaction message
+            addSoundEffect(interaction.message, CONFIG.canvas.width / 2, 200, {
+                color: '#ffd700',
+                duration: 90,
+                size: 16,
+                rise: false
+            });
+        }
+
         const lure = getCurrentLure();
         if (lure && lure.count > 0) {
             lure.count--;
@@ -240,8 +569,11 @@ function endMinigame(success) {
     } else {
         game.state = 'sailing';
         game.depth = 0;
-        document.getElementById('catch-display').textContent = 'It got away...';
-        setTimeout(() => { document.getElementById('catch-display').textContent = ''; }, 2000);
+        addSoundEffect('*snap* It got away...', CONFIG.canvas.width / 2, CONFIG.waterLine - 50, {
+            color: '#a06060',
+            duration: 60,
+            size: 14
+        });
     }
 
     game.pendingCatch = null;
@@ -724,48 +1056,94 @@ function drawEndingScene() {
         ? Math.min(1, game.ending.timer / 2000)
         : 1;
 
-    // Black background
-    ctx.fillStyle = `rgba(5, 8, 15, ${fadeAlpha})`;
+    // Ending-specific color palettes
+    const endingPalettes = {
+        deepOne: { bg: [5, 20, 40], text: [100, 180, 200], accent: [60, 140, 160] },
+        survivor: { bg: [30, 25, 15], text: [220, 200, 150], accent: [180, 150, 80] },
+        prophet: { bg: [20, 10, 30], text: [180, 140, 200], accent: [140, 80, 180] }
+    };
+    const palette = endingPalettes[game.ending.current] || endingPalettes.deepOne;
+
+    // Animated background with particles
+    ctx.fillStyle = `rgba(${palette.bg[0]}, ${palette.bg[1]}, ${palette.bg[2]}, ${fadeAlpha})`;
     ctx.fillRect(0, 0, CONFIG.canvas.width, CONFIG.canvas.height);
+
+    // Draw animated particles based on ending type
+    if (game.ending.phase === 'scene' || game.ending.phase === 'credits') {
+        drawEndingParticles(palette);
+    }
 
     if (game.ending.phase === 'scene') {
         const scenes = ENDING_SCENES[game.ending.current];
         const text = scenes[game.ending.textIndex];
         const textAlpha = Math.min(1, game.ending.timer / 500);
+        const fadeOut = game.ending.timer > 2500 ? Math.max(0, 1 - (game.ending.timer - 2500) / 500) : 1;
+        const alpha = textAlpha * fadeOut;
 
-        ctx.fillStyle = `rgba(150, 180, 200, ${textAlpha})`;
-        ctx.font = '20px VT323';
+        // Text glow effect
+        ctx.shadowColor = `rgba(${palette.accent[0]}, ${palette.accent[1]}, ${palette.accent[2]}, ${alpha * 0.5})`;
+        ctx.shadowBlur = 20;
+
+        ctx.fillStyle = `rgba(${palette.text[0]}, ${palette.text[1]}, ${palette.text[2]}, ${alpha})`;
+        ctx.font = '22px VT323';
         ctx.textAlign = 'center';
         ctx.fillText(text, CONFIG.canvas.width / 2, CONFIG.canvas.height / 2);
+
+        ctx.shadowBlur = 0;
     } else if (game.ending.phase === 'credits') {
         const ending = ENDINGS[game.ending.current];
+        const scrollOffset = Math.min(50, game.ending.timer / 100);
 
-        // Title
-        ctx.fillStyle = '#a0c0d0';
+        // Animated title with glow
+        const titlePulse = (Math.sin(game.time * 0.003) + 1) / 2;
+        ctx.shadowColor = `rgba(${palette.accent[0]}, ${palette.accent[1]}, ${palette.accent[2]}, ${0.3 + titlePulse * 0.3})`;
+        ctx.shadowBlur = 15 + titlePulse * 10;
+
+        ctx.fillStyle = `rgb(${palette.text[0]}, ${palette.text[1]}, ${palette.text[2]})`;
         ctx.font = '28px "Press Start 2P"';
         ctx.textAlign = 'center';
-        ctx.fillText(ending.name, CONFIG.canvas.width / 2, 150);
+        ctx.fillText(ending.name, CONFIG.canvas.width / 2, 150 - scrollOffset);
 
-        // Subtitle
-        ctx.fillStyle = '#708090';
-        ctx.font = '16px VT323';
-        ctx.fillText(`- ${ending.subtitle} -`, CONFIG.canvas.width / 2, 185);
+        ctx.shadowBlur = 0;
 
-        // Description
-        ctx.fillStyle = '#6080a0';
-        ctx.font = '16px VT323';
-        ctx.fillText(ending.description, CONFIG.canvas.width / 2, 250);
+        // Subtitle with fade-in
+        const subtitleAlpha = Math.min(1, game.ending.timer / 1000);
+        ctx.fillStyle = `rgba(${palette.text[0] * 0.7}, ${palette.text[1] * 0.7}, ${palette.text[2] * 0.7}, ${subtitleAlpha})`;
+        ctx.font = '18px VT323';
+        ctx.fillText(`- ${ending.subtitle} -`, CONFIG.canvas.width / 2, 190 - scrollOffset);
 
-        // Credits
-        ctx.fillStyle = '#506070';
-        ctx.font = '14px VT323';
-        ctx.fillText('THE DEEP ONES', CONFIG.canvas.width / 2, 350);
-        ctx.fillText('A Lovecraftian Fishing Game', CONFIG.canvas.width / 2, 375);
-        ctx.fillText('v0.8', CONFIG.canvas.width / 2, 400);
+        // Description with typewriter effect
+        const descAlpha = Math.min(1, (game.ending.timer - 500) / 1000);
+        if (descAlpha > 0) {
+            ctx.fillStyle = `rgba(${palette.accent[0]}, ${palette.accent[1]}, ${palette.accent[2]}, ${descAlpha})`;
+            ctx.font = '16px VT323';
+            ctx.fillText(ending.description, CONFIG.canvas.width / 2, 260 - scrollOffset);
+        }
 
-        // Continue prompt
+        // Decorative line
+        const lineWidth = Math.min(200, game.ending.timer / 10);
+        ctx.strokeStyle = `rgba(${palette.accent[0]}, ${palette.accent[1]}, ${palette.accent[2]}, 0.5)`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(CONFIG.canvas.width / 2 - lineWidth, 300 - scrollOffset);
+        ctx.lineTo(CONFIG.canvas.width / 2 + lineWidth, 300 - scrollOffset);
+        ctx.stroke();
+
+        // Credits with staggered fade
+        const creditsAlpha = Math.min(1, (game.ending.timer - 1500) / 1000);
+        if (creditsAlpha > 0) {
+            ctx.fillStyle = `rgba(${palette.text[0] * 0.5}, ${palette.text[1] * 0.5}, ${palette.text[2] * 0.5}, ${creditsAlpha})`;
+            ctx.font = '16px VT323';
+            ctx.fillText('THE DEEP ONES', CONFIG.canvas.width / 2, 360 - scrollOffset);
+            ctx.font = '14px VT323';
+            ctx.fillText('A Lovecraftian Fishing Game', CONFIG.canvas.width / 2, 385 - scrollOffset);
+            ctx.fillText('v0.9', CONFIG.canvas.width / 2, 410 - scrollOffset);
+        }
+
+        // Continue prompt with pulse animation
         if (game.ending.canContinue) {
-            ctx.fillStyle = '#80a0b0';
+            const pulse = (Math.sin(game.time * 0.005) + 1) / 2;
+            ctx.fillStyle = `rgba(${palette.text[0]}, ${palette.text[1]}, ${palette.text[2]}, ${0.6 + pulse * 0.4})`;
             ctx.font = '14px VT323';
             ctx.fillText('[SPACE] Enter Endless Mode', CONFIG.canvas.width / 2, 500);
             ctx.fillText('[ESC] Return to Title', CONFIG.canvas.width / 2, 525);
@@ -773,6 +1151,58 @@ function drawEndingScene() {
     }
 
     ctx.textAlign = 'left';
+}
+
+// Animated particles for ending scenes
+function drawEndingParticles(palette) {
+    const particleCount = 30;
+    for (let i = 0; i < particleCount; i++) {
+        const seed = i * 137.5;
+        const x = (seed + game.time * 0.02) % CONFIG.canvas.width;
+        const y = (seed * 2.3 + game.time * 0.01) % CONFIG.canvas.height;
+        const size = 1 + Math.sin(seed) * 1;
+        const alpha = 0.1 + Math.sin(game.time * 0.002 + seed) * 0.1;
+
+        ctx.fillStyle = `rgba(${palette.accent[0]}, ${palette.accent[1]}, ${palette.accent[2]}, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Special effect based on ending type
+    if (game.ending.current === 'deepOne') {
+        // Rising bubbles
+        for (let i = 0; i < 10; i++) {
+            const bx = 100 + i * 80;
+            const by = CONFIG.canvas.height - ((game.time * 0.05 + i * 50) % CONFIG.canvas.height);
+            ctx.fillStyle = 'rgba(100, 180, 200, 0.15)';
+            ctx.beginPath();
+            ctx.arc(bx, by, 3 + i % 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    } else if (game.ending.current === 'survivor') {
+        // Drifting light rays
+        for (let i = 0; i < 5; i++) {
+            const rayX = 150 + i * 180;
+            const rayAlpha = 0.05 + Math.sin(game.time * 0.001 + i) * 0.03;
+            const grad = ctx.createLinearGradient(rayX, 0, rayX + 50, CONFIG.canvas.height);
+            grad.addColorStop(0, `rgba(255, 220, 150, ${rayAlpha})`);
+            grad.addColorStop(1, 'transparent');
+            ctx.fillStyle = grad;
+            ctx.fillRect(rayX, 0, 30, CONFIG.canvas.height);
+        }
+    } else if (game.ending.current === 'prophet') {
+        // Swirling symbols
+        for (let i = 0; i < 8; i++) {
+            const angle = (game.time * 0.001 + i * Math.PI / 4);
+            const radius = 150 + Math.sin(game.time * 0.002 + i) * 30;
+            const sx = CONFIG.canvas.width / 2 + Math.cos(angle) * radius;
+            const sy = CONFIG.canvas.height / 2 + Math.sin(angle) * radius;
+            ctx.fillStyle = `rgba(140, 80, 180, ${0.1 + Math.sin(game.time * 0.003 + i) * 0.05})`;
+            ctx.font = '16px VT323';
+            ctx.fillText('◊', sx, sy);
+        }
+    }
 }
 
 function startEndlessMode() {
@@ -886,36 +1316,79 @@ function drawAchievementNotification() {
     // Slide-in animation
     const slideProgress = Math.min(1, (180 - notif.timer) / 30);
     const slideOut = notif.timer < 30 ? (30 - notif.timer) / 30 : 0;
-    const xOffset = (1 - slideProgress + slideOut) * 250;
+    const xOffset = (1 - slideProgress + slideOut) * 300;
 
-    const x = CONFIG.canvas.width - 240 + xOffset;
+    const x = CONFIG.canvas.width - 280 + xOffset;
     const y = 130;
-    const w = 230;
-    const h = 60;
+    const w = 270;
+    const h = 80;
 
-    // Background
-    ctx.fillStyle = 'rgba(40, 60, 80, 0.95)';
+    // Screen edge glow effect
+    if (slideProgress > 0 && slideOut < 1) {
+        const glowAlpha = Math.sin(notif.timer * 0.1) * 0.15 + 0.15;
+        const glowGrad = ctx.createRadialGradient(
+            CONFIG.canvas.width, y + h/2, 0,
+            CONFIG.canvas.width, y + h/2, 200
+        );
+        glowGrad.addColorStop(0, `rgba(255, 215, 100, ${glowAlpha})`);
+        glowGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = glowGrad;
+        ctx.fillRect(CONFIG.canvas.width - 200, y - 50, 200, h + 100);
+    }
+
+    // Background with gradient
+    const bgGrad = ctx.createLinearGradient(x, y, x + w, y + h);
+    bgGrad.addColorStop(0, 'rgba(30, 50, 70, 0.98)');
+    bgGrad.addColorStop(1, 'rgba(50, 70, 90, 0.98)');
+    ctx.fillStyle = bgGrad;
     ctx.fillRect(x, y, w, h);
-    ctx.strokeStyle = '#80a0c0';
+
+    // Animated border
+    const borderPulse = (Math.sin(notif.timer * 0.15) + 1) / 2;
+    ctx.strokeStyle = `rgba(255, 215, 100, ${0.6 + borderPulse * 0.4})`;
     ctx.lineWidth = 2;
     ctx.strokeRect(x, y, w, h);
 
-    // Icon
-    ctx.font = '24px serif';
-    ctx.fillText(achievement.icon, x + 15, y + 40);
+    // Inner glow
+    ctx.shadowColor = 'rgba(255, 215, 100, 0.3)';
+    ctx.shadowBlur = 10;
 
-    // Text
-    ctx.fillStyle = '#d0c080';
+    // Icon with background circle
+    ctx.fillStyle = 'rgba(255, 215, 100, 0.2)';
+    ctx.beginPath();
+    ctx.arc(x + 35, y + 40, 25, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    ctx.font = '32px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(achievement.icon, x + 35, y + 50);
+    ctx.textAlign = 'left';
+
+    // "ACHIEVEMENT UNLOCKED" header with gold gradient
+    ctx.fillStyle = '#ffd700';
     ctx.font = '12px VT323';
-    ctx.fillText('ACHIEVEMENT UNLOCKED', x + 50, y + 20);
+    ctx.fillText('★ ACHIEVEMENT UNLOCKED ★', x + 70, y + 22);
 
+    // Achievement name
     ctx.fillStyle = '#ffffff';
-    ctx.font = '14px VT323';
-    ctx.fillText(achievement.name, x + 50, y + 38);
+    ctx.font = '16px VT323';
+    ctx.fillText(achievement.name, x + 70, y + 42);
 
-    ctx.fillStyle = '#a0a0a0';
-    ctx.font = '11px VT323';
-    ctx.fillText(achievement.desc, x + 50, y + 52);
+    // Description
+    ctx.fillStyle = '#b0c0d0';
+    ctx.font = '12px VT323';
+    ctx.fillText(achievement.desc, x + 70, y + 60);
+
+    // Sparkle particles
+    for (let i = 0; i < 5; i++) {
+        const sparkleX = x + 20 + Math.sin(notif.timer * 0.2 + i * 1.5) * 15 + i * 50;
+        const sparkleY = y + 10 + Math.cos(notif.timer * 0.15 + i * 2) * 10;
+        const sparkleAlpha = 0.3 + Math.sin(notif.timer * 0.3 + i) * 0.2;
+        ctx.fillStyle = `rgba(255, 255, 200, ${sparkleAlpha})`;
+        ctx.font = '10px VT323';
+        ctx.fillText('✦', sparkleX, sparkleY);
+    }
 }
 
 // ============================================================

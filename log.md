@@ -609,6 +609,193 @@ Komplett Game Design Document basert på Cast n Chill + Deep Regrets inspirasjon
 
 ---
 
+## 2024-12-27 — Major Polish & Feature Expansion
+
+### Gjort
+
+#### 1. Visuell transformasjon av fiskeren
+- Fiskerens utseende endrer seg basert på transformasjonsstadium
+- Hudfarge går fra rosa → blek → grønnlig → turkis
+- Øynene blir større ved lavere sanity
+- Gjeller synlige ved stage 3+ (animert pustebevegelse)
+- Webbed hands synlige ved stage 2+
+- Glow-effekt rundt hodet ved transformasjon
+
+#### 2. Endings polering
+- Unik fargepallette per ending:
+  - Deep One: blå/turkis toner
+  - Survivor: varm gul/oransje
+  - Prophet: lilla/mystisk
+- Animerte partikler i ending-scener
+- Ending-spesifikke visuelle effekter:
+  - Deep One: stigende bobler
+  - Survivor: lysstråler
+  - Prophet: svirvlende symboler
+- Pulserende tittel-glow
+- Staggered fade-in for credits
+
+#### 3. Achievement feedback forbedring
+- Større achievement popup (270x80px)
+- Pulserende gullramme
+- Glow-effekt på skjermkanten
+- Ikon med sirkulær bakgrunn
+- Animerte sparkle-partikler
+- Forbedret typography
+
+#### 4. Tekst-basert lyd-simulering
+- Lydeffekt-system som viser tekst:
+  - `*splash*` ved kasting
+  - `*creak*` ved båtbevegelse
+  - `*BITE!*` ved fiskebitt
+  - `*whirrrr*` ved reeling
+  - `*caught!*` / `*CAUGHT!*` ved fangst
+  - `*KRAKA-BOOM*` ved torden
+  - `*whoosh*` ved bølger i storm
+- Lydeffekter fader ut og stiger oppover
+- Fargekodet basert på type
+
+#### 5. Forbedrede vær-effekter
+- **Regn**: Dråper på vannoverflaten med ripple-effekt
+- **Tåke**: Rullende tåkelag i 3 dybder
+- **Storm**:
+  - Prosedyrale lyn-bolter med forgreninger
+  - Lynnedslag med flash-effekt
+  - Torden-lyd trigger
+
+#### 6. Creature-interaksjoner
+- **Double Catch** (5% sjanse): Fanger to av samme fisk
+- **Predator Chase** (5-8% sjanse): Større fisk jager opp mindre
+  - Harbor Cod → Whisper Eel
+  - Pale Flounder → The Mimic
+  - Glass Squid → Bone Angler
+- **Abyss Call** (3% sjanse): Abyss-creatures kan "kalle" andre
+
+#### 7. Tid/vær-baserte spawns
+- 7 nye creatures med tid/vær-preferanser:
+  - Dawn Skipjack (dawn only)
+  - Storm Petrel Fish (storm only)
+  - Fog Phantom (fog only)
+  - Thunder Caller (storm only)
+  - Twilight Dweller (dusk only)
+  - Void Watcher (abyss, alltid)
+- Creatures har 2x spawn-bonus i riktig tid/vær
+- 0.2-0.3x spawn-sjanse uten riktig betingelse
+
+#### 8. Minigame-variasjon per dybde
+- **Surface (standard)**: Normal tracking
+- **Mid (erratic)**: Fisken beveger seg uforutsigbart med plutselige retningsendringer
+- **Deep (tugOfWar)**: Konstant drag på spillerens markør
+- **Abyss (tentacles)**: Interferens-soner som blokkerer synlighet
+- Lydeffekter integrert i minigame
+
+#### 9. Dynamisk NPC-dialog utvidelse
+- Kontekst-baserte dialoger:
+  - Første besøk
+  - Veteran-besøk (hver 10. gang)
+  - Nattbesøk, duskbesøk, dawnbesøk
+  - Storm-besøk
+  - Etter Unnamed-fangst
+  - Etter abyss-creatures
+- Fishing hints fra Marsh
+- Lore hints for å hjelpe spillere finne fragments
+- Achievement-baserte kommentarer
+
+#### 10. Lore-integrasjon forbedring
+- Lore fragments har nå "hints" om creature-spawns
+- 8 creatures har "secret info" som låses opp ved å finne relatert lore
+- `getSecretCreatureInfo()` funksjon for journal-integrasjon
+
+#### 11. Quality of Life UI forbedringer
+- **[H] Hotkey Help**: Full oversikt over alle kontroller
+- **Tutorial-system**: Kontekst-baserte tips for nye spillere
+  - Vises automatisk ved tidlige handlinger
+  - Forsvinner etter 3 fangster
+
+#### 12. Stats-tracking system
+- Utvidet stats:
+  - `totalFishCaught`
+  - `timePlayed` (i sekunder)
+  - `longestSanityStreak`
+  - `biggestCatch` per zone
+- Stats vises i achievements viewer
+
+### Endringer
+
+**config.js:**
+- Oppdatert LORE_FRAGMENTS med hints
+- Lagt til SECRET_CREATURE_INFO
+- Lagt til getSecretCreatureInfo()
+- Utvidet NPC_DIALOGS med 10+ nye kategorier
+
+**game-state.js:**
+- Lagt til weather.lightningFlash
+- Lagt til soundEffects array
+- Lagt til hotkeyHelp og tutorial state
+- Utvidet achievements.stats
+
+**systems.js:**
+- Lagt til sound effect system (addSoundEffect, updateSoundEffects, drawSoundEffects)
+- Lagt til trigger-funksjoner for lydeffekter
+- Forbedret drawWeatherEffects() med ripples, rullende tåke, lyn
+- Lagt til drawLightningBolt()
+- Lagt til MINIGAME_TYPES med 4 minigame-varianter
+- Oppdatert startMinigame() og updateMinigame() for variasjon
+- Forbedret drawEndingScene() med partikler og paletter
+- Forbedret drawAchievementNotification() med glow og sparkles
+
+**creatures.js:**
+- Lagt til tid/vær-preferanser på creatures
+- Lagt til 7 nye creatures
+- Lagt til CREATURE_INTERACTIONS
+- Lagt til getCreatureTimeWeatherBonus()
+- Lagt til checkCreatureInteraction()
+- Oppdatert getCreature() for tid/vær-bonuser
+
+**npc.js:**
+- Erstattet openShop() med kontekst-basert getContextualDialog()
+- Prioritert dialog-system basert på spillstatus
+
+**ui.js:**
+- Lagt til drawHotkeyHelp()
+- Lagt til drawTutorial()
+- Lagt til drawStatsPanel()
+
+**rendering.js:**
+- Oppdatert drawBoatProcedural() med transformasjonsvisuals
+- Lagt til gjeller, webbed hands, øye-endringer
+
+**input.js:**
+- Lagt til [H] for hotkey help
+- Integrert lydeffekter ved kasting
+- Utvidet stats-tracking ved fangst
+
+**main.js:**
+- Integrert updateSoundEffects()
+- Integrert drawSoundEffects()
+- Integrert drawHotkeyHelp() og drawTutorial()
+- Lagt til ambient sound triggers
+- Lagt til timePlayed tracking
+
+### Tekniske beslutninger
+- Lydeffekt-system bruker tekst i stedet for faktisk lyd (enklere, mer atmospherisk)
+- Minigame-typer er data-drevet for enkel utvidelse
+- NPC-dialog bruker prioritetssystem for kontekst-sensitivitet
+- Lore-hints gir gameplay-verdi til collectibles
+
+### Neste prioritet
+- [ ] Faktisk lyd/musikk-system
+- [ ] Claude API-integrasjon for dynamisk NPC-dialog
+- [ ] Polering av minigame-visuals for nye typer
+- [ ] Flere endings/endings variants
+
+### Notater
+- Tekst-basert lyd gir overraskende god atmosfære
+- Tid/vær-creatures gir grunn til å fiske på forskjellige tidspunkt
+- Predator-chase mekanikk gir "bonus catch" følelse
+- Tutorial er subtil og ikke påtrengende
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown
