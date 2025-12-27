@@ -42,7 +42,7 @@ Bruk conventional commits:
 
 ## Nåværende Status
 
-**Versjon:** 0.5 (Save/Load & Lore Viewer Update)
+**Versjon:** 0.6 (Modular Refactor & Asset Structure)
 
 **Ferdig:**
 - [x] Parallax layer system
@@ -67,6 +67,9 @@ Bruk conventional commits:
 - [x] Lore collection viewer ([L] keybind)
 - [x] Auto-save ved viktige hendelser
 - [x] Continue-knapp på title screen
+- [x] Modulær kode-struktur (13 JS-moduler)
+- [x] Komplett asset directory-struktur
+- [x] Placeholder art for alle 63 assets
 
 **Neste prioritet:**
 - [ ] Claude API-integrasjon for dynamisk NPC-dialog

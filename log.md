@@ -264,6 +264,86 @@
 
 ---
 
+## 2024-12-27 — Asset Structure & Modular Refactor
+
+### Gjort
+
+#### 1. Komplett Asset Directory Struktur
+Opprettet full mappestruktur basert på GFX-ASSET-LIST.md:
+- `backgrounds/dawn/` - sky.png, stars.png, sun.png
+- `backgrounds/day/` - sky.png, clouds-far.png, clouds-near.png, sun.png
+- `backgrounds/dusk/` - sky.png, stars.png, clouds.png, sun.png, moon.png
+- `backgrounds/night/` - sky.png, stars.png, moon.png, clouds.png
+- `backgrounds/land/` - mountains (3), trees (2), lighthouse.png, reeds.png
+- `backgrounds/water/` - surface.png, reflection.png
+- `backgrounds/underwater/` - gradient.png, lightrays.png, rocks (2), seaweed (2), particles.png, shadows.png
+- `sprites/boat/` - boat.png, fisher.png, dog.png, bobber.png, lantern.png, rod.png
+- `sprites/fish/surface/` - 4 surface creatures
+- `sprites/fish/mid/` - 4 mid creatures
+- `sprites/fish/deep/` - 4 deep creatures
+- `sprites/fish/abyss/` - 4 abyss creatures
+- `sprites/ui/` - catch-popup.png, journal-bg.png, sanity-bar.png, depth-meter.png, coin.png
+- `sprites/effects/` - bubbles.png, splash.png, glow.png, tentacle.png
+
+#### 2. Placeholder Art Generator
+Laget Python-script (`generate_placeholders.py`) som genererer 54 placeholder PNG-filer:
+- Gradient skies for alle 4 tider
+- Prosedyrale fjell, trær, skyer
+- Vannoverflate med bølger
+- Tang og undervannselementer
+- Fiske-silhuetter med riktige størrelser
+- UI-elementer med rammer
+
+#### 3. Modulær Refaktorering
+Splittet `asset-ready.html` (3700+ linjer) til 13 separate moduler:
+
+| Modul | Linjer | Beskrivelse |
+|-------|--------|-------------|
+| `js/config.js` | 114 | CONFIG, WEATHER, LORE, SHOP, NPC_DIALOGS |
+| `js/palettes.js` | 58 | TIME_PALETTES, getTimePalette() |
+| `js/game-state.js` | 101 | game objekt med all state |
+| `js/creatures.js` | 72 | CREATURES, creature functions |
+| `js/assets.js` | 253 | PARALLAX_LAYERS, SPRITES, asset loader |
+| `js/fallbacks.js` | 425 | Prosedyrale tegne-funksjoner |
+| `js/systems.js` | 314 | Weather, time, dog, lore, minigame, sanity |
+| `js/npc.js` | 358 | Old Marsh, dock, shop system |
+| `js/rendering.js` | 509 | Fish, boat, locations, lore bottles |
+| `js/ui.js` | 185 | UI rendering, indicators |
+| `js/save.js` | 144 | Save/Load system |
+| `js/input.js` | 197 | Keyboard input handling |
+| `js/main.js` | 205 | Game loop, init functions |
+
+**Total: 2935 linjer** (mer lesbar og vedlikeholdbar)
+
+#### 4. Ny Game Entry Point
+Opprettet `game.html` som loader alle moduler i riktig rekkefølge.
+
+### Filer opprettet
+- `generate_placeholders.py` — Asset generator script
+- `game.html` — Ny modular entry point
+- `js/*.js` — 13 JavaScript moduler
+
+### Tekniske beslutninger
+- Bruker standard `<script>` tags for enkelthet (ingen bundler)
+- Moduler lastes i dependency-rekkefølge
+- Beholder `asset-ready.html` som backup/referanse
+- Placeholder art bruker riktige størrelser fra GFX-ASSET-LIST.md
+- Versjonsnummer oppdatert til 0.6
+
+### Neste prioritet
+- [ ] Teste at modulær versjon fungerer korrekt
+- [ ] Lyd/musikk system
+- [ ] Claude API-integrasjon for dynamisk NPC-dialog
+- [ ] Ekte pixel art for å erstatte placeholders
+
+### Notater
+- Modularisering gjør det enklere å vedlikeholde og utvide
+- Placeholder art har riktige proporsjoner for enkel utskifting
+- Fish-sprites er organisert i underkataloger per dybdesone
+- Generator-scriptet kan gjenbrukes for å lage nye placeholders
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown
