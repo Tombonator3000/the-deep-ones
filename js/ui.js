@@ -308,3 +308,283 @@ function drawStatsPanel() {
     const seconds = Math.floor(stats.timePlayed % 60);
     ctx.fillText(`Time: ${minutes}m ${seconds}s`, x + 10, y + 95);
 }
+
+// ============================================================
+// STREAK/COMBO SYSTEM UI
+// ============================================================
+
+function drawStreakIndicator() {
+    if (game.streak.count < 2) return;
+
+    const x = CONFIG.canvas.width / 2;
+    const y = 70;
+
+    // Streak background
+    const pulse = (Math.sin(game.time * 0.01) + 1) / 2;
+    const alpha = 0.7 + pulse * 0.3;
+
+    ctx.fillStyle = `rgba(255, 180, 50, ${alpha * 0.2})`;
+    ctx.fillRect(x - 60, y - 20, 120, 40);
+
+    // Streak text
+    ctx.fillStyle = `rgba(255, 200, 100, ${alpha})`;
+    ctx.font = '20px VT323';
+    ctx.textAlign = 'center';
+    ctx.fillText(`STREAK x${game.streak.count}`, x, y);
+
+    // Multiplier
+    if (game.streak.comboMultiplier > 1) {
+        ctx.fillStyle = `rgba(100, 255, 100, ${alpha})`;
+        ctx.font = '14px VT323';
+        ctx.fillText(`+${Math.round((game.streak.comboMultiplier - 1) * 100)}% bonus`, x, y + 18);
+    }
+
+    ctx.textAlign = 'left';
+}
+
+// Update streak system
+function updateStreak() {
+    if (game.streak.timer > 0) {
+        game.streak.timer--;
+        if (game.streak.timer <= 0) {
+            // Streak ended
+            if (game.streak.count > game.streak.maxStreak) {
+                game.streak.maxStreak = game.streak.count;
+            }
+            game.streak.count = 0;
+            game.streak.comboMultiplier = 1;
+        }
+    }
+}
+
+// Add to streak
+function addToStreak() {
+    game.streak.count++;
+    game.streak.timer = 300;  // 5 seconds at 60fps to maintain streak
+    game.streak.lastCatchTime = game.time;
+
+    // Calculate multiplier (up to 2x at 10 streak)
+    game.streak.comboMultiplier = 1 + Math.min(1, game.streak.count * 0.1);
+
+    // Check daily challenge
+    if (game.streak.count >= 5 && typeof checkDailyChallengeProgress === 'function') {
+        checkDailyChallengeProgress('streak', game.streak.count);
+    }
+}
+
+// ============================================================
+// DAILY CHALLENGES UI
+// ============================================================
+
+function drawDailyChallenges() {
+    if (!game.dailyChallenges.challenges || game.dailyChallenges.challenges.length === 0) return;
+
+    const x = CONFIG.canvas.width - 220;
+    const y = 200;
+    const w = 210;
+    const h = 25 + game.dailyChallenges.challenges.length * 25;
+
+    // Background
+    ctx.fillStyle = 'rgba(20, 30, 40, 0.8)';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = '#4a6a7a';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, w, h);
+
+    // Title
+    ctx.fillStyle = '#8ab0c0';
+    ctx.font = '12px VT323';
+    ctx.textAlign = 'left';
+    ctx.fillText('DAILY CHALLENGES', x + 10, y + 15);
+
+    // Challenges
+    game.dailyChallenges.challenges.forEach((challenge, i) => {
+        const itemY = y + 30 + i * 25;
+        const isCompleted = game.dailyChallenges.completed.includes(challenge.id);
+
+        ctx.fillStyle = isCompleted ? '#60a060' : '#8090a0';
+        ctx.font = '11px VT323';
+        ctx.fillText(isCompleted ? 'v' : 'o', x + 10, itemY);
+        ctx.fillText(challenge.name, x + 25, itemY);
+
+        ctx.fillStyle = '#6080a0';
+        ctx.font = '10px VT323';
+        ctx.fillText(challenge.desc, x + 25, itemY + 12);
+    });
+
+    ctx.textAlign = 'left';
+}
+
+// Generate daily challenges
+function generateDailyChallenges() {
+    const today = new Date().toDateString();
+
+    if (game.dailyChallenges.date !== today) {
+        game.dailyChallenges.date = today;
+        game.dailyChallenges.completed = [];
+
+        // Pick 3 random challenges
+        if (typeof DAILY_CHALLENGES !== 'undefined') {
+            const shuffled = [...DAILY_CHALLENGES].sort(() => Math.random() - 0.5);
+            game.dailyChallenges.challenges = shuffled.slice(0, 3).map(c => ({
+                ...c,
+                progress: 0
+            }));
+        }
+    }
+}
+
+// Check daily challenge progress
+function checkDailyChallengeProgress(type, value) {
+    if (!game.dailyChallenges.challenges) return;
+
+    game.dailyChallenges.challenges.forEach(challenge => {
+        if (game.dailyChallenges.completed.includes(challenge.id)) return;
+
+        let completed = false;
+
+        if (challenge.type === type) {
+            challenge.progress = (challenge.progress || 0) + (typeof value === 'number' ? value : 1);
+            if (challenge.progress >= challenge.target) {
+                completed = true;
+            }
+        } else if (challenge.zone && type === 'catch') {
+            // Check zone-based catch challenges
+            if (value && value.zone === challenge.zone) {
+                challenge.progress = (challenge.progress || 0) + 1;
+                if (challenge.progress >= challenge.target) {
+                    completed = true;
+                }
+            }
+        }
+
+        if (completed) {
+            game.dailyChallenges.completed.push(challenge.id);
+            // Reward
+            const reward = 25 + Math.floor(Math.random() * 25);
+            game.money += reward;
+            game.achievements.stats.totalGoldEarned += reward;
+            addSoundEffect(`Challenge Complete! +${reward}g`, CONFIG.canvas.width / 2, 180, {
+                color: '#80e0a0',
+                size: 16,
+                duration: 100
+            });
+            if (typeof playAchievement === 'function') playAchievement();
+        }
+    });
+}
+
+// ============================================================
+// VISUAL EFFECTS
+// ============================================================
+
+// Water reflection effect
+function drawWaterReflection() {
+    if (typeof GameSettings !== 'undefined' && !GameSettings.graphics.weatherEffects) return;
+
+    const boatX = game.boatX - game.cameraX;
+    const reflectionY = CONFIG.waterLine + 20;
+
+    // Simple boat reflection
+    ctx.save();
+    ctx.globalAlpha = 0.15;
+    ctx.translate(0, reflectionY * 2);
+    ctx.scale(1, -1);
+
+    // Draw inverted boat shape
+    ctx.fillStyle = '#2a2520';
+    ctx.beginPath();
+    ctx.moveTo(boatX - 35, CONFIG.waterLine - 5);
+    ctx.lineTo(boatX - 30, CONFIG.waterLine - 25);
+    ctx.lineTo(boatX + 30, CONFIG.waterLine - 25);
+    ctx.lineTo(boatX + 35, CONFIG.waterLine - 5);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+
+    // Wavy distortion overlay
+    for (let i = 0; i < 5; i++) {
+        const waveY = reflectionY + i * 8;
+        const waveOffset = Math.sin(game.time * 0.003 + i * 0.5) * 3;
+
+        ctx.strokeStyle = `rgba(100, 140, 160, ${0.05 - i * 0.01})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(boatX - 40 + waveOffset, waveY);
+        ctx.lineTo(boatX + 40 + waveOffset, waveY);
+        ctx.stroke();
+    }
+}
+
+// Big catch screen shake
+function applyBigCatchShake() {
+    if (game.visualEffects.bigCatchShake > 0) {
+        const intensity = game.visualEffects.bigCatchShake;
+        const shakeX = (Math.random() - 0.5) * intensity * 4;
+        const shakeY = (Math.random() - 0.5) * intensity * 4;
+        ctx.translate(shakeX, shakeY);
+        game.visualEffects.bigCatchShake -= 0.05;
+    }
+}
+
+// Glitch effect for abyss/horror
+function drawGlitchEffect() {
+    if (game.visualEffects.glitchIntensity <= 0) return;
+    if (typeof GameSettings !== 'undefined' && !GameSettings.graphics.particles) return;
+
+    const intensity = game.visualEffects.glitchIntensity;
+
+    // Random scanlines
+    for (let i = 0; i < 5; i++) {
+        if (Math.random() < intensity * 0.3) {
+            const y = Math.random() * CONFIG.canvas.height;
+            const height = 2 + Math.random() * 5;
+            ctx.fillStyle = `rgba(100, 200, 200, ${intensity * 0.3})`;
+            ctx.fillRect(0, y, CONFIG.canvas.width, height);
+        }
+    }
+
+    // Color channel offset
+    if (Math.random() < intensity * 0.1) {
+        ctx.globalCompositeOperation = 'screen';
+        ctx.fillStyle = `rgba(255, 0, 0, ${intensity * 0.1})`;
+        ctx.fillRect(2, 0, CONFIG.canvas.width, CONFIG.canvas.height);
+        ctx.fillStyle = `rgba(0, 255, 255, ${intensity * 0.1})`;
+        ctx.fillRect(-2, 0, CONFIG.canvas.width, CONFIG.canvas.height);
+        ctx.globalCompositeOperation = 'source-over';
+    }
+
+    game.visualEffects.glitchIntensity -= 0.01;
+}
+
+// Trigger glitch effect
+function triggerGlitch(intensity) {
+    intensity = intensity || 0.5;
+    game.visualEffects.glitchIntensity = Math.min(1, game.visualEffects.glitchIntensity + intensity);
+}
+
+// Mute indicator
+function drawMuteIndicator() {
+    if (typeof AudioManager !== 'undefined' && AudioManager.settings && AudioManager.settings.muted) {
+        ctx.fillStyle = 'rgba(150, 80, 80, 0.8)';
+        ctx.font = '12px VT323';
+        ctx.textAlign = 'right';
+        ctx.fillText('[M] MUTED', CONFIG.canvas.width - 15, 75);
+        ctx.textAlign = 'left';
+    }
+}
+
+// Fullscreen indicator
+function drawFullscreenHint() {
+    if (typeof isTouchDevice === 'function' && isTouchDevice() && typeof isFullscreen === 'function' && !isFullscreen()) {
+        // Only show hint on touch devices when not fullscreen
+        if (game.state === 'sailing' && game.caughtCreatures.length < 5) {
+            ctx.fillStyle = 'rgba(80, 100, 120, 0.7)';
+            ctx.font = '11px VT323';
+            ctx.textAlign = 'center';
+            ctx.fillText('Tap [F] for fullscreen', CONFIG.canvas.width / 2, CONFIG.canvas.height - 45);
+            ctx.textAlign = 'left';
+        }
+    }
+}

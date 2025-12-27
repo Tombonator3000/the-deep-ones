@@ -2,6 +2,182 @@
 
 ---
 
+## 2024-12-27 — v1.0 Full Feature Release
+
+### Gjort
+
+#### 1. Lyd/Musikk-system (js/audio.js)
+- Web Audio API-basert lydmanager med prosedyral lydgenerering
+- Lydeffekter: splash, cast, bite, reel, catch, linesnap, creak, thunder, rain, wind, etc.
+- Ambient lyd-system som reagerer på vær og sanity
+- Dynamisk musikk som endrer stemning basert på game state
+- Mute-toggle med [M] keybind
+- Volume-kontroll for master, music, SFX, ambient
+
+#### 2. Random Events-system (js/events.js)
+- 12+ unike events med visuelle effekter:
+  - **Floating Debris** — Finn bonus gold
+  - **Whale Sighting** — Sanity boost
+  - **Seagull Landing** — Hunden reagerer
+  - **School of Fish** — Økt bite chance
+  - **Ghost Ship** — Creepy atmosfære om natten
+  - **Cult Ritual** — Mystisk chanting i The Void
+  - **Strange Lights** — Undervannslys
+  - **Ancient Whispers** — Stemmer fra dypet
+  - **Rainbow** — Etter regn
+  - **Sea Monster Glimpse** — Skummel skygge
+  - **Lucky Find** — Skattejakt
+  - **Dog Finds Item** — Hunden finner ting
+- Betingelsesbasert triggering (lokasjon, tid, vær, sanity)
+- Full visuell rendering for alle events
+
+#### 3. Streak/Combo-system
+- Streak-teller for påfølgende fangster
+- Combo-multiplier opp til 2x value
+- Visuell indikator med gull-animasjon og puls
+- Timer som resetter ved 5 sekunder uten fangst
+- Integrert med daily challenges
+
+#### 4. Daily Challenges-system
+- 3 tilfeldige challenges per dag
+- 12 forskjellige challenge-typer:
+  - Zone-baserte fangster (surface, mid, deep)
+  - Gold-målsetninger
+  - Pet dog challenges
+  - Location exploration
+  - Night/storm fishing
+  - Streak achievements
+  - Lore hunting
+- Belønning: 25-50g ved fullføring
+- Progress-tracking og completion-notifikasjoner
+
+#### 5. Nye NPCer i landsbyen
+- **The Innkeeper** (Gilman House)
+  - Mystiske hints om landsbyen
+  - Reaksjon på lav sanity
+  - Alltid tilgjengelig
+- **Father Waite** (Order of Dagon)
+  - Låses opp ved sanity < 40
+  - Tilbyr "blessings" og forbidden knowledge
+  - Creepy cultist dialog
+- **Strange Child**
+  - Dukker opp tilfeldig om natten (30% sjanse)
+  - Profetiske og cryptiske replikker
+  - Hinter om endings
+
+#### 6. Settings-meny (js/settings.js)
+- [O] keybind for å åpne
+- **Audio settings:**
+  - Master volume
+  - Music volume
+  - SFX volume
+  - Ambient volume
+  - Mute toggle
+- **Graphics settings:**
+  - Quality (low/medium/high)
+  - Particles on/off
+  - Screen shake on/off
+  - Weather effects on/off
+- **Gameplay settings:**
+  - Auto-save on/off
+  - Tutorial on/off
+  - Touch controls (auto/always/never)
+- **Controls tab:** Full oversikt over alle keybinds
+- Lagres til LocalStorage
+
+#### 7. Fullscreen-modus
+- [F] keybind for toggle
+- Fullscreen API-støtte (webkit, ms)
+- Hint på mobile enheter
+- Bedre immersjon på små skjermer
+
+#### 8. Visuelle effekter
+- **Water reflections:** Båten speiler seg i vannet med bølge-distorsjon
+- **Screen shake:** Ved store/sjeldne fangster (value >= 180)
+- **Glitch effect:** Ved abyss creatures (value >= 500)
+- **Scanlines og color offset** ved lav sanity
+- Settings-kontrollert (kan slås av)
+
+### Endringer
+
+**Nye filer:**
+- `js/audio.js` — 320 linjer, komplett lydmanager
+- `js/events.js` — 450 linjer, random events-system
+- `js/settings.js` — 350 linjer, settings og fullscreen
+
+**js/config.js:**
+- Lagt til NPCS objekt med 4 NPCer og deres dialoger
+- Lagt til DAILY_CHALLENGES array med 12 challenges
+
+**js/game-state.js:**
+- Lagt til events state
+- Lagt til streak state (count, timer, maxStreak, comboMultiplier)
+- Lagt til dailyChallenges state
+- Lagt til visualEffects state (bigCatchShake, glitchIntensity)
+
+**js/ui.js:**
+- Lagt til drawStreakIndicator()
+- Lagt til updateStreak(), addToStreak()
+- Lagt til drawDailyChallenges(), generateDailyChallenges(), checkDailyChallengeProgress()
+- Lagt til drawWaterReflection(), applyBigCatchShake(), drawGlitchEffect(), triggerGlitch()
+- Lagt til drawMuteIndicator(), drawFullscreenHint()
+
+**js/input.js:**
+- Lagt til [M] for mute toggle
+- Lagt til [F] for fullscreen toggle
+- Lagt til [O] for settings menu
+- Integrert handleSettingsInput()
+- Streak-bonus ved fangst
+- Daily challenge progress tracking
+- Visual effects triggers ved store fangster
+- Lydeffekter ved kasting
+
+**js/main.js:**
+- Integrert updateEvents(), updateStreak()
+- Integrert AudioManager.updateAmbient() og updateMusic()
+- Integrert drawEventVisuals(), drawWaterReflection(), drawGlitchEffect()
+- Integrert drawStreakIndicator(), drawDailyChallenges()
+- Integrert drawSettingsMenu(), drawMuteIndicator()
+- AudioManager.init() ved oppstart
+- Audio context resume på første brukerinteraksjon
+- Daily challenges generering ved oppstart
+
+**game.html:**
+- Versjon oppdatert til 1.0
+- Lagt til script includes for audio.js, events.js, settings.js
+- Oppdatert controls hint med [M] [F] [O] [H]
+
+**js/save.js:**
+- Versjon oppdatert til 1.0
+
+### Keybinds oppdatert
+- [M] — Toggle mute
+- [F] — Toggle fullscreen
+- [O] — Settings menu
+- [H] — Help/controls oversikt
+
+### Tekniske beslutninger
+- Web Audio API valgt for prosedyral lyd (ingen asset-filer nødvendig)
+- Events bruker condition-objekter for fleksibel triggering
+- Streak multiplier capped til 2x for balanse
+- Settings lagres separat fra game save
+- Visual effects er opt-out via settings
+
+### Neste prioritet
+- [ ] Claude API-integrasjon for dynamisk NPC-dialog
+- [ ] Flere endings variants
+- [ ] Multiplayer/leaderboard features
+- [ ] Sprite-art for alle creatures
+
+### Notater
+- v1.0 markerer "feature complete" for core gameplay
+- Prosedyral lyd gir overraskende god atmosfære uten assets
+- Daily challenges øker replay value betydelig
+- Random events gjør fishing mindre repetitivt
+- Settings-meny gjør spillet mer tilgjengelig
+
+---
+
 ## 2024-12-25 — Initial Development
 
 ### Gjort

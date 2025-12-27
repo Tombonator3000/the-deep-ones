@@ -187,5 +187,36 @@ const game = {
             { text: "Visit the dock [E] to sell fish and buy gear.", trigger: 'nearDock' },
             { text: "Press [P] to pet your dog for sanity!", trigger: 'lowSanity' }
         ]
+    },
+
+    // Events system
+    events: {
+        active: null,
+        timer: 0,
+        cooldown: 0,
+        fishSchoolBonus: 0
+    },
+
+    // Streak/Combo system
+    streak: {
+        count: 0,
+        timer: 0,
+        maxStreak: 0,
+        comboMultiplier: 1,
+        lastCatchTime: 0
+    },
+
+    // Daily challenges
+    dailyChallenges: {
+        date: null,
+        challenges: [],
+        completed: []
+    },
+
+    // Visual effects
+    visualEffects: {
+        bigCatchShake: 0,
+        glitchIntensity: 0,
+        waterReflection: true
     }
 };

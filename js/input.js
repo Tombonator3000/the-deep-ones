@@ -148,9 +148,13 @@ function setupInputHandlers() {
         if (game.currentLore) {
             if (e.key === ' ') {
                 game.currentLore = null;
+                if (typeof playMenuClose === 'function') playMenuClose();
             }
             return;
         }
+
+        // Handle settings menu input
+        if (typeof handleSettingsInput === 'function' && handleSettingsInput(e)) return;
 
         // Handle lore viewer
         if (handleLoreViewerInput(e)) return;
@@ -222,6 +226,34 @@ function setupInputHandlers() {
             return;
         }
 
+        // Mute toggle
+        if (e.key.toLowerCase() === 'm' && game.state !== 'title') {
+            if (typeof AudioManager !== 'undefined') {
+                AudioManager.toggleMute();
+            }
+            return;
+        }
+
+        // Fullscreen toggle
+        if (e.key.toLowerCase() === 'f' && game.state !== 'title') {
+            if (typeof toggleFullscreen === 'function') {
+                toggleFullscreen();
+            }
+            return;
+        }
+
+        // Settings menu toggle
+        if (e.key.toLowerCase() === 'o' && game.state !== 'title') {
+            if (typeof settingsMenu !== 'undefined') {
+                if (settingsMenu.open) {
+                    if (typeof closeSettingsMenu === 'function') closeSettingsMenu();
+                } else {
+                    if (typeof openSettingsMenu === 'function') openSettingsMenu();
+                }
+            }
+            return;
+        }
+
         // Game state controls
         if (game.state === 'title') return;
 
@@ -256,6 +288,7 @@ function setupInputHandlers() {
                     game.state = 'waiting';
                     game.targetDepth = 30;
                     triggerSplashSound();
+                    if (typeof playSplash === 'function') playSplash();
                 } else if (game.state === 'waiting') {
                     game.state = 'sailing';
                     game.depth = 0;
@@ -269,6 +302,15 @@ function setupInputHandlers() {
                     // Add to journal
                     addToJournal(c);
 
+                    // Add to streak
+                    if (typeof addToStreak === 'function') {
+                        addToStreak();
+                    }
+
+                    // Apply streak bonus to value
+                    const streakBonus = game.streak.comboMultiplier || 1;
+                    const adjustedValue = Math.floor(c.value * streakBonus);
+
                     // Track total fish caught and biggest catch
                     game.achievements.stats.totalFishCaught++;
                     const zone = c.value >= 500 ? 'abyss' : c.value >= 180 ? 'deep' : c.value >= 60 ? 'mid' : 'surface';
@@ -276,14 +318,36 @@ function setupInputHandlers() {
                         game.achievements.stats.biggestCatch[zone] = c.value;
                     }
 
+                    // Check daily challenges
+                    if (typeof checkDailyChallengeProgress === 'function') {
+                        checkDailyChallengeProgress('catch', { zone: zone });
+                        if (game.timeOfDay === 'night') {
+                            checkDailyChallengeProgress('nightCatch', 1);
+                        }
+                        if (game.weather.current === 'storm') {
+                            checkDailyChallengeProgress('stormCatch', 1);
+                        }
+                    }
+
                     if (game.inventory.length < game.inventoryMax) {
-                        game.inventory.push(c);
+                        // Store with adjusted value for selling
+                        const catchWithBonus = { ...c, value: adjustedValue };
+                        game.inventory.push(catchWithBonus);
                     } else {
-                        game.money += Math.floor(c.value * 0.5);
+                        game.money += Math.floor(adjustedValue * 0.5);
+                        game.achievements.stats.totalGoldEarned += Math.floor(adjustedValue * 0.5);
                     }
 
                     game.caughtCreatures.push(c);
                     if (c.rarity < 0.15) game.lastRareCatch = true;
+
+                    // Trigger visual effects for rare/valuable catches
+                    if (c.value >= 180 && typeof game.visualEffects !== 'undefined') {
+                        game.visualEffects.bigCatchShake = 0.5;
+                    }
+                    if (c.value >= 500 && typeof triggerGlitch === 'function') {
+                        triggerGlitch(0.3);
+                    }
 
                     // Track story flags
                     if (c.name === "The Unnamed") game.storyFlags.caughtUnnamed = true;

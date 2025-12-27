@@ -35,6 +35,20 @@ function update(deltaTime) {
     updateTransformation();
     updateAchievementNotification();
     updateSoundEffects();
+    updateStreak();
+
+    // Update events system
+    if (typeof updateEvents === 'function') {
+        updateEvents(deltaTime);
+    }
+
+    // Update audio
+    if (typeof AudioManager !== 'undefined' && AudioManager.context) {
+        AudioManager.updateAmbient(game);
+        if (game.time % 30000 < deltaTime) {  // Every 30 seconds, check music mood
+            AudioManager.updateMusic(game);
+        }
+    }
 
     // Update stats
     game.achievements.stats.timePlayed += deltaTime / 1000;
@@ -42,9 +56,11 @@ function update(deltaTime) {
     // Random ambient sounds
     if (game.weather.current === 'storm' && Math.random() < 0.001) {
         triggerWaveSound();
+        if (typeof playWave === 'function') playWave();
     }
     if (game.state === 'sailing' && Math.random() < 0.0005) {
         triggerCreakSound();
+        if (typeof playCreak === 'function') playCreak();
     }
 
     // Check endings
@@ -138,6 +154,12 @@ function render() {
         return;
     }
 
+    // Apply screen shake if active
+    ctx.save();
+    if (typeof applyBigCatchShake === 'function') {
+        applyBigCatchShake();
+    }
+
     // Draw layers with fallbacks
     game.layers.forEach(layer => {
         const fallback = FALLBACKS[layer.id];
@@ -156,6 +178,11 @@ function render() {
     // Draw fish
     drawFish();
 
+    // Draw water reflection
+    if (typeof drawWaterReflection === 'function') {
+        drawWaterReflection();
+    }
+
     // Draw boat
     drawBoat();
 
@@ -165,14 +192,41 @@ function render() {
     // Draw weather effects
     drawWeatherEffects();
 
+    // Draw event visuals
+    if (typeof drawEventVisuals === 'function') {
+        drawEventVisuals();
+    }
+
     // Draw sanity effects
     drawSanityEffects();
+
+    // Draw glitch effect
+    if (typeof drawGlitchEffect === 'function') {
+        drawGlitchEffect();
+    }
+
+    ctx.restore();  // Restore from screen shake
 
     // Draw UI elements
     drawLocationIndicator();
     drawWeatherIndicator();
     drawDogIndicator();
     drawTransformationIndicator();
+
+    // Draw streak indicator
+    if (typeof drawStreakIndicator === 'function') {
+        drawStreakIndicator();
+    }
+
+    // Draw daily challenges
+    if (typeof drawDailyChallenges === 'function') {
+        drawDailyChallenges();
+    }
+
+    // Draw mute indicator
+    if (typeof drawMuteIndicator === 'function') {
+        drawMuteIndicator();
+    }
 
     // Draw endless mode indicator
     if (game.endlessMode) {
@@ -197,6 +251,16 @@ function render() {
     drawVillageMenu();
     drawAchievementsViewer();
 
+    // Draw settings menu
+    if (typeof drawSettingsMenu === 'function') {
+        drawSettingsMenu();
+    }
+
+    // Draw delete confirmation
+    if (typeof drawDeleteConfirmation === 'function') {
+        drawDeleteConfirmation();
+    }
+
     // Draw notifications
     drawSaveNotification();
     drawAchievementNotification();
@@ -211,6 +275,11 @@ function render() {
 
     // Draw tutorial if active
     drawTutorial();
+
+    // Draw fullscreen hint on mobile
+    if (typeof drawFullscreenHint === 'function') {
+        drawFullscreenHint();
+    }
 }
 
 function gameLoop(timestamp) {
@@ -268,8 +337,36 @@ function initTitleScreen() {
 
 // Initialize
 window.onload = function() {
+    // Initialize audio
+    if (typeof AudioManager !== 'undefined') {
+        AudioManager.init();
+    }
+
+    // Load settings
+    if (typeof loadSettings === 'function') {
+        loadSettings();
+    }
+
+    // Generate daily challenges
+    if (typeof generateDailyChallenges === 'function') {
+        generateDailyChallenges();
+    }
+
     setupInputHandlers();
     setupTouchControls();
     initTitleScreen();
     requestAnimationFrame(gameLoop);
+
+    // Resume audio context on first user interaction
+    document.addEventListener('click', () => {
+        if (typeof AudioManager !== 'undefined') {
+            AudioManager.resume();
+        }
+    }, { once: true });
+
+    document.addEventListener('keydown', () => {
+        if (typeof AudioManager !== 'undefined') {
+            AudioManager.resume();
+        }
+    }, { once: true });
 };
