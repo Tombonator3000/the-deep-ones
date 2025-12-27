@@ -26,6 +26,7 @@ function update(deltaTime) {
     updateLoreBottles();
     updateSanityEffects();
     updateMinigame(deltaTime);
+    updateTransformation();
 
     // Update location
     game.currentLocation = getCurrentLocation();
@@ -38,11 +39,10 @@ function update(deltaTime) {
         game.sanity = Math.min(100, game.sanity + 0.05);
     }
 
-    // Location-based sanity effects
-    if (game.currentLocation === 'trench') {
-        game.sanity = Math.max(0, game.sanity - 0.01);
-    } else if (game.currentLocation === 'void') {
-        game.sanity = Math.max(0, game.sanity - 0.03);
+    // Location-based sanity effects (using sanityMod from locationBonuses)
+    const locBonus = game.locationBonuses[game.currentLocation];
+    if (locBonus && locBonus.sanityMod !== 0) {
+        game.sanity = Math.max(0, Math.min(100, game.sanity + locBonus.sanityMod));
     }
 
     // Update depth
@@ -130,6 +130,7 @@ function render() {
     drawLocationIndicator();
     drawWeatherIndicator();
     drawDogIndicator();
+    drawTransformationIndicator();
 
     // Draw minigame
     drawMinigame();
@@ -139,6 +140,8 @@ function render() {
     drawLorePopup();
     drawShopUI();
     drawLoreCollection();
+    drawJournal();
+    drawVillageMenu();
 
     // Draw save notification
     drawSaveNotification();

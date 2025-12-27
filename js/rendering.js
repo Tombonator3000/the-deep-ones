@@ -234,17 +234,126 @@ function drawFishingLine() {
 
 // Location Features
 function drawLocationFeatures() {
-    const wreckX = CONFIG.locations.shipwreck.x - game.cameraX;
-    if (wreckX > -200 && wreckX < CONFIG.canvas.width + 200) drawShipwreck(wreckX);
+    // Sandbank (western boundary)
+    const sandbankX = CONFIG.locations.sandbank.x - game.cameraX;
+    if (sandbankX > -300 && sandbankX < CONFIG.canvas.width + 300) drawSandbank(sandbankX);
 
+    // Sunset Cove
+    const coveX = CONFIG.locations.sunsetCove.x - game.cameraX;
+    if (coveX > -300 && coveX < CONFIG.canvas.width + 300) drawSunsetCove(coveX);
+
+    // Coral Reef
     const reefX = CONFIG.locations.reef.x - game.cameraX;
     if (reefX > -300 && reefX < CONFIG.canvas.width + 300) drawCoralReef(reefX);
 
+    // Shipwreck
+    const wreckX = CONFIG.locations.shipwreck.x - game.cameraX;
+    if (wreckX > -200 && wreckX < CONFIG.canvas.width + 200) drawShipwreck(wreckX);
+
+    // Deep Trench
     const trenchX = CONFIG.locations.trench.x - game.cameraX;
     if (trenchX > -100 && trenchX < CONFIG.canvas.width + 100) drawTrenchMarker(trenchX);
 
+    // The Void
     const voidX = CONFIG.locations.void.x - game.cameraX;
     if (voidX > -100 && voidX < CONFIG.canvas.width + 100) drawVoidBuoy(voidX);
+}
+
+function drawSandbank(x) {
+    const y = CONFIG.waterLine;
+
+    // Shallow sandy bottom visible through water
+    ctx.fillStyle = 'rgba(180, 160, 120, 0.3)';
+    ctx.beginPath();
+    ctx.moveTo(x - 150, y + 30);
+    ctx.quadraticCurveTo(x - 100, y + 60, x - 50, y + 50);
+    ctx.quadraticCurveTo(x, y + 70, x + 50, y + 55);
+    ctx.quadraticCurveTo(x + 100, y + 40, x + 150, y + 45);
+    ctx.lineTo(x + 150, y + 100);
+    ctx.lineTo(x - 150, y + 100);
+    ctx.closePath();
+    ctx.fill();
+
+    // Warning buoy
+    const bob = Math.sin(game.time * 0.003) * 3;
+    ctx.fillStyle = '#e0a040';
+    ctx.beginPath();
+    ctx.ellipse(x, y + bob, 10, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#303030';
+    ctx.fillRect(x - 8, y + bob - 3, 16, 6);
+
+    // Sign post
+    ctx.fillStyle = '#4a3a25';
+    ctx.fillRect(x - 40, y - 40, 6, 50);
+    ctx.fillStyle = '#5a4a35';
+    ctx.fillRect(x - 55, y - 55, 45, 20);
+    ctx.fillStyle = '#c0a060';
+    ctx.font = '10px VT323';
+    ctx.textAlign = 'center';
+    ctx.fillText('SHALLOWS', x - 32, y - 42);
+    ctx.textAlign = 'left';
+
+    // Seagulls occasionally
+    if (Math.sin(game.time * 0.001) > 0.7) {
+        ctx.fillStyle = '#f0f0f0';
+        const birdY = y - 60 + Math.sin(game.time * 0.01) * 5;
+        ctx.beginPath();
+        ctx.moveTo(x + 30, birdY);
+        ctx.lineTo(x + 25, birdY - 5);
+        ctx.lineTo(x + 20, birdY);
+        ctx.lineTo(x + 25, birdY + 2);
+        ctx.closePath();
+        ctx.fill();
+    }
+}
+
+function drawSunsetCove(x) {
+    const y = CONFIG.waterLine;
+    const palette = getTimePalette();
+
+    // Distinctive rock formations
+    ctx.fillStyle = '#3a3530';
+    ctx.beginPath();
+    ctx.moveTo(x - 60, y + 10);
+    ctx.lineTo(x - 70, y - 30);
+    ctx.lineTo(x - 50, y - 45);
+    ctx.lineTo(x - 40, y - 25);
+    ctx.lineTo(x - 35, y + 5);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(x + 40, y + 10);
+    ctx.lineTo(x + 35, y - 20);
+    ctx.lineTo(x + 55, y - 35);
+    ctx.lineTo(x + 65, y - 15);
+    ctx.lineTo(x + 60, y + 8);
+    ctx.closePath();
+    ctx.fill();
+
+    // Beautiful sunset reflection (especially at dusk)
+    if (game.timeOfDay === 'dusk' || game.timeOfDay === 'dawn') {
+        const gradient = ctx.createLinearGradient(x - 80, y + 10, x + 80, y + 100);
+        gradient.addColorStop(0, 'rgba(255, 150, 100, 0.3)');
+        gradient.addColorStop(0.5, 'rgba(255, 100, 80, 0.2)');
+        gradient.addColorStop(1, 'rgba(200, 80, 100, 0.1)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(x - 80, y + 10, 160, 90);
+    }
+
+    // Mysterious glow at night (hint at something beneath)
+    if (game.timeOfDay === 'night' && game.sanity < 70) {
+        const pulseAlpha = (Math.sin(game.time * 0.002) + 1) / 2 * 0.2;
+        ctx.fillStyle = `rgba(100, 200, 180, ${pulseAlpha})`;
+        ctx.beginPath();
+        ctx.arc(x, y + 60, 40, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Abandoned picnic spot on rock
+    ctx.fillStyle = '#5a4a3a';
+    ctx.fillRect(x - 48, y - 28, 12, 3);
 }
 
 function drawShipwreck(x) {

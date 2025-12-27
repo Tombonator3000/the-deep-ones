@@ -312,3 +312,297 @@ function drawSanityEffects() {
 
     if (effects.screenShake > 0) ctx.restore();
 }
+
+// ============================================================
+// TRANSFORMATION SYSTEM
+// ============================================================
+
+function getTransformationStage() {
+    const sanity = game.sanity;
+    for (let i = TRANSFORMATION.stages.length - 1; i >= 0; i--) {
+        if (sanity <= TRANSFORMATION.stages[i].sanityThreshold) {
+            return i;
+        }
+    }
+    return 0;
+}
+
+function updateTransformation() {
+    const oldStage = game.transformation.stage;
+    const newStage = getTransformationStage();
+
+    if (newStage > oldStage) {
+        game.transformation.stage = newStage;
+        game.storyFlags.transformationStarted = true;
+
+        // Add physical change notification
+        if (newStage < TRANSFORMATION.physicalSigns.length) {
+            game.transformation.physicalChanges.push({
+                text: TRANSFORMATION.physicalSigns[newStage],
+                time: game.time,
+                alpha: 1
+            });
+        }
+    }
+
+    // Fade out physical change notifications
+    game.transformation.physicalChanges = game.transformation.physicalChanges.filter(change => {
+        change.alpha -= 0.001;
+        return change.alpha > 0;
+    });
+}
+
+function getTransformationBiteBonus() {
+    // Higher transformation = fish bite more eagerly
+    return 1 + (game.transformation.stage * 0.15);
+}
+
+function drawTransformationIndicator() {
+    const stage = TRANSFORMATION.stages[game.transformation.stage];
+    if (!stage) return;
+
+    // Draw transformation stage in top left
+    ctx.fillStyle = 'rgba(10, 15, 20, 0.7)';
+    ctx.fillRect(10, 85, 150, 40);
+    ctx.strokeStyle = stage.color;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(10, 85, 150, 40);
+
+    ctx.font = '12px VT323';
+    ctx.fillStyle = stage.color;
+    ctx.fillText(`Stage: ${stage.name}`, 20, 102);
+    ctx.fillStyle = '#8a9a8a';
+    ctx.font = '10px VT323';
+    ctx.fillText(stage.desc, 20, 118);
+
+    // Draw physical change notifications
+    game.transformation.physicalChanges.forEach((change, i) => {
+        ctx.fillStyle = `rgba(100, 150, 160, ${change.alpha})`;
+        ctx.font = '14px VT323';
+        ctx.textAlign = 'center';
+        ctx.fillText(change.text, CONFIG.canvas.width / 2, 200 + i * 25);
+        ctx.textAlign = 'left';
+    });
+}
+
+// Visual transformation of fisher sprite
+function getTransformationVisuals() {
+    const stage = game.transformation.stage;
+    return {
+        skinColor: ['#d4a574', '#b8c0c0', '#90a8a8', '#6890a0', '#4878a0'][stage],
+        eyeSize: 1 + stage * 0.2,
+        hasGills: stage >= 3,
+        hasWebbing: stage >= 2,
+        glowIntensity: stage * 0.1
+    };
+}
+
+// ============================================================
+// FISHING JOURNAL SYSTEM
+// ============================================================
+
+function openJournal() {
+    game.journal.open = true;
+    game.journal.page = 0;
+}
+
+function closeJournal() {
+    game.journal.open = false;
+}
+
+function addToJournal(creature) {
+    if (!game.journal.discovered.includes(creature.name)) {
+        game.journal.discovered.push(creature.name);
+    }
+}
+
+function drawJournal() {
+    if (!game.journal.open) return;
+
+    const w = 550, h = 450;
+    const x = (CONFIG.canvas.width - w) / 2;
+    const y = (CONFIG.canvas.height - h) / 2;
+
+    // Background
+    ctx.fillStyle = 'rgba(20, 15, 10, 0.98)';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = '#8a7a5a';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x, y, w, h);
+
+    // Title
+    ctx.font = '16px "Press Start 2P"';
+    ctx.fillStyle = '#c0b090';
+    ctx.textAlign = 'center';
+    ctx.fillText('FISHING JOURNAL', x + w/2, y + 30);
+
+    // Stats
+    ctx.font = '12px VT323';
+    ctx.fillStyle = '#a09080';
+    const allCreatures = [...CREATURES.surface, ...CREATURES.mid, ...CREATURES.deep, ...CREATURES.abyss];
+    ctx.fillText(`Discovered: ${game.journal.discovered.length}/${allCreatures.length}`, x + w/2, y + 50);
+
+    // Creature list by zone
+    ctx.textAlign = 'left';
+    let currentY = y + 80;
+    const zones = [
+        { name: 'SURFACE (0-20m)', creatures: CREATURES.surface, color: '#80c0ff' },
+        { name: 'MID (20-55m)', creatures: CREATURES.mid, color: '#60a0a0' },
+        { name: 'DEEP (55-90m)', creatures: CREATURES.deep, color: '#4080a0' },
+        { name: 'ABYSS (90m+)', creatures: CREATURES.abyss, color: '#6040a0' }
+    ];
+
+    const startZone = game.journal.page;
+    const zone = zones[startZone];
+    if (!zone) return;
+
+    // Zone header
+    ctx.fillStyle = zone.color;
+    ctx.font = '14px VT323';
+    ctx.fillText(zone.name, x + 20, currentY);
+    currentY += 25;
+
+    // Creatures in zone
+    zone.creatures.forEach((creature, i) => {
+        const discovered = game.journal.discovered.includes(creature.name);
+
+        ctx.fillStyle = discovered ? 'rgba(60, 50, 40, 0.5)' : 'rgba(30, 25, 20, 0.5)';
+        ctx.fillRect(x + 15, currentY - 15, w - 30, 75);
+
+        if (discovered) {
+            ctx.fillStyle = '#c0b090';
+            ctx.font = '14px VT323';
+            ctx.fillText(creature.name, x + 25, currentY);
+
+            ctx.fillStyle = '#a09070';
+            ctx.font = '12px VT323';
+            ctx.fillText(creature.desc, x + 25, currentY + 20);
+
+            ctx.fillStyle = '#d0c060';
+            ctx.fillText(`Value: ${creature.value}g`, x + 25, currentY + 40);
+            ctx.fillStyle = '#a06060';
+            ctx.fillText(`Sanity Loss: ${creature.sanityLoss}`, x + 150, currentY + 40);
+            ctx.fillStyle = '#80a080';
+            ctx.fillText(`Rarity: ${Math.round(creature.rarity * 100)}%`, x + 300, currentY + 40);
+        } else {
+            ctx.fillStyle = '#605040';
+            ctx.font = '14px VT323';
+            ctx.fillText('???', x + 25, currentY);
+            ctx.font = '12px VT323';
+            ctx.fillText('Not yet discovered...', x + 25, currentY + 20);
+        }
+
+        currentY += 85;
+    });
+
+    // Navigation
+    ctx.fillStyle = '#8a7a6a';
+    ctx.font = '12px VT323';
+    ctx.textAlign = 'center';
+    ctx.fillText(`[←/→] ${zones[startZone].name} (${startZone + 1}/${zones.length}) | [J/ESC] Close`, x + w/2, y + h - 15);
+    ctx.textAlign = 'left';
+}
+
+// ============================================================
+// VILLAGE MENU SYSTEM
+// ============================================================
+
+function openVillageMenu() {
+    game.villageMenu.open = true;
+    game.villageMenu.selectedIndex = 0;
+}
+
+function closeVillageMenu() {
+    game.villageMenu.open = false;
+}
+
+function restAtVillage() {
+    // Skip to next dawn
+    game.dayProgress = 0.1;
+    game.timeOfDay = 'dawn';
+    game.sanity = Math.min(100, game.sanity + 30);
+    game.dog.happiness = Math.min(100, game.dog.happiness + 50);
+    initLayers();
+    closeVillageMenu();
+
+    // Show rest message
+    game.shop.npcDialog = "You rest through the night. The dreams were... troubling.";
+    game.shop.dialogTimer = game.time + 3000;
+}
+
+function drawVillageMenu() {
+    if (!game.villageMenu.open) return;
+
+    const w = 400, h = 300;
+    const x = (CONFIG.canvas.width - w) / 2;
+    const y = (CONFIG.canvas.height - h) / 2;
+
+    // Background
+    ctx.fillStyle = 'rgba(15, 12, 10, 0.98)';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = '#6a5a4a';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x, y, w, h);
+
+    // Title
+    ctx.font = '16px "Press Start 2P"';
+    ctx.fillStyle = '#a09080';
+    ctx.textAlign = 'center';
+    ctx.fillText('INNSMOUTH HARBOR', x + w/2, y + 30);
+
+    // Menu options
+    const options = [
+        { label: "Old Marsh's Bait & Tackle", desc: "Buy and sell goods", action: 'shop' },
+        { label: "Rest Until Dawn", desc: `Restore sanity (+30). Current: ${Math.round(game.sanity)}`, action: 'rest' },
+        { label: "Fishing Journal", desc: `${game.journal.discovered.length} creatures discovered`, action: 'journal' },
+        { label: "Return to Sea", desc: "Continue fishing", action: 'leave' }
+    ];
+
+    options.forEach((opt, i) => {
+        const optY = y + 70 + i * 55;
+        const isSelected = game.villageMenu.selectedIndex === i;
+
+        if (isSelected) {
+            ctx.fillStyle = 'rgba(80, 70, 50, 0.5)';
+            ctx.fillRect(x + 20, optY - 10, w - 40, 50);
+        }
+
+        ctx.fillStyle = isSelected ? '#d0c0a0' : '#a09080';
+        ctx.font = '14px VT323';
+        ctx.textAlign = 'left';
+        ctx.fillText(opt.label, x + 30, optY + 10);
+
+        ctx.fillStyle = '#706050';
+        ctx.font = '12px VT323';
+        ctx.fillText(opt.desc, x + 30, optY + 28);
+    });
+
+    // Controls
+    ctx.fillStyle = '#605040';
+    ctx.font = '12px VT323';
+    ctx.textAlign = 'center';
+    ctx.fillText('[↑/↓] Select | [SPACE/ENTER] Confirm | [ESC] Leave', x + w/2, y + h - 15);
+    ctx.textAlign = 'left';
+}
+
+function villageMenuAction() {
+    const options = ['shop', 'rest', 'journal', 'leave'];
+    const action = options[game.villageMenu.selectedIndex];
+
+    switch(action) {
+        case 'shop':
+            closeVillageMenu();
+            openShop();
+            break;
+        case 'rest':
+            restAtVillage();
+            break;
+        case 'journal':
+            closeVillageMenu();
+            openJournal();
+            break;
+        case 'leave':
+            closeVillageMenu();
+            break;
+    }
+}

@@ -8,7 +8,7 @@ let saveNotification = { show: false, text: '', timer: 0 };
 
 function saveGame() {
     const saveData = {
-        version: '0.6',
+        version: '0.7',
         timestamp: Date.now(),
         game: {
             money: game.money,
@@ -27,6 +27,14 @@ function saveGame() {
             lures: SHOP.lures.map(l => ({ id: l.id, count: l.count })),
             boats: SHOP.boats.map(b => ({ id: b.id, owned: b.owned }))
         },
+        transformation: {
+            stage: game.transformation.stage,
+            totalSanityLost: game.transformation.totalSanityLost
+        },
+        journal: {
+            discovered: [...game.journal.discovered]
+        },
+        storyFlags: { ...game.storyFlags },
         stats: {
             totalCatches: game.caughtCreatures.length
         }
@@ -79,6 +87,22 @@ function loadGame() {
         LORE_FRAGMENTS.forEach(lore => {
             lore.found = game.loreFound.includes(lore.id);
         });
+
+        // Restore transformation state
+        if (saveData.transformation) {
+            game.transformation.stage = saveData.transformation.stage || 0;
+            game.transformation.totalSanityLost = saveData.transformation.totalSanityLost || 0;
+        }
+
+        // Restore journal state
+        if (saveData.journal) {
+            game.journal.discovered = [...(saveData.journal.discovered || [])];
+        }
+
+        // Restore story flags
+        if (saveData.storyFlags) {
+            game.storyFlags = { ...game.storyFlags, ...saveData.storyFlags };
+        }
 
         // Update inventory max based on boat
         const boat = getCurrentBoat();

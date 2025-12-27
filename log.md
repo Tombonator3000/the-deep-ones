@@ -386,6 +386,117 @@ Komplett Game Design Document basert på Cast n Chill + Deep Regrets inspirasjon
 
 ---
 
+## 2024-12-27 — Expanded World & Transformation System
+
+### Gjort
+
+#### 1. Utvidet verden til 6000px
+- Verden er nå 50% større (fra 4000px til 6000px)
+- Lagt til 2 nye lokasjoner:
+  - **Sandbank** (x=200) — Vestlig grense, grunt vann, trygt område
+  - **Sunset Cove** (x=1000) — Vakker ved solnedgang, mystisk om natten
+- Dock flyttet til sentrum (x=1500, omdøpt til "Innsmouth Harbor")
+- Alle eksisterende lokasjoner reposisjonert for bedre progresjon
+
+#### 2. Transformasjonssystem (Deep Regrets-inspirert)
+- 5 stages basert på sanity:
+  - **Human** (100-70) — Normal gameplay
+  - **Touched** (70-40) — Fisk biter oftere
+  - **Changing** (40-20) — "Noe er galt med deg"
+  - **Becoming** (20-1) — Nesten monster
+  - **Deep One** (0) — Full transformasjon
+- Visuell indikator i UI med stage-navn og beskrivelse
+- Physical change notifications ved stage-overgang
+- Transformation bite bonus (høyere stage = fisk biter mer)
+- Visuell data for fisker-sprite endring (skin color, eye size, gills, webbing)
+
+#### 3. Innsmouth Village Menu
+- [E] åpner nå village-meny i stedet for shop direkte
+- Menu options:
+  - **Old Marsh's Bait & Tackle** — Åpner butikken
+  - **Rest Until Dawn** — Gjenopprett +30 sanity, skipper til dawn
+  - **Fishing Journal** — Se alle fangede fisk
+  - **Return to Sea** — Lukk menyen
+- Rest-funksjon gjenoppretter også hundens happiness
+
+#### 4. Fishing Journal/Bestiary
+- [J] åpner journal fra hvor som helst
+- Viser alle creatures organisert etter dybdesone
+- Discovered creatures viser:
+  - Navn og beskrivelse
+  - Value, sanity loss, rarity
+- Undiscovered creatures viser "???"
+- Paginering mellom soner (Surface, Mid, Deep, Abyss)
+
+#### 5. Story Flags System
+- Tracking for endings:
+  - metMarsh, heardWhispers, sawVision
+  - foundAllLore, caughtUnnamed, reachedVoid
+  - transformationStarted
+- Creature zone tracking for transformation
+
+### Endringer
+
+**config.js:**
+- Utvidet worldWidth til 6000
+- Reposisjonert alle lokasjoner med maxDepth og zone
+- Lagt til 2 nye lore fragments (14 total)
+- Lagt til TRANSFORMATION config med stages og physicalSigns
+
+**game-state.js:**
+- Oppdatert locationBonuses med nye soner og sanityMod
+- Lagt til transformation state (stage, totalSanityLost, creaturesCaught)
+- Lagt til journal state (open, page, discovered)
+- Lagt til villageMenu state
+- Lagt til storyFlags for endings
+
+**systems.js:**
+- Lagt til transformation system (getTransformationStage, updateTransformation, etc.)
+- Lagt til journal system (openJournal, closeJournal, addToJournal, drawJournal)
+- Lagt til village menu system (openVillageMenu, restAtVillage, drawVillageMenu, villageMenuAction)
+
+**rendering.js:**
+- Lagt til drawSandbank() og drawSunsetCove()
+- Oppdatert drawLocationFeatures() med nye lokasjoner
+
+**npc.js:**
+- Oppdatert dock prompt til "[E] Innsmouth Harbor"
+
+**input.js:**
+- Lagt til handleJournalInput() og handleVillageMenuInput()
+- [E] åpner nå village menu i stedet for shop
+- [J] toggle for journal
+- Creature tracking ved fangst (addToJournal, storyFlags)
+
+**save.js:**
+- Versjon oppdatert til 0.7
+- Lagrer transformation, journal.discovered, og storyFlags
+- Loader nye state-felt med fallbacks
+
+**game.html:**
+- Versjon oppdatert til 0.7
+- Kontrolltekst oppdatert med [J] Journal og [E] Harbor
+
+### Tekniske beslutninger
+- Village menu som hub gir bedre UX enn direkte shop-åpning
+- Transformation-visuals er data-drevet for enkel sprite-bytte
+- Journal bruker zone-paginering for oversiktlighet
+- Story flags er forberedt for endings-implementering
+
+### Neste prioritet
+- [ ] Implementere endings-system (3 endings)
+- [ ] Lyd/musikk
+- [ ] Claude API-integrasjon for dynamisk NPC-dialog
+- [ ] Lokasjonsbaserte creatures
+
+### Notater
+- Transformasjonssystemet er kjernen i "horror"-aspektet
+- Rest-funksjonen balanserer sanity-drain i late-game
+- Journal gir grunn til å utforske alle dybdesoner
+- Village menu åpner for fremtidige features (tavern, church, etc.)
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown

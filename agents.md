@@ -43,7 +43,7 @@ Bruk conventional commits:
 
 ## Nåværende Status
 
-**Versjon:** 0.6 (Modular Refactor & Asset Structure)
+**Versjon:** 0.7 (Expanded World & Transformation)
 
 **Ferdig:**
 - [x] Parallax layer system
@@ -57,10 +57,10 @@ Bruk conventional commits:
 - [x] Butikk-system (selg fisk, kjøp utstyr)
 - [x] Progression-system (stenger, agn, båter)
 - [x] Inventory-system
-- [x] Utvidet verden (4000px) med scrolling
-- [x] 6 unike lokasjoner med visuelle features
+- [x] Utvidet verden (6000px) med scrolling
+- [x] 8 unike lokasjoner med visuelle features
 - [x] Vær-system (5 værtyper)
-- [x] Lore fragments / collectibles (12 stk)
+- [x] Lore fragments / collectibles (14 stk)
 - [x] Hund som gameplay-element
 - [x] Naturlig tid-progresjon
 - [x] Minimap og lokasjonsindikatorer
@@ -71,12 +71,16 @@ Bruk conventional commits:
 - [x] Modulær kode-struktur (13 JS-moduler)
 - [x] Komplett asset directory-struktur
 - [x] Placeholder art for alle 63 assets
+- [x] Transformasjonssystem (5 stages: Human → Deep One)
+- [x] Innsmouth Village meny med Rest-funksjon
+- [x] Fishing Journal/Bestiary ([J] keybind)
+- [x] Story flags for endings
 
 **Neste prioritet:**
 - [ ] Claude API-integrasjon for dynamisk NPC-dialog
 - [ ] Lyd/musikk
 - [ ] Lokasjonsbaserte creatures
-- [ ] Fishing journal / bestiary
+- [ ] Endings-system (3 endings)
 - [ ] Achievements
 
 ---

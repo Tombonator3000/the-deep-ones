@@ -9,7 +9,7 @@ const game = {
     sanity: 100,
     depth: 0,
     targetDepth: 30,
-    boatX: 500,
+    boatX: 1500,
     cameraX: 0,
     time: 0,
     currentCatch: null,
@@ -85,17 +85,52 @@ const game = {
     loreBottles: [],
 
     locationBonuses: {
-        dock: { zone: 'surface', bonus: 0 },
-        shallows: { zone: 'surface', bonus: 0.1 },
-        reef: { zone: 'mid', bonus: 0.2 },
-        shipwreck: { zone: 'deep', bonus: 0.3 },
-        trench: { zone: 'abyss', bonus: 0.4 },
-        void: { zone: 'abyss', bonus: 0.5 }
+        sandbank: { zone: 'surface', bonus: 0, sanityMod: 0.02 },
+        shallows: { zone: 'surface', bonus: 0.1, sanityMod: 0.01 },
+        sunsetCove: { zone: 'surface', bonus: 0.15, sanityMod: 0 },
+        dock: { zone: 'surface', bonus: 0, sanityMod: 0.05 },
+        reef: { zone: 'mid', bonus: 0.2, sanityMod: -0.01 },
+        shipwreck: { zone: 'deep', bonus: 0.3, sanityMod: -0.02 },
+        trench: { zone: 'deep', bonus: 0.4, sanityMod: -0.03 },
+        void: { zone: 'abyss', bonus: 0.5, sanityMod: -0.05 }
     },
 
     loreViewer: {
         open: false,
         page: 0,
         itemsPerPage: 4
+    },
+
+    // Transformation system (inspired by Deep Regrets)
+    transformation: {
+        stage: 0,  // 0=Human, 1=Touched, 2=Changing, 3=Becoming, 4=Deep One
+        totalSanityLost: 0,
+        creaturesCaught: { surface: 0, mid: 0, deep: 0, abyss: 0 },
+        physicalChanges: []
+    },
+
+    // Fishing Journal/Bestiary
+    journal: {
+        open: false,
+        page: 0,
+        discovered: [],  // Array of creature names that have been caught
+        itemsPerPage: 3
+    },
+
+    // Village menu
+    villageMenu: {
+        open: false,
+        selectedIndex: 0
+    },
+
+    // Endings tracking
+    storyFlags: {
+        metMarsh: false,
+        heardWhispers: false,
+        sawVision: false,
+        foundAllLore: false,
+        caughtUnnamed: false,
+        reachedVoid: false,
+        transformationStarted: false
     }
 };
