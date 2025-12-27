@@ -135,9 +135,11 @@
         
         <div id="title-screen">
             <h1>THE DEEP ONES</h1>
-            <div class="subtitle">ASSET-READY BUILD</div>
+            <div class="subtitle">ASSET-READY BUILD v0.5</div>
             <p>"Drop in your pixel art and watch it come alive."</p>
-            <button onclick="startGame('dusk')">🌅 START GAME</button>
+            <button onclick="startGame('dusk')">🌅 NEW GAME</button>
+            <button id="continue-btn" onclick="continueGame()" style="display: none;">📖 CONTINUE</button>
+            <div id="save-info" style="color: #5a7a6a; font-size: 14px; margin-top: 10px;"></div>
             <div class="time-buttons">
                 <button onclick="startGame('dawn')">🌄 Dawn</button>
                 <button onclick="startGame('day')">☀️ Day</button>
@@ -161,7 +163,7 @@
         </div>
         
         <div id="controls">
-            [SPACE] Cast/Reel | [↑↓] Depth | [←→] Move | [E] Shop | [P] Pet Dog | [T] Time | [D] Debug
+            [SPACE] Cast/Reel | [↑↓] Depth | [←→] Move | [E] Shop | [P] Pet Dog | [L] Lore | [Shift+S] Save
         </div>
     </div>
 
@@ -1247,6 +1249,13 @@ const game = {
         shipwreck: { zone: 'deep', bonus: 0.3 },
         trench: { zone: 'abyss', bonus: 0.4 },
         void: { zone: 'abyss', bonus: 0.5 }
+    },
+
+    // Lore viewer
+    loreViewer: {
+        open: false,
+        page: 0,
+        itemsPerPage: 4
     }
 };
 
@@ -1598,6 +1607,8 @@ function updateLoreBottles() {
                 game.loreFound.push(lore.id);
                 game.currentLore = lore;
                 game.loreBottles.splice(i, 1);
+                // Auto-save after finding lore
+                autoSave();
             }
         }
     });
@@ -2854,6 +2865,8 @@ function openShop() {
 function closeShop() {
     game.shop.open = false;
     game.shop.npcDialog = '';
+    // Auto-save after shopping
+    autoSave();
 }
 
 function shopAction() {
@@ -3107,6 +3120,8 @@ function render() {
     if (game.shop.open) drawShopUI();
     if (game.currentLore) drawLorePopup();
     if (game.minigame.active) drawMinigame();
+    if (game.loreViewer.open) drawLoreCollection();
+    drawSaveNotification();
 }
 
 function gameLoop(timestamp) {
@@ -3159,6 +3174,11 @@ function updateUI() {
 document.addEventListener('keydown', (e) => {
     if (game.state === 'title') return;
 
+    // Lore collection viewer controls
+    if (game.loreViewer.open) {
+        if (handleLoreViewerInput(e)) return;
+    }
+
     // Shop controls
     if (game.shop.open) {
         handleShopInput(e);
@@ -3203,6 +3223,8 @@ document.addEventListener('keydown', (e) => {
                 game.state = 'sailing';
                 game.depth = 0;
                 document.getElementById('catch-display').textContent = '';
+                // Auto-save after catch
+                autoSave();
             } else if (game.state === 'sailing') {
                 game.state = 'casting';
                 document.getElementById('catch-display').textContent = 'Casting...';
@@ -3273,10 +3295,325 @@ document.addEventListener('keydown', (e) => {
             break;
 
         case 'KeyL':
-            // Show lore collection (future feature)
+            // Toggle lore collection viewer
+            if (game.state === 'sailing') {
+                game.loreViewer = {
+                    open: true,
+                    page: 0,
+                    itemsPerPage: 4
+                };
+            }
+            break;
+
+        case 'KeyS':
+            // Quick save (Shift+S)
+            if (e.shiftKey && game.state === 'sailing') {
+                saveGame();
+            }
             break;
     }
 });
+
+// ============================================================
+// LORE COLLECTION VIEWER
+// ============================================================
+
+function drawLoreCollection() {
+    if (!game.loreViewer || !game.loreViewer.open) return;
+
+    const w = 500;
+    const h = 400;
+    const x = (CONFIG.canvas.width - w) / 2;
+    const y = (CONFIG.canvas.height - h) / 2;
+
+    // Background
+    ctx.fillStyle = 'rgba(15, 20, 25, 0.97)';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = '#5a8a7a';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x, y, w, h);
+
+    // Header
+    ctx.font = '16px "Press Start 2P"';
+    ctx.fillStyle = '#8aba9a';
+    ctx.textAlign = 'center';
+    ctx.fillText('FORBIDDEN KNOWLEDGE', x + w/2, y + 35);
+
+    // Found count
+    const foundCount = game.loreFound.length;
+    const totalCount = LORE_FRAGMENTS.length;
+    ctx.font = '14px VT323';
+    ctx.fillStyle = '#6a8a7a';
+    ctx.fillText(`${foundCount} / ${totalCount} fragments discovered`, x + w/2, y + 55);
+
+    // Draw lore entries
+    const startIdx = game.loreViewer.page * game.loreViewer.itemsPerPage;
+    const endIdx = Math.min(startIdx + game.loreViewer.itemsPerPage, LORE_FRAGMENTS.length);
+    let entryY = y + 85;
+
+    for (let i = startIdx; i < endIdx; i++) {
+        const fragment = LORE_FRAGMENTS[i];
+        const isFound = game.loreFound.includes(fragment.id);
+
+        // Entry background
+        ctx.fillStyle = isFound ? 'rgba(50, 70, 60, 0.5)' : 'rgba(30, 30, 40, 0.5)';
+        ctx.fillRect(x + 15, entryY, w - 30, 70);
+
+        if (isFound) {
+            // Title
+            ctx.font = '14px "Press Start 2P"';
+            ctx.fillStyle = '#b0d0b0';
+            ctx.textAlign = 'left';
+            ctx.fillText(fragment.title, x + 25, entryY + 22);
+
+            // Text (truncated)
+            ctx.font = '14px VT323';
+            ctx.fillStyle = '#90a090';
+            const truncated = fragment.text.length > 60 ? fragment.text.substring(0, 60) + '...' : fragment.text;
+            ctx.fillText(truncated, x + 25, entryY + 45);
+
+            // Location hint
+            ctx.fillStyle = '#5a7a6a';
+            ctx.font = '12px VT323';
+            ctx.fillText(`Found at: ${CONFIG.locations[fragment.location]?.name || fragment.location}`, x + 25, entryY + 62);
+        } else {
+            // Unknown entry
+            ctx.font = '14px "Press Start 2P"';
+            ctx.fillStyle = '#4a5a5a';
+            ctx.textAlign = 'left';
+            ctx.fillText('? ? ?', x + 25, entryY + 22);
+
+            ctx.font = '14px VT323';
+            ctx.fillStyle = '#3a4a4a';
+            ctx.fillText('This knowledge remains hidden...', x + 25, entryY + 45);
+
+            // Location hint
+            ctx.fillStyle = '#4a5a5a';
+            ctx.font = '12px VT323';
+            ctx.fillText(`Seek near: ${CONFIG.locations[fragment.location]?.name || fragment.location}`, x + 25, entryY + 62);
+        }
+
+        entryY += 78;
+    }
+
+    // Pagination
+    const totalPages = Math.ceil(LORE_FRAGMENTS.length / game.loreViewer.itemsPerPage);
+    ctx.font = '12px VT323';
+    ctx.fillStyle = '#6a8a7a';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Page ${game.loreViewer.page + 1} / ${totalPages}`, x + w/2, y + h - 45);
+
+    // Controls
+    ctx.font = '12px VT323';
+    ctx.fillStyle = '#5a7a6a';
+    ctx.fillText('[←/→] Navigate pages | [ESC/L] Close', x + w/2, y + h - 20);
+
+    ctx.textAlign = 'left';
+}
+
+function handleLoreViewerInput(e) {
+    if (!game.loreViewer || !game.loreViewer.open) return false;
+
+    const totalPages = Math.ceil(LORE_FRAGMENTS.length / game.loreViewer.itemsPerPage);
+
+    switch(e.code) {
+        case 'ArrowLeft':
+            e.preventDefault();
+            game.loreViewer.page = Math.max(0, game.loreViewer.page - 1);
+            return true;
+        case 'ArrowRight':
+            e.preventDefault();
+            game.loreViewer.page = Math.min(totalPages - 1, game.loreViewer.page + 1);
+            return true;
+        case 'Escape':
+        case 'KeyL':
+            game.loreViewer.open = false;
+            return true;
+    }
+    return false;
+}
+
+// ============================================================
+// SAVE / LOAD SYSTEM
+// ============================================================
+
+const SAVE_KEY = 'theDeepOnes_save';
+
+function saveGame() {
+    const saveData = {
+        version: '0.5',
+        timestamp: Date.now(),
+
+        // Core stats
+        money: game.money,
+        sanity: game.sanity,
+        boatX: game.boatX,
+        timeOfDay: game.timeOfDay,
+        dayProgress: game.dayProgress,
+
+        // Equipment
+        equipment: { ...game.equipment },
+
+        // Inventory
+        inventory: game.inventory.map(fish => ({
+            name: fish.name,
+            desc: fish.desc,
+            value: fish.value,
+            sanityLoss: fish.sanityLoss
+        })),
+
+        // Progress
+        loreFound: [...game.loreFound],
+        caughtCreatures: game.caughtCreatures.map(c => c.name),
+
+        // Shop progress
+        shopProgress: {
+            rods: SHOP.rods.map(r => ({ id: r.id, owned: r.owned })),
+            lures: SHOP.lures.map(l => ({ id: l.id, count: l.count })),
+            boats: SHOP.boats.map(b => ({ id: b.id, owned: b.owned }))
+        },
+
+        // Dog
+        dogHappiness: game.dog.happiness,
+
+        // Stats
+        totalCatches: game.caughtCreatures.length
+    };
+
+    try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+        showSaveNotification('Game Saved!');
+        console.log('Game saved successfully');
+        return true;
+    } catch (e) {
+        console.error('Failed to save game:', e);
+        showSaveNotification('Save Failed!');
+        return false;
+    }
+}
+
+function loadGame() {
+    try {
+        const saveStr = localStorage.getItem(SAVE_KEY);
+        if (!saveStr) return false;
+
+        const saveData = JSON.parse(saveStr);
+
+        // Core stats
+        game.money = saveData.money || 50;
+        game.sanity = saveData.sanity || 100;
+        game.boatX = saveData.boatX || 500;
+        game.timeOfDay = saveData.timeOfDay || 'dusk';
+        game.dayProgress = saveData.dayProgress || 0.5;
+
+        // Equipment
+        if (saveData.equipment) {
+            game.equipment = { ...saveData.equipment };
+        }
+
+        // Inventory
+        if (saveData.inventory) {
+            game.inventory = saveData.inventory;
+        }
+
+        // Progress
+        if (saveData.loreFound) {
+            game.loreFound = saveData.loreFound;
+        }
+        if (saveData.caughtCreatures) {
+            game.caughtCreatures = saveData.caughtCreatures.map(name => ({ name }));
+        }
+
+        // Shop progress
+        if (saveData.shopProgress) {
+            saveData.shopProgress.rods.forEach(saved => {
+                const rod = SHOP.rods.find(r => r.id === saved.id);
+                if (rod) rod.owned = saved.owned;
+            });
+            saveData.shopProgress.lures.forEach(saved => {
+                const lure = SHOP.lures.find(l => l.id === saved.id);
+                if (lure) lure.count = saved.count;
+            });
+            saveData.shopProgress.boats.forEach(saved => {
+                const boat = SHOP.boats.find(b => b.id === saved.id);
+                if (boat) boat.owned = saved.owned;
+            });
+        }
+
+        // Dog
+        if (saveData.dogHappiness !== undefined) {
+            game.dog.happiness = saveData.dogHappiness;
+        }
+
+        // Update inventory max based on boat
+        const boat = getCurrentBoat();
+        if (boat) {
+            game.inventoryMax = boat.storage;
+        }
+
+        console.log('Game loaded successfully');
+        return true;
+    } catch (e) {
+        console.error('Failed to load game:', e);
+        return false;
+    }
+}
+
+function hasSaveGame() {
+    return localStorage.getItem(SAVE_KEY) !== null;
+}
+
+function deleteSave() {
+    localStorage.removeItem(SAVE_KEY);
+    console.log('Save deleted');
+}
+
+function getSaveInfo() {
+    try {
+        const saveStr = localStorage.getItem(SAVE_KEY);
+        if (!saveStr) return null;
+        const saveData = JSON.parse(saveStr);
+        return {
+            money: saveData.money,
+            loreCount: saveData.loreFound?.length || 0,
+            totalCatches: saveData.totalCatches || 0,
+            timestamp: new Date(saveData.timestamp).toLocaleString()
+        };
+    } catch (e) {
+        return null;
+    }
+}
+
+// Save notification
+let saveNotification = { show: false, text: '', timer: 0 };
+
+function showSaveNotification(text) {
+    saveNotification = { show: true, text: text, timer: 120 }; // 2 seconds at 60fps
+}
+
+function drawSaveNotification() {
+    if (!saveNotification.show) return;
+
+    saveNotification.timer--;
+    if (saveNotification.timer <= 0) {
+        saveNotification.show = false;
+        return;
+    }
+
+    const alpha = Math.min(1, saveNotification.timer / 30);
+    ctx.font = '14px "Press Start 2P"';
+    ctx.fillStyle = `rgba(138, 186, 154, ${alpha})`;
+    ctx.textAlign = 'center';
+    ctx.fillText(saveNotification.text, CONFIG.canvas.width / 2, 50);
+    ctx.textAlign = 'left';
+}
+
+// Auto-save on important events
+function autoSave() {
+    if (game.state === 'sailing' && !game.shop.open && !game.currentLore) {
+        saveGame();
+    }
+}
 
 function handleMinigameInput(e) {
     switch(e.code) {
@@ -3384,7 +3721,45 @@ function startGame(time) {
     loadAllAssets();
 }
 
+function continueGame() {
+    if (!hasSaveGame()) {
+        startGame('dusk');
+        return;
+    }
+
+    document.getElementById('title-screen').style.display = 'none';
+    game.state = 'sailing';
+
+    // Load saved data
+    loadGame();
+
+    // Initialize with saved time
+    initLayers();
+    initFish();
+    initLoreBottles();
+    loadAllAssets();
+
+    showSaveNotification('Game Loaded!');
+}
+
+// Initialize title screen
+function initTitleScreen() {
+    if (hasSaveGame()) {
+        document.getElementById('continue-btn').style.display = 'inline-block';
+        const info = getSaveInfo();
+        if (info) {
+            document.getElementById('save-info').innerHTML =
+                `Last save: ${info.timestamp}<br>💰 ${info.money} gold | 📜 ${info.loreCount}/12 lore | 🐟 ${info.totalCatches} catches`;
+        }
+    }
+}
+
 window.startGame = startGame;
+window.continueGame = continueGame;
+
+// Init title screen on load
+initTitleScreen();
+
 requestAnimationFrame(gameLoop);
 </script>
 </body>
