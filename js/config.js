@@ -183,6 +183,118 @@ const ACHIEVEMENTS = {
     endingProphet: { id: 'ending_prophet', name: 'The Prophet', desc: 'Achieve the Prophet ending', icon: '👁️‍🗨️' }
 };
 
+// Additional NPCs in Innsmouth
+const NPCS = {
+    marsh: {
+        id: 'marsh',
+        name: 'Old Marsh',
+        title: 'Bait & Tackle',
+        location: 'dock',
+        unlocked: true
+    },
+    innkeeper: {
+        id: 'innkeeper',
+        name: 'The Innkeeper',
+        title: 'Gilman House',
+        location: 'dock',
+        unlocked: true,
+        dialogs: {
+            greeting: [
+                "Room for the night? ...No? Then what do you want?",
+                "The walls here remember things. Best not to ask what.",
+                "Sleep well in Innsmouth? Ha. No one sleeps well here.",
+                "Checkout is at dawn. If you last that long."
+            ],
+            lowSanity: [
+                "You look like you've seen things. Join the club.",
+                "The dreams getting worse? They will.",
+                "I can give you something for the nightmares... but you won't like the side effects.",
+                "Your eyes... they're starting to change. Like the others."
+            ],
+            hint: [
+                "The fishermen talk about lights in the deep. Best ignore them.",
+                "Father Dagon's followers meet on full moons. You didn't hear that from me.",
+                "The old church? Abandoned. Officially. Unofficially... well."
+            ]
+        }
+    },
+    priest: {
+        id: 'priest',
+        name: 'Father Waite',
+        title: 'Order of Dagon',
+        location: 'dock',
+        unlocked: false,  // Unlocks at low sanity
+        unlockCondition: { sanity: { max: 40 } },
+        dialogs: {
+            greeting: [
+                "Ah, a new convert... or will you be?",
+                "The Deep Ones welcome all who hear the call.",
+                "Your transformation has begun. Embrace it.",
+                "Father Dagon sees all. He sees you."
+            ],
+            blessing: [
+                "Receive Dagon's blessing... +5 to abyss catches, -10 sanity.",
+                "The deep knows its own. Accept this gift.",
+                "Let the waters claim what was always theirs."
+            ],
+            prophecy: [
+                "The stars align soon. The sleeper stirs.",
+                "R'lyeh rises when the moon bleeds.",
+                "You will be among the chosen. If you survive."
+            ]
+        },
+        services: [
+            { name: "Dagon's Blessing", desc: "+50% abyss bite rate, -10 sanity", cost: 100, effect: 'blessing' },
+            { name: "Forbidden Knowledge", desc: "Reveal nearby lore location", cost: 50, effect: 'loreHint' },
+            { name: "Deep Communion", desc: "Speak with the fish... +15 sanity loss, reveals secrets", cost: 200, effect: 'communion' }
+        ]
+    },
+    child: {
+        id: 'child',
+        name: 'Strange Child',
+        title: '???',
+        location: 'dock',
+        unlocked: false,  // Appears randomly at night
+        unlockCondition: { timeOfDay: 'night', random: 0.3 },
+        dialogs: {
+            greeting: [
+                "...",
+                "*stares with too-large eyes*",
+                "The fish told me about you.",
+                "Do you dream of the water too?"
+            ],
+            lowSanity: [
+                "You're becoming like us. It doesn't hurt after a while.",
+                "Mother says I used to be different. I don't remember.",
+                "They're waiting for you. Under the waves.",
+                "I can teach you to breathe water. Want me to?"
+            ],
+            cryptic: [
+                "The old ones never died. They just... wait.",
+                "I saw your ending. Both of them.",
+                "The dog knows. Ask the dog.",
+                "Don't catch the Unnamed. Or do. It's already written."
+            ]
+        }
+    }
+};
+
+// Daily challenge definitions
+const DAILY_CHALLENGES = [
+    { id: 'catch_5_surface', name: 'Surface Skimmer', desc: 'Catch 5 surface fish', target: 5, zone: 'surface' },
+    { id: 'catch_3_mid', name: 'Mid-Water Hunter', desc: 'Catch 3 mid-depth fish', target: 3, zone: 'mid' },
+    { id: 'catch_deep', name: 'Deep Diver', desc: 'Catch a deep creature', target: 1, zone: 'deep' },
+    { id: 'earn_100', name: 'Gold Rush', desc: 'Earn 100 gold today', target: 100, type: 'gold' },
+    { id: 'earn_500', name: 'Big Haul', desc: 'Earn 500 gold today', target: 500, type: 'gold' },
+    { id: 'pet_dog_5', name: 'Good Owner', desc: 'Pet your dog 5 times', target: 5, type: 'pet' },
+    { id: 'visit_locations', name: 'Explorer', desc: 'Visit 4 different locations', target: 4, type: 'locations' },
+    { id: 'night_catches', name: 'Night Owl', desc: 'Catch 3 fish at night', target: 3, type: 'nightCatch' },
+    { id: 'storm_catch', name: 'Storm Chaser', desc: 'Catch a fish during a storm', target: 1, type: 'stormCatch' },
+    { id: 'streak_5', name: 'On a Roll', desc: 'Get a 5-catch streak', target: 5, type: 'streak' },
+    { id: 'find_lore', name: 'Knowledge Seeker', desc: 'Find a lore fragment', target: 1, type: 'lore' },
+    { id: 'no_sanity_loss', name: 'Stay Sane', desc: 'Fish for 5 minutes without sanity loss', target: 300, type: 'sanityStreak' }
+];
+
 const NPC_DIALOGS = {
     greeting: [
         "Ah, another early riser. The fish bite best when the world sleeps.",

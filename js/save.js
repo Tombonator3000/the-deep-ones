@@ -8,7 +8,7 @@ let saveNotification = { show: false, text: '', timer: 0 };
 
 function saveGame() {
     const saveData = {
-        version: '0.9',
+        version: '1.0',
         timestamp: Date.now(),
         game: {
             money: game.money,
