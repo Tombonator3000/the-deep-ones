@@ -43,7 +43,7 @@ Bruk conventional commits:
 
 ## Nåværende Status
 
-**Versjon:** 0.7 (Expanded World & Transformation)
+**Versjon:** 0.8 (Endings, Achievements & Location-Based Creatures)
 
 **Ferdig:**
 - [x] Parallax layer system
@@ -75,13 +75,16 @@ Bruk conventional commits:
 - [x] Innsmouth Village meny med Rest-funksjon
 - [x] Fishing Journal/Bestiary ([J] keybind)
 - [x] Story flags for endings
+- [x] Endings-system (3 endings: Deep One, Survivor, Prophet)
+- [x] Endless Mode etter ending
+- [x] Lokasjonsbaserte creatures (weighted spawning)
+- [x] Achievements-system (20 achievements)
+- [x] Achievements viewer ([A] keybind)
 
 **Neste prioritet:**
 - [ ] Claude API-integrasjon for dynamisk NPC-dialog
 - [ ] Lyd/musikk
-- [ ] Lokasjonsbaserte creatures
-- [ ] Endings-system (3 endings)
-- [ ] Achievements
+- [ ] Polering av endings (visuelle effekter)
 
 ---
 

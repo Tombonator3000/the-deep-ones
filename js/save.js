@@ -8,7 +8,7 @@ let saveNotification = { show: false, text: '', timer: 0 };
 
 function saveGame() {
     const saveData = {
-        version: '0.7',
+        version: '0.8',
         timestamp: Date.now(),
         game: {
             money: game.money,
@@ -37,7 +37,16 @@ function saveGame() {
         storyFlags: { ...game.storyFlags },
         stats: {
             totalCatches: game.caughtCreatures.length
-        }
+        },
+        achievements: {
+            unlocked: [...game.achievements.unlocked],
+            stats: { ...game.achievements.stats }
+        },
+        ending: {
+            triggered: game.ending.triggered,
+            current: game.ending.current
+        },
+        endlessMode: game.endlessMode
     };
 
     try {
@@ -103,6 +112,21 @@ function loadGame() {
         if (saveData.storyFlags) {
             game.storyFlags = { ...game.storyFlags, ...saveData.storyFlags };
         }
+
+        // Restore achievements
+        if (saveData.achievements) {
+            game.achievements.unlocked = [...(saveData.achievements.unlocked || [])];
+            game.achievements.stats = { ...game.achievements.stats, ...(saveData.achievements.stats || {}) };
+        }
+
+        // Restore ending state
+        if (saveData.ending) {
+            game.ending.triggered = saveData.ending.triggered || false;
+            game.ending.current = saveData.ending.current || null;
+        }
+
+        // Restore endless mode
+        game.endlessMode = saveData.endlessMode || false;
 
         // Update inventory max based on boat
         const boat = getCurrentBoat();

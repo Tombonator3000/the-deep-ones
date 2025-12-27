@@ -101,8 +101,49 @@ function handleVillageMenuInput(e) {
     return false;
 }
 
+function handleAchievementsViewerInput(e) {
+    if (!game.achievements.viewerOpen) return false;
+
+    const allAchievements = Object.values(ACHIEVEMENTS);
+    const totalPages = Math.ceil(allAchievements.length / 6);
+
+    if (e.key === 'ArrowLeft') {
+        game.achievements.viewerPage = Math.max(0, game.achievements.viewerPage - 1);
+        return true;
+    } else if (e.key === 'ArrowRight') {
+        game.achievements.viewerPage = Math.min(totalPages - 1, game.achievements.viewerPage + 1);
+        return true;
+    } else if (e.key === 'Escape' || e.key.toLowerCase() === 'a') {
+        closeAchievementsViewer();
+        return true;
+    }
+    return false;
+}
+
+function handleEndingInput(e) {
+    if (game.state !== 'ending') return false;
+
+    if (game.ending.canContinue) {
+        if (e.key === ' ') {
+            startEndlessMode();
+            return true;
+        } else if (e.key === 'Escape') {
+            // Return to title
+            game.state = 'title';
+            game.ending.triggered = false;
+            game.ending.phase = 'none';
+            document.getElementById('title-screen').style.display = 'flex';
+            return true;
+        }
+    }
+    return true;  // Block all other input during ending
+}
+
 function setupInputHandlers() {
     document.addEventListener('keydown', (e) => {
+        // Handle ending input first
+        if (handleEndingInput(e)) return;
+
         // Handle lore popup first
         if (game.currentLore) {
             if (e.key === ' ') {
@@ -120,6 +161,9 @@ function setupInputHandlers() {
         // Handle village menu input
         if (handleVillageMenuInput(e)) return;
 
+        // Handle achievements viewer input
+        if (handleAchievementsViewerInput(e)) return;
+
         // Handle minigame input
         if (handleMinigameInput(e)) return;
 
@@ -129,6 +173,16 @@ function setupInputHandlers() {
         // Lore viewer toggle
         if (e.key.toLowerCase() === 'l' && game.state !== 'title') {
             game.loreViewer.open = !game.loreViewer.open;
+            return;
+        }
+
+        // Achievements viewer toggle
+        if (e.key.toLowerCase() === 'a' && game.state !== 'title') {
+            if (game.achievements.viewerOpen) {
+                closeAchievementsViewer();
+            } else {
+                openAchievementsViewer();
+            }
             return;
         }
 
@@ -225,6 +279,14 @@ function setupInputHandlers() {
 
                     // Track story flags
                     if (c.name === "The Unnamed") game.storyFlags.caughtUnnamed = true;
+
+                    // Track achievement stats
+                    if (game.timeOfDay === 'night') {
+                        game.achievements.stats.nightCatches++;
+                    }
+                    if (game.weather.current === 'storm') {
+                        game.achievements.stats.stormCatches++;
+                    }
 
                     game.currentCatch = null;
                     game.state = 'sailing';
