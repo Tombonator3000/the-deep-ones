@@ -5,11 +5,12 @@
 Når du jobber med dette prosjektet:
 
 ### Alltid
-1. **Les `SYSTEM-PROMPT.md`** først for full kontekst
-2. **Logg alt arbeid** til `log.md` med dato og beskrivelse
-3. **Følg filstrukturen** definert i system prompt
-4. **Behold prosedyral fallback** når du legger til nye visuelle elementer
-5. **Test at spillet kjører** før du avslutter
+1. **Les `GAME-DESIGN.md`** for spilldesign og visjon
+2. **Les `SYSTEM-PROMPT.md`** for teknisk kontekst
+3. **Logg alt arbeid** til `log.md` med dato og beskrivelse
+4. **Følg filstrukturen** definert i system prompt
+5. **Behold prosedyral fallback** når du legger til nye visuelle elementer
+6. **Test at spillet kjører** før du avslutter
 
 ### Kode-stil
 - Vanilla JavaScript, ingen frameworks

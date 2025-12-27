@@ -344,6 +344,48 @@ Opprettet `game.html` som loader alle moduler i riktig rekkefølge.
 
 ---
 
+## 2024-12-27 — Game Design Document
+
+### Gjort
+
+#### Opprettet GAME-DESIGN.md
+Komplett Game Design Document basert på Cast n Chill + Deep Regrets inspirasjon:
+- **Kjernedesign-beslutninger** — Fri seiling, meny-basert landsby, full Lovecraft
+- **Inspirasjonskilder** — "Cozy until it isn't" blanding
+- **Kjerneloop** — Fisk → Selg → Kjøp → Dypere → Sanity tap → Transformasjon
+- **Progresjonsstige** — Early (0-500g) → Mid (500-2000g) → Late (2000-5000g) → End (5000g+)
+- **Transformasjonssystem** — 5 stages fra Human til Deep One
+- **Verden** — 6000px bred med 6 soner (Sandbanke → Shallows → Sunset Cove → Innsmouth → Reef → Deep)
+- **Dybdeprofil** — Sandbunn 40m, Vrak 100m, Abyss 200m+
+- **Landsby meny-system** — Butikk, hvile, journal
+- **Butikk-dialog** — Endrer seg basert på sanity
+- **3 Endings** — The Deep One (Embrace), The Survivor (Resist), The Prophet (Secret)
+- **Endless Mode** — Etter ending med achievements/completion
+- **Cult/Lore** — Order of Dagon, fiskelore, environmental storytelling
+
+### Filer opprettet
+- `GAME-DESIGN.md` — Komplett Game Design Document
+
+### Tekniske beslutninger
+- GDD er separat fra teknisk dokumentasjon (SYSTEM-PROMPT.md)
+- Bruker Markdown-tabeller og ASCII art for oversiktlighet
+- Dokumentet fungerer som roadmap for implementering
+
+### Neste prioritet
+- [ ] Utvide verden til 6000px (fra 4000px)
+- [ ] Implementere transformasjonssystem visuelt
+- [ ] Legge til nye soner (Sandbanke, Sunset Cove)
+- [ ] Implementere endings-system
+- [ ] Endless Mode etter ending
+
+### Notater
+- Verden skal utvides fra 4000px til 6000px
+- Transformasjon er inspirert av Deep Regrets brettspill
+- "Cozy until it isn't" er kjernen i spillopplevelsen
+- Multiple endings gir replay value
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown
