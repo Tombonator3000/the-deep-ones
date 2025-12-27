@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Deep Ones — Modular Build v0.8</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Deep Ones — Modular Build v0.9</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
 
@@ -127,6 +127,105 @@
 
         .time-buttons { display: flex; gap: 10px; margin-top: 20px; }
         .time-buttons button { font-size: 10px; padding: 12px 20px; }
+
+        /* Touch Controls */
+        #touch-controls {
+            display: none;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 140px;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        #touch-controls.visible {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 10px 15px;
+        }
+
+        .touch-btn {
+            pointer-events: auto;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(90, 154, 122, 0.3);
+            border: 3px solid rgba(90, 154, 122, 0.6);
+            color: rgba(200, 220, 210, 0.9);
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            transition: all 0.1s;
+        }
+
+        .touch-btn:active, .touch-btn.pressed {
+            background: rgba(90, 154, 122, 0.6);
+            transform: scale(0.95);
+        }
+
+        .touch-btn.action-btn {
+            width: 80px;
+            height: 80px;
+            font-size: 14px;
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        .touch-dpad {
+            display: grid;
+            grid-template-columns: 55px 55px 55px;
+            grid-template-rows: 55px 55px 55px;
+            gap: 4px;
+        }
+
+        .touch-dpad .touch-btn {
+            width: 52px;
+            height: 52px;
+        }
+
+        .touch-dpad .up { grid-column: 2; grid-row: 1; }
+        .touch-dpad .left { grid-column: 1; grid-row: 2; }
+        .touch-dpad .right { grid-column: 3; grid-row: 2; }
+        .touch-dpad .down { grid-column: 2; grid-row: 3; }
+
+        .touch-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .touch-actions-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .touch-btn.small {
+            width: 50px;
+            height: 50px;
+            font-size: 18px;
+        }
+
+        /* Hide keyboard controls hint on mobile */
+        @media (pointer: coarse) {
+            #controls { display: none; }
+            #touch-controls { display: flex !important; }
+            #touch-controls.visible { display: flex; }
+        }
+
+        /* Landscape mobile optimization */
+        @media (max-height: 500px) and (pointer: coarse) {
+            #touch-controls { height: 100px; }
+            .touch-btn { width: 50px; height: 50px; font-size: 20px; }
+            .touch-btn.action-btn { width: 65px; height: 65px; font-size: 11px; }
+            .touch-dpad .touch-btn { width: 45px; height: 45px; }
+        }
     </style>
 </head>
 <body>
@@ -135,7 +234,7 @@
 
         <div id="title-screen">
             <h1>THE DEEP ONES</h1>
-            <div class="subtitle">MODULAR BUILD v0.8</div>
+            <div class="subtitle">MODULAR BUILD v0.9</div>
             <p>"Drop in your pixel art and watch it come alive."</p>
             <button onclick="startGame('dusk')">NEW GAME</button>
             <button id="continue-btn" onclick="continueGame()" style="display: none;">CONTINUE</button>
@@ -164,6 +263,26 @@
 
         <div id="controls">
             [SPACE] Cast/Reel | [Arrows] Move | [E] Harbor | [J] Journal | [P] Pet | [L] Lore | [A] Achievements
+        </div>
+
+        <!-- Touch Controls for Mobile -->
+        <div id="touch-controls" class="visible">
+            <div class="touch-dpad">
+                <button class="touch-btn up" data-key="ArrowUp">▲</button>
+                <button class="touch-btn left" data-key="ArrowLeft">◀</button>
+                <button class="touch-btn right" data-key="ArrowRight">▶</button>
+                <button class="touch-btn down" data-key="ArrowDown">▼</button>
+            </div>
+            <div class="touch-actions">
+                <div class="touch-actions-row">
+                    <button class="touch-btn small" data-key="p" title="Pet Dog">🐕</button>
+                    <button class="touch-btn small" data-key="e" title="Harbor">⚓</button>
+                </div>
+                <div class="touch-actions-row">
+                    <button class="touch-btn small" data-key="j" title="Journal">📖</button>
+                    <button class="touch-btn action-btn" data-key=" " id="touch-action">CAST</button>
+                </div>
+            </div>
         </div>
     </div>
 
