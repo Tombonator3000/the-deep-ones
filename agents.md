@@ -42,7 +42,7 @@ Bruk conventional commits:
 
 ## Nåværende Status
 
-**Versjon:** 0.4 (Exploration Update)
+**Versjon:** 0.5 (Save/Load & Lore Viewer Update)
 
 **Ferdig:**
 - [x] Parallax layer system
@@ -63,13 +63,17 @@ Bruk conventional commits:
 - [x] Hund som gameplay-element
 - [x] Naturlig tid-progresjon
 - [x] Minimap og lokasjonsindikatorer
+- [x] Save/Load system med LocalStorage
+- [x] Lore collection viewer ([L] keybind)
+- [x] Auto-save ved viktige hendelser
+- [x] Continue-knapp på title screen
 
 **Neste prioritet:**
 - [ ] Claude API-integrasjon for dynamisk NPC-dialog
 - [ ] Lyd/musikk
-- [ ] Save/load system med LocalStorage
-- [ ] Lore collection viewer
-- [ ] Flere creatures per lokasjon
+- [ ] Lokasjonsbaserte creatures
+- [ ] Fishing journal / bestiary
+- [ ] Achievements
 
 ---
 

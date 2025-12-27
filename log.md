@@ -205,6 +205,65 @@
 
 ---
 
+## 2024-12-27 — Save/Load & Lore Viewer Update
+
+### Gjort
+
+#### 1. Save/Load System med LocalStorage
+- Komplett save-system som lagrer all spillprogress
+- Lagrer: money, sanity, equipment, inventory, loreFound, shop progress, dog happiness
+- `saveGame()` — Manuell lagring med [Shift+S]
+- `loadGame()` — Laster lagret spill
+- `hasSaveGame()` / `getSaveInfo()` — Sjekker for eksisterende save
+- Auto-save ved viktige hendelser:
+  - Etter fangst av fisk
+  - Etter butikkbesøk
+  - Etter å finne lore fragment
+- Save notification popup vises i 2 sekunder
+
+#### 2. Lore Collection Viewer
+- Nytt [L] keybind åpner "Forbidden Knowledge" viewer
+- Viser alle 12 lore fragments med paginering (4 per side)
+- Funne fragments viser tittel, tekst-snippet og lokasjon
+- Ukjente fragments viser "???" med hint om hvor de finnes
+- Navigering med [←/→] piltaster
+- Lukkes med [ESC] eller [L]
+
+#### 3. Title Screen Oppdatering
+- "CONTINUE" knapp vises hvis save eksisterer
+- Viser save-info: tidspunkt, gold, lore-telling, total fangst
+- Versjonsnummer oppdatert til v0.5
+
+### Endringer i `asset-ready.html`
+- **game state**: Lagt til `loreViewer` objekt
+- **Nye funksjoner**:
+  - `saveGame()`, `loadGame()`, `hasSaveGame()`, `deleteSave()`, `getSaveInfo()`
+  - `autoSave()`, `showSaveNotification()`, `drawSaveNotification()`
+  - `drawLoreCollection()`, `handleLoreViewerInput()`
+  - `continueGame()`, `initTitleScreen()`
+- **Input**: Nye keybinds [L] lore viewer, [Shift+S] save
+- **render()**: Integrert `drawLoreCollection()` og `drawSaveNotification()`
+- **UI**: Oppdatert controls-tekst med nye keybinds
+
+### Tekniske beslutninger
+- LocalStorage brukes for persistens (enkelt, ingen backend nødvendig)
+- Auto-save er diskret — notification forsvinner etter 2 sekunder
+- Lore viewer er fullscreen overlay som blokkerer gameplay
+- Save-versjon inkludert for fremtidig migrering
+
+### Neste prioritet
+- [ ] Lyd/musikk system
+- [ ] Lokasjonsbaserte creatures
+- [ ] Fishing journal / bestiary
+- [ ] Achievements
+
+### Notater
+- Save-systemet gjør spillet mye mer "sticky"
+- Lore viewer gir incentiv til å utforske alle lokasjoner
+- Vurder å legge til "Delete Save" knapp på title screen
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown
