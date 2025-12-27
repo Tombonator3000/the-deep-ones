@@ -42,27 +42,34 @@ Bruk conventional commits:
 
 ## Nåværende Status
 
-**Versjon:** 0.3 (Shop System Build)
+**Versjon:** 0.4 (Exploration Update)
 
 **Ferdig:**
 - [x] Parallax layer system
 - [x] 4 tider på døgnet
 - [x] 16 creatures med descriptions
-- [x] Sanity system
-- [x] Fishing mechanics
+- [x] Sanity system med utvidede effekter
+- [x] Fishing mechanics med minigame
 - [x] Prosedyral grafikk
 - [x] Sprite-ready arkitektur
 - [x] NPC Old Marsh med butikk
 - [x] Butikk-system (selg fisk, kjøp utstyr)
 - [x] Progression-system (stenger, agn, båter)
 - [x] Inventory-system
+- [x] Utvidet verden (4000px) med scrolling
+- [x] 6 unike lokasjoner med visuelle features
+- [x] Vær-system (5 værtyper)
+- [x] Lore fragments / collectibles (12 stk)
+- [x] Hund som gameplay-element
+- [x] Naturlig tid-progresjon
+- [x] Minimap og lokasjonsindikatorer
 
 **Neste prioritet:**
 - [ ] Claude API-integrasjon for dynamisk NPC-dialog
 - [ ] Lyd/musikk
-- [ ] Flere creatures
-- [ ] Narrativ/lore fragments
-- [ ] Save/load system
+- [ ] Save/load system med LocalStorage
+- [ ] Lore collection viewer
+- [ ] Flere creatures per lokasjon
 
 ---
 

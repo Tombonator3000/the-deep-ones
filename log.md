@@ -92,6 +92,119 @@
 
 ---
 
+## 2024-12-27 — Massive Feature Update
+
+### Gjort
+
+#### 1. Utvidet spillverden med scrolling
+- Verdensbredde utvidet fra ~1200px til 4000px
+- Båten kan nå ro fritt fra venstre til høyre
+- Kamera følger båten med parallax-effekt
+- Grenser: worldMinX (50) til worldMaxX (3950)
+
+#### 2. Nye lokasjoner
+- **Marsh's Dock** (x=180) — Startpunkt, butikk
+- **The Shallows** (x=500) — Trygt farvann for nybegynnere
+- **Coral Reef** (x=1200) — Fargerike koraller, mid-tier fisk
+- **The Wreck** (x=2000) — Skipsvrak fra SS Dagon, sjeldne fangster
+- **Deep Trench** (x=3200) — Farlig, abyss-creatures
+- **The Void** (x=3800) — Ekstrem fare, mystiske ting
+- Minimap nederst til høyre viser alle lokasjoner
+- Lokasjonsbaserte bonuser for bite-chance
+
+#### 3. Vær-system
+- 5 værtyper: Clear, Cloudy, Rain, Fog, Storm
+- Dynamisk vær som endrer seg over tid
+- Vær påvirker:
+  - Bite-chance (storm = +50%)
+  - Sanity-drain (storm/fog tapper sanity)
+  - Visibilitet (tåke = 40%)
+- Visuelle effekter: regndråper, tåke-overlay, lyn-glimt
+
+#### 4. Lore Fragments / Collectibles
+- 12 lore fragments spredt rundt i verden
+- Flytende flasker som samles inn ved å seile over dem
+- Historier om Dagon, SS Dagon-vraket, Marsh's hemmeligheter
+- Popup-vindu når lore blir funnet
+
+#### 5. Hund som gameplay-element
+- Hunden har happiness-meter
+- [P] for å klappe hunden — gir +3 sanity, +25 happiness
+- Hunden reagerer på:
+  - Sjeldne fisk (bjeffer)
+  - Dypt vann (whimper)
+  - Bite (excited bark)
+- Animasjoner: idle, wag, alert, sleep
+- Dog indicator i hjørnet med hint
+
+#### 6. Fisking-minigame
+- Ved bite starter nå et minigame
+- Fisken beveger seg på en bar
+- Bruk [←→] for å holde markøren i grønn sone
+- Tension-meter: for høy = snøret ryker
+- Fish stamina: tøm den for å fange fisken
+- Vanskelighetsgrad basert på fiskens rarity
+
+#### 7. Naturlig tid-progresjon
+- Tiden går automatisk: dawn → day → dusk → night
+- Full dag-syklus = 3 minutter
+- [Shift+T] for å pause/resume tid
+- [T] for manuell cycling (som før)
+- Layers oppdateres automatisk ved tidsendring
+
+#### 8. Utvidede sanity-effekter
+- **Screen shake** ved sanity < 30
+- **Vignette** som øker ved lav sanity
+- **Whispers** — creepy tekst på skjermen ved sanity < 25
+- **Hallucinations** — skygger med røde øyne ved sanity < 20
+- Lokasjonsbasert sanity:
+  - Dock: +0.05 recovery
+  - Trench: -0.01 drain
+  - Void: -0.03 drain, ingen recovery
+
+### Endringer i `asset-ready.html`
+- **CONFIG**: Lagt til worldWidth, worldMinX, worldMaxX, locations, timeProgressionSpeed, dayDuration
+- **WEATHER**: Nytt objekt med 5 værtyper og modifiers
+- **LORE_FRAGMENTS**: 12 lore-historier med lokasjoner
+- **game state**: Utvidet med weather, dayProgress, currentLocation, dog, minigame, sanityEffects, loreBottles, locationBonuses
+- **Nye funksjoner**:
+  - updateWeather(), drawWeatherEffects()
+  - updateTimeProgression()
+  - getCurrentLocation(), drawLocationIndicator()
+  - updateDog(), petDog(), drawDogIndicator()
+  - initLoreBottles(), updateLoreBottles(), drawLoreBottles(), drawLorePopup()
+  - startMinigame(), updateMinigame(), endMinigame(), drawMinigame()
+  - updateSanityEffects(), drawSanityEffects()
+  - drawLocationFeatures(), drawShipwreck(), drawCoralReef(), drawTrenchMarker(), drawVoidBuoy()
+  - drawWeatherIndicator()
+  - handleMinigameInput()
+- **update()**: Integrert alle nye systemer
+- **render()**: Integrert alle nye draw-funksjoner
+- **Input**: Nye keybinds [P] pet dog, [Shift+T] pause time, minigame controls
+
+### Tekniske beslutninger
+- Verden er 4x større, men parallax-systemet håndterer det elegant
+- Lore bottles spawnes ved game start basert på unfound fragments
+- Minigame bruker enkel zonetracking for tilgjengelighet
+- Sanity-effekter er subtile men merkbare
+- Lokasjoner har distinkte visuelle elementer
+
+### Neste prioritet
+- [ ] Lyd/musikk system
+- [ ] Save/Load med LocalStorage
+- [ ] Lore collection viewer ([L] keybind)
+- [ ] Flere creatures per lokasjon
+- [ ] Claude API for dynamisk NPC-dialog
+
+### Notater
+- Skipsvraket er haunted om natten
+- The Void har en mystisk obelisk
+- Hunden er en viktig sanity-mekanikk
+- Storm-vær gir beste fangst, men tapper sanity
+- Tåke blir mer sannsynlig ved lav sanity
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown

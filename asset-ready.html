@@ -161,7 +161,7 @@
         </div>
         
         <div id="controls">
-            [SPACE] Cast/Reel | [↑↓] Depth | [←→] Move | [E] Shop | [T] Time | [D] Debug
+            [SPACE] Cast/Reel | [↑↓] Depth | [←→] Move | [E] Shop | [P] Pet Dog | [T] Time | [D] Debug
         </div>
     </div>
 
@@ -183,7 +183,92 @@ const CONFIG = {
 
     // NPC & Shop
     dockX: 180, // Where Old Marsh's shop is located
+
+    // World dimensions - expanded for exploration
+    worldWidth: 4000, // Much wider world to explore
+    worldMinX: 50,    // Left boundary (near dock)
+    worldMaxX: 3950,  // Right boundary (deep ocean)
+
+    // Locations in the world
+    locations: {
+        dock: { x: 180, name: "Marsh's Dock", desc: "Safe harbor. Old Marsh waits here." },
+        shallows: { x: 500, name: "The Shallows", desc: "Calm waters. Good for beginners." },
+        reef: { x: 1200, name: "Coral Reef", desc: "Colorful but strange. Mid-tier creatures lurk here." },
+        shipwreck: { x: 2000, name: "The Wreck", desc: "SS Dagon. Lost in '28. They say the crew still fishes." },
+        trench: { x: 3200, name: "The Deep Trench", desc: "Where light fears to go. Only the mad fish here." },
+        void: { x: 3800, name: "The Void", desc: "Turn back. TURN BACK." }
+    },
+
+    // Time progression
+    timeProgressionSpeed: 0.0001, // How fast time passes (dawn->day->dusk->night)
+    dayDuration: 180000, // 3 minutes per full day cycle in ms
 };
+
+// ============================================================
+// WEATHER SYSTEM
+// ============================================================
+
+const WEATHER = {
+    types: {
+        clear: {
+            name: "Clear",
+            biteModifier: 1.0,
+            sanityDrain: 0,
+            visibility: 1.0,
+            desc: "Calm seas. Perfect fishing weather."
+        },
+        cloudy: {
+            name: "Cloudy",
+            biteModifier: 1.1,
+            sanityDrain: 0,
+            visibility: 0.9,
+            desc: "Overcast. The fish seem more active."
+        },
+        rain: {
+            name: "Rain",
+            biteModifier: 1.3,
+            sanityDrain: 0.01,
+            visibility: 0.7,
+            desc: "Steady rain. Something stirs below."
+        },
+        fog: {
+            name: "Fog",
+            biteModifier: 1.2,
+            sanityDrain: 0.02,
+            visibility: 0.4,
+            desc: "Thick fog. You can barely see your hands."
+        },
+        storm: {
+            name: "Storm",
+            biteModifier: 1.5,
+            sanityDrain: 0.05,
+            visibility: 0.5,
+            desc: "The sea rages. Rare creatures surface..."
+        }
+    },
+    transitionTime: 30000, // 30 seconds to transition weather
+    minDuration: 20000,    // Minimum weather duration
+    maxDuration: 60000     // Maximum weather duration
+};
+
+// ============================================================
+// LORE FRAGMENTS - Collectible story pieces
+// ============================================================
+
+const LORE_FRAGMENTS = [
+    { id: 1, title: "Marsh's Journal, Page 1", text: "Day 47. The fish are different now. Their eyes... they follow.", found: false, location: 'shallows' },
+    { id: 2, title: "Torn Letter", text: "Dearest Sarah, I've seen things in the deep. Don't come looking for me. -Your Father", found: false, location: 'reef' },
+    { id: 3, title: "Ship's Log (SS Dagon)", text: "Captain's Log: The crew won't sleep. They say the water sings to them at night.", found: false, location: 'shipwreck' },
+    { id: 4, title: "Carved Stone Tablet", text: "PH'NGLUI MGLW'NAFH... The rest is worn away. You feel sick looking at it.", found: false, location: 'shipwreck' },
+    { id: 5, title: "Child's Drawing", text: "A crude drawing of a fish. It has too many fins. 'My friend' is written below.", found: false, location: 'shallows' },
+    { id: 6, title: "Marsh's Journal, Page 23", text: "The old ones remember. Before the ice. Before the land. They wait.", found: false, location: 'trench' },
+    { id: 7, title: "Waterlogged Bible", text: "Someone has crossed out 'God' and written 'DAGON' throughout. The pages stick together.", found: false, location: 'shipwreck' },
+    { id: 8, title: "Photograph", text: "A fishing crew, circa 1920. Their faces are scratched out. One figure in back has no face.", found: false, location: 'reef' },
+    { id: 9, title: "Final Transmission", text: "MAYDAY. SS DAGON. COORDINATES [ILLEGIBLE]. THEY'RE COMING UP. THEY'RE COMING UP. THEY'RE C—", found: false, location: 'trench' },
+    { id: 10, title: "The Naming", text: "When you name a thing, you give it power. Some things should remain unnamed.", found: false, location: 'void' },
+    { id: 11, title: "Marsh's Journal, Final Entry", text: "I understand now. The fish don't fear us. They pity us. We are so small. So brief.", found: false, location: 'void' },
+    { id: 12, title: "Mother Hydra's Promise", text: "THOSE WHO SERVE SHALL NOT DIE. THOSE WHO SERVE SHALL DREAM FOREVER.", found: false, location: 'void' }
+];
 
 // ============================================================
 // SHOP SYSTEM
@@ -1096,7 +1181,73 @@ const game = {
 
     // NPC interaction
     nearDock: false,
-    lastRareCatch: false
+    lastRareCatch: false,
+
+    // === NEW SYSTEMS ===
+
+    // Weather system
+    weather: {
+        current: 'clear',
+        next: 'clear',
+        transitionProgress: 0, // 0-1, how far into transition
+        timeUntilChange: 30000,
+        intensity: 0 // For rain/storm effects
+    },
+
+    // Time progression
+    dayProgress: 0.5, // 0-1, where in the day cycle (0.5 = dusk)
+    timePaused: false,
+
+    // Current location
+    currentLocation: 'dock',
+
+    // Dog companion
+    dog: {
+        happiness: 100,
+        lastPetTime: 0,
+        isBarking: false,
+        barkReason: null, // 'rare', 'danger', 'excited'
+        animation: 'idle' // 'idle', 'wag', 'alert', 'sleep'
+    },
+
+    // Lore collection
+    loreFound: [],
+    currentLore: null, // Currently displayed lore fragment
+
+    // Fishing minigame
+    minigame: {
+        active: false,
+        targetZone: 0.5,    // Where the fish is (0-1)
+        playerZone: 0.5,    // Where player's cursor is
+        zoneSize: 0.15,     // Size of success zone
+        tension: 0,         // Line tension (0-100)
+        fishStamina: 100,   // Fish's remaining fight
+        difficulty: 1,      // Based on fish rarity
+        direction: 1,       // Fish movement direction
+        speed: 0.02         // Fish movement speed
+    },
+
+    // Sanity effects
+    sanityEffects: {
+        screenShake: 0,
+        colorShift: 0,
+        whispers: false,
+        hallucinations: [],
+        vignette: 0
+    },
+
+    // Floating lore bottles in the world
+    loreBottles: [],
+
+    // Location-based creature bonuses
+    locationBonuses: {
+        dock: { zone: 'surface', bonus: 0 },
+        shallows: { zone: 'surface', bonus: 0.1 },
+        reef: { zone: 'mid', bonus: 0.2 },
+        shipwreck: { zone: 'deep', bonus: 0.3 },
+        trench: { zone: 'abyss', bonus: 0.4 },
+        void: { zone: 'abyss', bonus: 0.5 }
+    }
 };
 
 // ============================================================
@@ -1158,6 +1309,625 @@ const CREATURES = {
         { name: "The Unnamed", desc: "There are no words.", value: 2000, rarity: 0.05, sanityLoss: 80 }
     ]
 };
+
+// ============================================================
+// WEATHER SYSTEM FUNCTIONS
+// ============================================================
+
+function updateWeather(deltaTime) {
+    game.weather.timeUntilChange -= deltaTime;
+
+    if (game.weather.timeUntilChange <= 0) {
+        // Pick new weather
+        const weathers = Object.keys(WEATHER.types);
+        const weights = {
+            clear: 0.35,
+            cloudy: 0.25,
+            rain: 0.2,
+            fog: 0.12,
+            storm: 0.08
+        };
+
+        // Storm more likely at night and in deep waters
+        if (game.timeOfDay === 'night') weights.storm += 0.1;
+        if (game.boatX > 2500) weights.storm += 0.1;
+        if (game.sanity < 30) weights.fog += 0.15;
+
+        let roll = Math.random();
+        let sum = 0;
+        for (const w of weathers) {
+            sum += weights[w] || 0.1;
+            if (roll <= sum) {
+                game.weather.next = w;
+                break;
+            }
+        }
+
+        game.weather.transitionProgress = 0;
+        game.weather.timeUntilChange = WEATHER.minDuration +
+            Math.random() * (WEATHER.maxDuration - WEATHER.minDuration);
+    }
+
+    // Handle transition
+    if (game.weather.current !== game.weather.next) {
+        game.weather.transitionProgress += deltaTime / WEATHER.transitionTime;
+        if (game.weather.transitionProgress >= 1) {
+            game.weather.current = game.weather.next;
+            game.weather.transitionProgress = 0;
+        }
+    }
+
+    // Update weather intensity for effects
+    const w = WEATHER.types[game.weather.current];
+    if (game.weather.current === 'rain' || game.weather.current === 'storm') {
+        game.weather.intensity = Math.min(1, game.weather.intensity + 0.02);
+    } else {
+        game.weather.intensity = Math.max(0, game.weather.intensity - 0.02);
+    }
+
+    // Apply sanity drain from weather
+    if (w.sanityDrain > 0 && game.state !== 'title') {
+        game.sanity = Math.max(0, game.sanity - w.sanityDrain);
+    }
+}
+
+function drawWeatherEffects() {
+    const w = WEATHER.types[game.weather.current];
+
+    // Rain effect
+    if (game.weather.current === 'rain' || game.weather.current === 'storm') {
+        ctx.strokeStyle = game.weather.current === 'storm' ?
+            'rgba(180, 200, 255, 0.4)' : 'rgba(150, 180, 220, 0.3)';
+        ctx.lineWidth = game.weather.current === 'storm' ? 2 : 1;
+
+        const drops = game.weather.current === 'storm' ? 150 : 80;
+        for (let i = 0; i < drops; i++) {
+            const x = (i * 37 + game.time * 3) % CONFIG.canvas.width;
+            const y = (i * 53 + game.time * 8) % CONFIG.waterLine;
+            const len = game.weather.current === 'storm' ? 15 : 8;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - 2, y + len);
+            ctx.stroke();
+        }
+    }
+
+    // Fog effect
+    if (game.weather.current === 'fog') {
+        const gradient = ctx.createLinearGradient(0, 0, 0, CONFIG.canvas.height);
+        gradient.addColorStop(0, 'rgba(180, 190, 200, 0.6)');
+        gradient.addColorStop(0.5, 'rgba(160, 170, 180, 0.4)');
+        gradient.addColorStop(1, 'rgba(140, 150, 160, 0.3)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, CONFIG.canvas.width, CONFIG.canvas.height);
+    }
+
+    // Storm lightning flash
+    if (game.weather.current === 'storm' && Math.random() < 0.002) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.fillRect(0, 0, CONFIG.canvas.width, CONFIG.canvas.height);
+    }
+}
+
+// ============================================================
+// TIME PROGRESSION FUNCTIONS
+// ============================================================
+
+function updateTimeProgression(deltaTime) {
+    if (game.timePaused) return;
+
+    game.dayProgress += deltaTime / CONFIG.dayDuration;
+    if (game.dayProgress >= 1) game.dayProgress = 0;
+
+    // Map progress to time of day
+    const oldTime = game.timeOfDay;
+    if (game.dayProgress < 0.25) {
+        game.timeOfDay = 'dawn';
+    } else if (game.dayProgress < 0.5) {
+        game.timeOfDay = 'day';
+    } else if (game.dayProgress < 0.75) {
+        game.timeOfDay = 'dusk';
+    } else {
+        game.timeOfDay = 'night';
+    }
+
+    // Reinit layers if time changed
+    if (oldTime !== game.timeOfDay) {
+        initLayers();
+    }
+}
+
+// ============================================================
+// LOCATION SYSTEM FUNCTIONS
+// ============================================================
+
+function getCurrentLocation() {
+    const x = game.boatX;
+    let closest = 'dock';
+    let closestDist = Infinity;
+
+    for (const [name, loc] of Object.entries(CONFIG.locations)) {
+        const dist = Math.abs(x - loc.x);
+        if (dist < closestDist) {
+            closestDist = dist;
+            closest = name;
+        }
+    }
+
+    return closest;
+}
+
+function drawLocationIndicator() {
+    const loc = CONFIG.locations[game.currentLocation];
+    if (!loc) return;
+
+    // Draw location name at top center
+    ctx.font = '20px VT323';
+    ctx.fillStyle = 'rgba(200, 220, 210, 0.8)';
+    ctx.textAlign = 'center';
+    ctx.fillText(loc.name, CONFIG.canvas.width / 2, 30);
+
+    // Draw minimap
+    const mapWidth = 200;
+    const mapHeight = 20;
+    const mapX = CONFIG.canvas.width - mapWidth - 15;
+    const mapY = CONFIG.canvas.height - mapHeight - 15;
+
+    // Background
+    ctx.fillStyle = 'rgba(10, 20, 30, 0.7)';
+    ctx.fillRect(mapX, mapY, mapWidth, mapHeight);
+    ctx.strokeStyle = 'rgba(100, 130, 120, 0.5)';
+    ctx.strokeRect(mapX, mapY, mapWidth, mapHeight);
+
+    // Location markers
+    for (const [name, l] of Object.entries(CONFIG.locations)) {
+        const markerX = mapX + (l.x / CONFIG.worldWidth) * mapWidth;
+        ctx.fillStyle = name === game.currentLocation ? '#8aba9a' : '#4a6a5a';
+        ctx.fillRect(markerX - 2, mapY + 2, 4, mapHeight - 4);
+    }
+
+    // Boat position
+    const boatMarkerX = mapX + (game.boatX / CONFIG.worldWidth) * mapWidth;
+    ctx.fillStyle = '#f0d080';
+    ctx.beginPath();
+    ctx.moveTo(boatMarkerX, mapY + 3);
+    ctx.lineTo(boatMarkerX - 4, mapY + mapHeight - 3);
+    ctx.lineTo(boatMarkerX + 4, mapY + mapHeight - 3);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.textAlign = 'left'; // Reset
+}
+
+// ============================================================
+// DOG COMPANION FUNCTIONS
+// ============================================================
+
+function updateDog(deltaTime) {
+    // Dog happiness decreases slowly
+    game.dog.happiness = Math.max(0, game.dog.happiness - 0.001);
+
+    // Dog reacts to rare fish
+    if (game.state === 'reeling') {
+        const creature = getCreatureForDepth(game.depth);
+        if (creature && creature.rarity < 0.15) {
+            game.dog.isBarking = true;
+            game.dog.barkReason = 'rare';
+            game.dog.animation = 'alert';
+        }
+    } else if (game.state === 'waiting' && game.depth > 80) {
+        // Dog gets nervous in deep water
+        if (Math.random() < 0.01) {
+            game.dog.isBarking = true;
+            game.dog.barkReason = 'danger';
+            game.dog.animation = 'alert';
+        }
+    } else {
+        game.dog.isBarking = false;
+        game.dog.barkReason = null;
+
+        // Animation based on state
+        if (game.dog.happiness > 80) {
+            game.dog.animation = 'wag';
+        } else if (game.dog.happiness < 30) {
+            game.dog.animation = 'sleep';
+        } else {
+            game.dog.animation = 'idle';
+        }
+    }
+}
+
+function petDog() {
+    game.dog.happiness = Math.min(100, game.dog.happiness + 25);
+    game.dog.lastPetTime = game.time;
+    game.dog.animation = 'wag';
+
+    // Petting dog restores a little sanity
+    game.sanity = Math.min(100, game.sanity + 3);
+
+    // Show reaction
+    game.dog.isBarking = true;
+    game.dog.barkReason = 'excited';
+    setTimeout(() => {
+        game.dog.isBarking = false;
+    }, 1000);
+}
+
+function getCreatureForDepth(depth) {
+    let pool;
+    if (depth < 20) pool = CREATURES.surface;
+    else if (depth < 55) pool = CREATURES.mid;
+    else if (depth < 90) pool = CREATURES.deep;
+    else pool = CREATURES.abyss;
+    return pool[0]; // Just return first for checking
+}
+
+// ============================================================
+// LORE SYSTEM FUNCTIONS
+// ============================================================
+
+function initLoreBottles() {
+    game.loreBottles = [];
+
+    // Create bottles for unfound lore
+    LORE_FRAGMENTS.forEach(lore => {
+        if (!lore.found) {
+            const loc = CONFIG.locations[lore.location];
+            if (loc) {
+                game.loreBottles.push({
+                    id: lore.id,
+                    x: loc.x + (Math.random() - 0.5) * 400,
+                    y: CONFIG.waterLine + 20 + Math.random() * 30,
+                    bobOffset: Math.random() * Math.PI * 2
+                });
+            }
+        }
+    });
+}
+
+function updateLoreBottles() {
+    game.loreBottles.forEach((bottle, i) => {
+        // Check if player is near bottle
+        const dist = Math.abs(game.boatX - bottle.x);
+        if (dist < 50 && game.state === 'sailing') {
+            // Collect the lore!
+            const lore = LORE_FRAGMENTS.find(l => l.id === bottle.id);
+            if (lore && !lore.found) {
+                lore.found = true;
+                game.loreFound.push(lore.id);
+                game.currentLore = lore;
+                game.loreBottles.splice(i, 1);
+            }
+        }
+    });
+}
+
+function drawLoreBottles() {
+    game.loreBottles.forEach(bottle => {
+        const screenX = bottle.x - game.cameraX;
+        if (screenX < -50 || screenX > CONFIG.canvas.width + 50) return;
+
+        const bob = Math.sin(game.time * 0.003 + bottle.bobOffset) * 3;
+        const y = bottle.y + bob;
+
+        // Draw bottle
+        ctx.fillStyle = '#4a6a5a';
+        ctx.beginPath();
+        ctx.ellipse(screenX, y, 6, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cork
+        ctx.fillStyle = '#8a6a4a';
+        ctx.fillRect(screenX - 2, y - 12, 4, 4);
+
+        // Glint
+        ctx.fillStyle = 'rgba(255, 255, 200, 0.5)';
+        ctx.fillRect(screenX - 3, y - 5, 2, 4);
+    });
+}
+
+function drawLorePopup() {
+    if (!game.currentLore) return;
+
+    const w = 400;
+    const h = 180;
+    const x = (CONFIG.canvas.width - w) / 2;
+    const y = (CONFIG.canvas.height - h) / 2;
+
+    // Background
+    ctx.fillStyle = 'rgba(20, 25, 30, 0.95)';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = '#5a8a7a';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, w, h);
+
+    // Title
+    ctx.font = '18px "Press Start 2P"';
+    ctx.fillStyle = '#8aba9a';
+    ctx.textAlign = 'center';
+    ctx.fillText('LORE FOUND', x + w/2, y + 30);
+
+    // Fragment title
+    ctx.font = '16px VT323';
+    ctx.fillStyle = '#c0d0c0';
+    ctx.fillText(game.currentLore.title, x + w/2, y + 60);
+
+    // Fragment text (word wrap)
+    ctx.font = '14px VT323';
+    ctx.fillStyle = '#a0b0a0';
+    const words = game.currentLore.text.split(' ');
+    let line = '';
+    let lineY = y + 90;
+    words.forEach(word => {
+        const testLine = line + word + ' ';
+        if (ctx.measureText(testLine).width > w - 40) {
+            ctx.fillText(line, x + w/2, lineY);
+            line = word + ' ';
+            lineY += 18;
+        } else {
+            line = testLine;
+        }
+    });
+    ctx.fillText(line, x + w/2, lineY);
+
+    // Close hint
+    ctx.font = '12px VT323';
+    ctx.fillStyle = '#6a8a7a';
+    ctx.fillText('[SPACE] to continue', x + w/2, y + h - 15);
+
+    ctx.textAlign = 'left';
+}
+
+// ============================================================
+// FISHING MINIGAME FUNCTIONS
+// ============================================================
+
+function startMinigame(creature) {
+    game.minigame.active = true;
+    game.minigame.targetZone = 0.5;
+    game.minigame.playerZone = 0.5;
+    game.minigame.tension = 0;
+    game.minigame.fishStamina = 100;
+    game.minigame.difficulty = 1 - creature.rarity + (creature.sanityLoss / 100);
+    game.minigame.zoneSize = Math.max(0.08, 0.2 - game.minigame.difficulty * 0.1);
+    game.minigame.speed = 0.015 + game.minigame.difficulty * 0.02;
+    game.minigame.direction = Math.random() > 0.5 ? 1 : -1;
+    game.pendingCatch = creature;
+}
+
+function updateMinigame(deltaTime) {
+    if (!game.minigame.active) return;
+
+    const mg = game.minigame;
+
+    // Fish moves erratically
+    mg.targetZone += mg.direction * mg.speed;
+    if (mg.targetZone > 0.9 || mg.targetZone < 0.1) {
+        mg.direction *= -1;
+    }
+    if (Math.random() < 0.02) {
+        mg.direction *= -1;
+    }
+
+    // Check if player is in zone
+    const inZone = Math.abs(mg.playerZone - mg.targetZone) < mg.zoneSize;
+
+    if (inZone) {
+        // Drain fish stamina
+        mg.fishStamina -= 0.5;
+        mg.tension = Math.min(100, mg.tension + 0.3);
+    } else {
+        // Fish recovers, tension drops
+        mg.fishStamina = Math.min(100, mg.fishStamina + 0.1);
+        mg.tension = Math.max(0, mg.tension - 0.5);
+    }
+
+    // Line snap check
+    if (mg.tension >= 100) {
+        // Line snapped!
+        endMinigame(false);
+        return;
+    }
+
+    // Fish caught check
+    if (mg.fishStamina <= 0) {
+        endMinigame(true);
+        return;
+    }
+}
+
+function endMinigame(success) {
+    game.minigame.active = false;
+
+    if (success && game.pendingCatch) {
+        game.currentCatch = game.pendingCatch;
+        game.state = 'caught';
+
+        // Use up lure
+        const lure = getCurrentLure();
+        if (lure && lure.count > 0) {
+            lure.count--;
+            if (lure.count === 0) {
+                game.equipment.lure = null;
+            }
+        }
+    } else {
+        // Fish escaped
+        game.state = 'sailing';
+        game.depth = 0;
+        document.getElementById('catch-display').textContent = 'It got away...';
+        setTimeout(() => {
+            document.getElementById('catch-display').textContent = '';
+        }, 2000);
+    }
+
+    game.pendingCatch = null;
+}
+
+function drawMinigame() {
+    if (!game.minigame.active) return;
+
+    const mg = game.minigame;
+    const barWidth = 300;
+    const barHeight = 30;
+    const x = (CONFIG.canvas.width - barWidth) / 2;
+    const y = CONFIG.canvas.height - 100;
+
+    // Background bar
+    ctx.fillStyle = 'rgba(20, 30, 40, 0.9)';
+    ctx.fillRect(x, y, barWidth, barHeight);
+    ctx.strokeStyle = '#4a6a5a';
+    ctx.strokeRect(x, y, barWidth, barHeight);
+
+    // Fish zone (target)
+    const fishX = x + mg.targetZone * barWidth;
+    const zoneWidth = mg.zoneSize * barWidth;
+    ctx.fillStyle = 'rgba(100, 150, 120, 0.5)';
+    ctx.fillRect(fishX - zoneWidth/2, y, zoneWidth, barHeight);
+
+    // Player cursor
+    const cursorX = x + mg.playerZone * barWidth;
+    ctx.fillStyle = '#f0d080';
+    ctx.fillRect(cursorX - 3, y - 5, 6, barHeight + 10);
+
+    // Fish icon at target
+    ctx.fillStyle = '#8aba9a';
+    ctx.font = '16px VT323';
+    ctx.textAlign = 'center';
+    ctx.fillText('🐟', fishX, y + 20);
+
+    // Tension meter
+    ctx.fillStyle = 'rgba(20, 30, 40, 0.9)';
+    ctx.fillRect(x, y - 25, barWidth, 15);
+    const tensionColor = mg.tension > 70 ? '#a04040' : (mg.tension > 40 ? '#a0a040' : '#40a060');
+    ctx.fillStyle = tensionColor;
+    ctx.fillRect(x + 2, y - 23, (barWidth - 4) * (mg.tension / 100), 11);
+
+    // Fish stamina
+    ctx.fillStyle = '#4a8a6a';
+    ctx.fillRect(x + 2, y + barHeight + 5, (barWidth - 4) * (mg.fishStamina / 100), 8);
+
+    // Labels
+    ctx.font = '12px VT323';
+    ctx.fillStyle = '#8a9a8a';
+    ctx.textAlign = 'left';
+    ctx.fillText('TENSION', x, y - 30);
+    ctx.fillText('FISH STAMINA', x, y + barHeight + 20);
+
+    // Instructions
+    ctx.textAlign = 'center';
+    ctx.fillText('[← →] Keep fish in green zone!', x + barWidth/2, y + barHeight + 35);
+
+    ctx.textAlign = 'left';
+}
+
+// ============================================================
+// SANITY EFFECTS FUNCTIONS
+// ============================================================
+
+function updateSanityEffects() {
+    const s = game.sanity;
+    const effects = game.sanityEffects;
+
+    // Screen shake at low sanity
+    if (s < 30) {
+        effects.screenShake = (30 - s) / 30 * 3;
+    } else {
+        effects.screenShake = 0;
+    }
+
+    // Color shift
+    if (s < 50) {
+        effects.colorShift = (50 - s) / 50;
+    } else {
+        effects.colorShift = 0;
+    }
+
+    // Vignette
+    effects.vignette = Math.max(0, (70 - s) / 70);
+
+    // Whispers
+    effects.whispers = s < 25;
+
+    // Hallucinations
+    if (s < 20 && Math.random() < 0.001) {
+        effects.hallucinations.push({
+            x: Math.random() * CONFIG.canvas.width,
+            y: CONFIG.waterLine + Math.random() * 200,
+            type: 'shadow',
+            life: 100
+        });
+    }
+
+    // Update existing hallucinations
+    effects.hallucinations = effects.hallucinations.filter(h => {
+        h.life--;
+        return h.life > 0;
+    });
+}
+
+function drawSanityEffects() {
+    const effects = game.sanityEffects;
+
+    // Screen shake
+    if (effects.screenShake > 0) {
+        ctx.save();
+        const shakeX = (Math.random() - 0.5) * effects.screenShake * 2;
+        const shakeY = (Math.random() - 0.5) * effects.screenShake * 2;
+        ctx.translate(shakeX, shakeY);
+    }
+
+    // Hallucinations
+    effects.hallucinations.forEach(h => {
+        const alpha = h.life / 100 * 0.3;
+        ctx.fillStyle = `rgba(30, 20, 40, ${alpha})`;
+
+        if (h.type === 'shadow') {
+            // Creepy shadow figure
+            ctx.beginPath();
+            ctx.ellipse(h.x, h.y, 20, 40, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eyes
+            ctx.fillStyle = `rgba(200, 50, 50, ${alpha})`;
+            ctx.fillRect(h.x - 8, h.y - 15, 4, 4);
+            ctx.fillRect(h.x + 4, h.y - 15, 4, 4);
+        }
+    });
+
+    // Vignette
+    if (effects.vignette > 0) {
+        const gradient = ctx.createRadialGradient(
+            CONFIG.canvas.width/2, CONFIG.canvas.height/2, 100,
+            CONFIG.canvas.width/2, CONFIG.canvas.height/2, CONFIG.canvas.width * 0.7
+        );
+        gradient.addColorStop(0, 'transparent');
+        gradient.addColorStop(1, `rgba(10, 5, 15, ${effects.vignette * 0.7})`);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, CONFIG.canvas.width, CONFIG.canvas.height);
+    }
+
+    // Whispers text
+    if (effects.whispers && Math.random() < 0.01) {
+        const whispers = [
+            "come deeper...",
+            "we see you...",
+            "join us...",
+            "the water remembers...",
+            "do you hear us?",
+            "look below..."
+        ];
+        const whisper = whispers[Math.floor(Math.random() * whispers.length)];
+        ctx.font = '14px VT323';
+        ctx.fillStyle = `rgba(150, 100, 120, ${0.3 + Math.random() * 0.3})`;
+        ctx.fillText(whisper, Math.random() * CONFIG.canvas.width, Math.random() * CONFIG.canvas.height);
+    }
+
+    if (effects.screenShake > 0) {
+        ctx.restore();
+    }
+}
 
 function initFish() {
     game.fish = [];
@@ -1479,6 +2249,232 @@ function getCurrentBoat() {
 function getCurrentLure() {
     if (!game.equipment.lure) return null;
     return SHOP.lures.find(l => l.id === game.equipment.lure);
+}
+
+// ============================================================
+// LOCATION FEATURES DRAWING
+// ============================================================
+
+function drawLocationFeatures() {
+    // Draw features based on current camera position
+
+    // Shipwreck at x=2000
+    const wreckX = CONFIG.locations.shipwreck.x - game.cameraX;
+    if (wreckX > -200 && wreckX < CONFIG.canvas.width + 200) {
+        drawShipwreck(wreckX);
+    }
+
+    // Coral reef at x=1200
+    const reefX = CONFIG.locations.reef.x - game.cameraX;
+    if (reefX > -300 && reefX < CONFIG.canvas.width + 300) {
+        drawCoralReef(reefX);
+    }
+
+    // Deep trench marker at x=3200
+    const trenchX = CONFIG.locations.trench.x - game.cameraX;
+    if (trenchX > -100 && trenchX < CONFIG.canvas.width + 100) {
+        drawTrenchMarker(trenchX);
+    }
+
+    // The Void warning buoy at x=3800
+    const voidX = CONFIG.locations.void.x - game.cameraX;
+    if (voidX > -100 && voidX < CONFIG.canvas.width + 100) {
+        drawVoidBuoy(voidX);
+    }
+}
+
+function drawShipwreck(x) {
+    const y = CONFIG.waterLine;
+
+    // Mast sticking out of water
+    ctx.fillStyle = '#3a2a20';
+    ctx.fillRect(x - 3, y - 80, 6, 90);
+
+    // Broken crossbeam
+    ctx.fillRect(x - 25, y - 60, 50, 4);
+
+    // Tattered sail
+    ctx.fillStyle = 'rgba(180, 170, 150, 0.4)';
+    ctx.beginPath();
+    ctx.moveTo(x + 2, y - 75);
+    ctx.lineTo(x + 25, y - 55);
+    ctx.lineTo(x + 20, y - 35);
+    ctx.lineTo(x + 2, y - 40);
+    ctx.closePath();
+    ctx.fill();
+
+    // Hull visible underwater
+    ctx.fillStyle = 'rgba(40, 30, 25, 0.6)';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 30, 60, 25, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ghostly glow at night
+    if (game.timeOfDay === 'night' || game.timeOfDay === 'dusk') {
+        ctx.fillStyle = 'rgba(100, 150, 120, 0.1)';
+        ctx.beginPath();
+        ctx.arc(x, y, 80, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+function drawCoralReef(x) {
+    const y = CONFIG.waterLine + 20;
+
+    // Draw coral formations
+    const colors = ['#a05060', '#60a080', '#a0a060', '#8060a0'];
+
+    for (let i = 0; i < 8; i++) {
+        const cx = x - 80 + i * 25 + Math.sin(i * 2) * 10;
+        const cy = y + 10 + Math.sin(i * 1.5) * 5;
+        const color = colors[i % colors.length];
+
+        ctx.fillStyle = color;
+
+        // Coral branch
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + 30);
+        ctx.lineTo(cx - 8, cy);
+        ctx.lineTo(cx - 4, cy - 15);
+        ctx.lineTo(cx + 4, cy - 12);
+        ctx.lineTo(cx + 8, cy + 5);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    // Bubble particles
+    if (Math.random() < 0.1) {
+        ctx.fillStyle = 'rgba(200, 220, 255, 0.5)';
+        ctx.beginPath();
+        ctx.arc(x + (Math.random() - 0.5) * 100, y + Math.random() * 30, 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+function drawTrenchMarker(x) {
+    // Warning buoy
+    const y = CONFIG.waterLine;
+    const bob = Math.sin(game.time * 0.003) * 3;
+
+    // Buoy body
+    ctx.fillStyle = '#a04040';
+    ctx.beginPath();
+    ctx.ellipse(x, y + bob, 12, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Warning stripe
+    ctx.fillStyle = '#e0e040';
+    ctx.fillRect(x - 10, y + bob - 5, 20, 6);
+
+    // Pole
+    ctx.fillStyle = '#404040';
+    ctx.fillRect(x - 2, y + bob - 30, 4, 25);
+
+    // Sign
+    ctx.fillStyle = '#2a2a2a';
+    ctx.fillRect(x - 20, y + bob - 45, 40, 18);
+    ctx.fillStyle = '#a04040';
+    ctx.font = '10px VT323';
+    ctx.textAlign = 'center';
+    ctx.fillText('DANGER', x, y + bob - 32);
+    ctx.textAlign = 'left';
+
+    // Darkness below
+    const gradient = ctx.createLinearGradient(x, y + 50, x, y + 200);
+    gradient.addColorStop(0, 'rgba(5, 5, 15, 0)');
+    gradient.addColorStop(1, 'rgba(5, 5, 15, 0.8)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x - 60, y + 50, 120, 150);
+}
+
+function drawVoidBuoy(x) {
+    // Ominous marker for The Void
+    const y = CONFIG.waterLine;
+    const bob = Math.sin(game.time * 0.002) * 5;
+
+    // Dark obelisk
+    ctx.fillStyle = '#1a1a1a';
+    ctx.beginPath();
+    ctx.moveTo(x, y + bob - 50);
+    ctx.lineTo(x - 15, y + bob + 20);
+    ctx.lineTo(x + 15, y + bob + 20);
+    ctx.closePath();
+    ctx.fill();
+
+    // Glowing runes (at low sanity)
+    if (game.sanity < 50) {
+        const alpha = (50 - game.sanity) / 50 * 0.5;
+        ctx.fillStyle = `rgba(150, 50, 80, ${alpha})`;
+        ctx.font = '12px VT323';
+        ctx.textAlign = 'center';
+        ctx.fillText('◊', x, y + bob - 30);
+        ctx.fillText('◊', x - 5, y + bob - 15);
+        ctx.fillText('◊', x + 5, y + bob);
+        ctx.textAlign = 'left';
+    }
+
+    // Extreme darkness
+    const gradient = ctx.createRadialGradient(x, y + 100, 20, x, y + 100, 200);
+    gradient.addColorStop(0, 'rgba(0, 0, 5, 0.9)');
+    gradient.addColorStop(1, 'rgba(0, 0, 5, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x - 200, y, 400, 300);
+}
+
+function drawWeatherIndicator() {
+    const weather = WEATHER.types[game.weather.current];
+
+    ctx.font = '14px VT323';
+    ctx.fillStyle = 'rgba(200, 220, 210, 0.7)';
+    ctx.textAlign = 'right';
+
+    // Weather icon and name
+    let icon = '☀️';
+    if (game.weather.current === 'cloudy') icon = '☁️';
+    else if (game.weather.current === 'rain') icon = '🌧️';
+    else if (game.weather.current === 'fog') icon = '🌫️';
+    else if (game.weather.current === 'storm') icon = '⛈️';
+
+    ctx.fillText(`${icon} ${weather.name}`, CONFIG.canvas.width - 15, 55);
+
+    ctx.textAlign = 'left';
+}
+
+function drawDogIndicator() {
+    // Dog status in corner
+    const x = 15;
+    const y = CONFIG.canvas.height - 60;
+
+    // Dog icon with state
+    let dogEmoji = '🐕';
+    if (game.dog.animation === 'sleep') dogEmoji = '😴';
+    else if (game.dog.animation === 'alert') dogEmoji = '🐕‍🦺';
+    else if (game.dog.isBarking) dogEmoji = '🗯️';
+
+    ctx.font = '24px VT323';
+    ctx.fillText(dogEmoji, x, y);
+
+    // Happiness bar
+    ctx.fillStyle = 'rgba(10, 20, 30, 0.7)';
+    ctx.fillRect(x + 30, y - 15, 60, 10);
+    ctx.fillStyle = game.dog.happiness > 50 ? '#6a9a6a' : '#9a6a6a';
+    ctx.fillRect(x + 31, y - 14, 58 * (game.dog.happiness / 100), 8);
+
+    // Bark text
+    if (game.dog.isBarking) {
+        ctx.font = '12px VT323';
+        ctx.fillStyle = '#c0d0c0';
+        let barkText = '*woof!*';
+        if (game.dog.barkReason === 'rare') barkText = '*BARK BARK!*';
+        else if (game.dog.barkReason === 'danger') barkText = '*whimper*';
+        else if (game.dog.barkReason === 'excited') barkText = '*happy bark!*';
+        ctx.fillText(barkText, x + 30, y + 5);
+    }
+
+    // Pet hint
+    ctx.font = '10px VT323';
+    ctx.fillStyle = '#5a7a6a';
+    ctx.fillText('[P] Pet dog', x, y + 15);
 }
 
 function drawDock() {
@@ -1959,6 +2955,31 @@ function update(deltaTime) {
     // Check if near dock
     game.nearDock = Math.abs(game.boatX - CONFIG.dockX) < 80;
 
+    // === NEW SYSTEMS UPDATE ===
+
+    // Update weather
+    updateWeather(deltaTime);
+
+    // Update time progression
+    updateTimeProgression(deltaTime);
+
+    // Update current location
+    game.currentLocation = getCurrentLocation();
+
+    // Update dog companion
+    updateDog(deltaTime);
+
+    // Update lore bottles
+    updateLoreBottles();
+
+    // Update sanity effects
+    updateSanityEffects();
+
+    // Update fishing minigame if active
+    if (game.minigame.active) {
+        updateMinigame(deltaTime);
+    }
+
     // Get current rod for depth limit
     const currentRod = getCurrentRod();
     const maxDepth = currentRod ? currentRod.depthMax : 30;
@@ -1970,7 +2991,7 @@ function update(deltaTime) {
 
     // Game logic
     if (game.state === 'waiting') {
-        // Bite chance affected by lure
+        // Bite chance affected by lure and weather
         let biteChance = 0.003 + (game.depth / 800);
         const lure = getCurrentLure();
         if (lure) {
@@ -1981,9 +3002,23 @@ function update(deltaTime) {
             }
         }
 
+        // Weather modifier
+        const weather = WEATHER.types[game.weather.current];
+        biteChance *= weather.biteModifier;
+
+        // Location bonus for rare fish
+        const locBonus = game.locationBonuses[game.currentLocation];
+        if (locBonus) {
+            biteChance *= (1 + locBonus.bonus);
+        }
+
         if (Math.random() < biteChance) {
             game.state = 'reeling';
             document.getElementById('catch-display').textContent = '🐟 BITE! [SPACE]';
+
+            // Dog reacts
+            game.dog.isBarking = true;
+            game.dog.barkReason = 'excited';
         }
     }
 
@@ -1996,9 +3031,20 @@ function update(deltaTime) {
         }
     }
 
-    // Sanity recovery
+    // Sanity recovery - more at dock, less in dangerous areas
     if (game.depth < 15 && game.sanity < 100 && game.state === 'sailing') {
-        game.sanity = Math.min(100, game.sanity + 0.02);
+        let recovery = 0.02;
+        if (game.currentLocation === 'dock') recovery = 0.05;
+        else if (game.currentLocation === 'void') recovery = 0;
+        else if (game.currentLocation === 'trench') recovery = 0.01;
+        game.sanity = Math.min(100, game.sanity + recovery);
+    }
+
+    // Passive sanity drain in dangerous locations
+    if (game.currentLocation === 'void') {
+        game.sanity = Math.max(0, game.sanity - 0.03);
+    } else if (game.currentLocation === 'trench') {
+        game.sanity = Math.max(0, game.sanity - 0.01);
     }
 
     // Maintain fish
@@ -2010,14 +3056,28 @@ function update(deltaTime) {
 function render() {
     ctx.clearRect(0, 0, CONFIG.canvas.width, CONFIG.canvas.height);
 
+    // Apply screen shake if needed
+    if (game.sanityEffects.screenShake > 0) {
+        ctx.save();
+        const shakeX = (Math.random() - 0.5) * game.sanityEffects.screenShake * 2;
+        const shakeY = (Math.random() - 0.5) * game.sanityEffects.screenShake * 2;
+        ctx.translate(shakeX, shakeY);
+    }
+
     // Draw all layers in order
     game.layers.forEach(layer => {
         const fallback = FALLBACKS[layer.id];
         layer.draw(ctx, CONFIG.canvas.width, CONFIG.canvas.height, fallback);
     });
 
+    // Draw world objects based on location
+    drawLocationFeatures();
+
     // Draw dock (behind fish but in front of underwater)
     drawDock();
+
+    // Draw lore bottles floating on water
+    drawLoreBottles();
 
     // Draw fish (between underwater layers and boat)
     drawFish();
@@ -2026,9 +3086,27 @@ function render() {
     drawBoat();
     drawFishingLine();
 
+    // Draw weather effects (rain, fog, etc.)
+    drawWeatherEffects();
+
+    // Draw sanity effects (hallucinations, vignette)
+    drawSanityEffects();
+
+    // Restore from screen shake
+    if (game.sanityEffects.screenShake > 0) {
+        ctx.restore();
+    }
+
+    // Draw UI elements (not affected by shake)
+    drawLocationIndicator();
+    drawWeatherIndicator();
+    drawDogIndicator();
+
     // UI overlays
     if (game.currentCatch) drawCatchPopup();
     if (game.shop.open) drawShopUI();
+    if (game.currentLore) drawLorePopup();
+    if (game.minigame.active) drawMinigame();
 }
 
 function gameLoop(timestamp) {
@@ -2087,6 +3165,21 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
+    // Lore popup - dismiss with space
+    if (game.currentLore) {
+        if (e.code === 'Space') {
+            e.preventDefault();
+            game.currentLore = null;
+        }
+        return;
+    }
+
+    // Minigame controls
+    if (game.minigame.active) {
+        handleMinigameInput(e);
+        return;
+    }
+
     switch(e.code) {
         case 'Space':
             e.preventDefault();
@@ -2114,17 +3207,10 @@ document.addEventListener('keydown', (e) => {
                 game.state = 'casting';
                 document.getElementById('catch-display').textContent = 'Casting...';
             } else if (game.state === 'reeling') {
-                game.currentCatch = getCreature();
-                game.state = 'caught';
-
-                // Use up lure on catch
-                const lure = getCurrentLure();
-                if (lure && lure.count > 0) {
-                    lure.count--;
-                    if (lure.count === 0) {
-                        game.equipment.lure = null;
-                    }
-                }
+                // Start minigame instead of instant catch
+                const creature = getCreature();
+                startMinigame(creature);
+                document.getElementById('catch-display').textContent = 'Fight the fish!';
             } else {
                 game.state = 'sailing';
                 game.depth = 0;
@@ -2147,14 +3233,14 @@ document.addEventListener('keydown', (e) => {
         case 'ArrowLeft':
             if (game.state === 'sailing') {
                 const speed = getCurrentBoat() ? getCurrentBoat().speed : 1;
-                game.boatX = Math.max(100, game.boatX - 15 * speed);
+                game.boatX = Math.max(CONFIG.worldMinX, game.boatX - 15 * speed);
             }
             break;
 
         case 'ArrowRight':
             if (game.state === 'sailing') {
                 const speed = getCurrentBoat() ? getCurrentBoat().speed : 1;
-                game.boatX = Math.min(CONFIG.canvas.width + 200, game.boatX + 15 * speed);
+                game.boatX = Math.min(CONFIG.worldMaxX, game.boatX + 15 * speed);
             }
             break;
 
@@ -2165,16 +3251,49 @@ document.addEventListener('keydown', (e) => {
             }
             break;
 
+        case 'KeyP':
+            // Pet the dog!
+            if (game.state === 'sailing') {
+                petDog();
+            }
+            break;
+
         case 'KeyT':
-            cycleTime();
+            // Toggle time pause / manual cycle
+            if (e.shiftKey) {
+                game.timePaused = !game.timePaused;
+            } else {
+                cycleTime();
+            }
             break;
 
         case 'KeyD':
             CONFIG.showDebug = !CONFIG.showDebug;
             updateDebugPanel();
             break;
+
+        case 'KeyL':
+            // Show lore collection (future feature)
+            break;
     }
 });
+
+function handleMinigameInput(e) {
+    switch(e.code) {
+        case 'ArrowLeft':
+            e.preventDefault();
+            game.minigame.playerZone = Math.max(0, game.minigame.playerZone - 0.03);
+            break;
+        case 'ArrowRight':
+            e.preventDefault();
+            game.minigame.playerZone = Math.min(1, game.minigame.playerZone + 0.03);
+            break;
+        case 'Escape':
+            // Give up on fish
+            endMinigame(false);
+            break;
+    }
+}
 
 function handleShopInput(e) {
     const tabs = ['sell', 'rods', 'lures', 'boats'];
@@ -2252,8 +3371,16 @@ function startGame(time) {
     document.getElementById('title-screen').style.display = 'none';
     game.state = 'sailing';
     game.timeOfDay = time || 'dusk';
+
+    // Set day progress based on starting time
+    if (time === 'dawn') game.dayProgress = 0.1;
+    else if (time === 'day') game.dayProgress = 0.35;
+    else if (time === 'dusk') game.dayProgress = 0.6;
+    else game.dayProgress = 0.85;
+
     initLayers();
     initFish();
+    initLoreBottles();
     loadAllAssets();
 }
 
