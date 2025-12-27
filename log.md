@@ -497,6 +497,118 @@ Komplett Game Design Document basert på Cast n Chill + Deep Regrets inspirasjon
 
 ---
 
+## 2024-12-27 — Endings, Achievements & Location-Based Creatures
+
+### Gjort
+
+#### 1. Endings System (3 endings)
+- **The Deep One** (Embrace) — Triggers when sanity reaches 0
+  - Full transformation sequence with scene text
+  - Credits scene with ending description
+  - Unlocks Endless Mode
+- **The Survivor** (Resist) — Triggers when player leaves map after catching The Unnamed with sanity > 30
+  - Escape sequence with bittersweet narrative
+  - Credits and Endless Mode unlock
+- **Prophet** (Secret) — Triggers with all lore, The Unnamed, and sanity 20-40
+  - Ambiguous transcendence ending
+  - Rarest achievement
+
+#### 2. Achievements System (20 achievements)
+- **Fishing achievements**: First Bite, Surface Dweller, Into the Blue, Depths Unknown, Abyss Walker
+- **Wealth achievements**: Getting Started (100g), Thousandaire (1000g), Rich Beyond Reason (5000g)
+- **Exploration achievements**: Edge of Nothing (The Void), Wanderer (all locations)
+- **Lore achievements**: Curious Mind, Truth Seeker, Forbidden Knowledge
+- **Sanity achievements**: Brink of Madness, Changed
+- **Special achievements**: Good Boy (pet 50x), Storm Chaser, Night Fisher
+- **Ending achievements**: One for each ending
+- Achievement viewer with [A] keybind
+- Pop-up notification when achievement unlocks
+
+#### 3. Location-Based Creature Spawning
+- Each location now has weighted creature pools:
+  - Sandbank: 100% surface
+  - Shallows: 80% surface, 20% mid
+  - Sunset Cove: 60% surface, 40% mid
+  - Dock: 90% surface, 10% mid
+  - Reef: 20% surface, 70% mid, 10% deep
+  - Shipwreck: 10% surface, 30% mid, 50% deep, 10% abyss
+  - Trench: 10% mid, 60% deep, 30% abyss
+  - Void: 20% deep, 80% abyss
+- Weights adjusted by rod depth capability
+
+#### 4. Endless Mode
+- Unlocks after completing any ending
+- Sanity reset to 50 for continued play
+- Endless Mode indicator in UI
+- Full save/load support
+
+### Endringer
+
+**config.js:**
+- Added ENDINGS config with 3 ending definitions
+- Added ACHIEVEMENTS config with 20 achievements
+
+**game-state.js:**
+- Added `ending` state (triggered, current, phase, timer, etc.)
+- Added `endlessMode` boolean
+- Added `achievements` state (unlocked, stats, notification, viewerOpen)
+- Added `visitedLocations` to storyFlags
+
+**systems.js:**
+- Added ENDING_SCENES with narrative text for each ending
+- Added ending functions: checkEnding(), triggerEnding(), updateEnding(), drawEndingScene(), startEndlessMode()
+- Added achievement functions: unlockAchievement(), checkAchievements(), updateAchievementNotification(), drawAchievementNotification()
+- Added achievements viewer: openAchievementsViewer(), closeAchievementsViewer(), drawAchievementsViewer()
+- Added getLocationCreaturePool() for location-based creature weights
+
+**creatures.js:**
+- Updated getCreature() to use location-based pool weights
+- Added transformation bite bonus integration
+
+**main.js:**
+- Integrated updateEnding(), checkEnding(), checkAchievements(), updateAchievementNotification()
+- Added drawEndingScene(), drawAchievementsViewer(), drawAchievementNotification() to render
+- Added Endless Mode indicator
+- Track visited locations for achievements
+
+**input.js:**
+- Added handleEndingInput() for ending scene controls
+- Added handleAchievementsViewerInput() for viewer navigation
+- Added [A] keybind for achievements viewer toggle
+- Track nightCatches and stormCatches on catch
+
+**npc.js:**
+- Track totalGoldEarned in shopAction() and sellAllFish()
+
+**save.js:**
+- Version updated to 0.8
+- Added achievements, ending, and endlessMode to save data
+- Added restoration of these states on load
+
+**game.html:**
+- Version updated to 0.8
+- Updated controls text with [A] Achievements
+
+### Tekniske beslutninger
+- Endings use phase-based state machine (fadeout → scene → credits → complete)
+- Achievements check runs every frame for immediate feedback
+- Location weights combine with rod depth to prevent impossible catches
+- Endless Mode is a flag that disables ending checks
+
+### Neste prioritet
+- [ ] Lyd/musikk system
+- [ ] Claude API-integrasjon for dynamisk NPC-dialog
+- [ ] Polering av endings (visuelle effekter, musikk)
+- [ ] Mer lore content
+
+### Notater
+- Prophet ending er vanskeligst å oppnå (krever presisjon)
+- Location-based creatures gir bedre grunn til å utforske
+- Achievements gir lang-tid engagement
+- Endless Mode lar spillere fortsette etter "winning"
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown

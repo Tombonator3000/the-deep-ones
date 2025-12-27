@@ -39,30 +39,63 @@ function getCreatureForDepth(depth) {
 }
 
 function getCreature() {
-    let pool;
     const rod = getCurrentRod();
     const lure = getCurrentLure();
     const depth = game.depth;
 
-    if (depth < 20) pool = CREATURES.surface;
-    else if (depth < 55) pool = CREATURES.mid;
-    else if (depth < 90) pool = CREATURES.deep;
-    else pool = CREATURES.abyss;
+    // Get location-based creature pool weights
+    const locationWeights = getLocationCreaturePool();
+
+    // Select pool based on location weights AND depth
+    let pool;
+    let poolRoll = Math.random();
+
+    // Combine location preference with depth requirement
+    if (locationWeights) {
+        // Adjust weights based on depth capability
+        const maxDepth = rod ? rod.depthMax : 30;
+        let adjustedWeights = { ...locationWeights };
+
+        // Can't catch deep creatures without proper equipment
+        if (maxDepth < 90) adjustedWeights.abyss = 0;
+        if (maxDepth < 55) adjustedWeights.deep = 0;
+        if (maxDepth < 20) adjustedWeights.mid = 0;
+
+        // Normalize weights
+        const total = adjustedWeights.surface + adjustedWeights.mid + adjustedWeights.deep + adjustedWeights.abyss;
+        if (total > 0) {
+            if (poolRoll < adjustedWeights.surface / total) pool = CREATURES.surface;
+            else if (poolRoll < (adjustedWeights.surface + adjustedWeights.mid) / total) pool = CREATURES.mid;
+            else if (poolRoll < (adjustedWeights.surface + adjustedWeights.mid + adjustedWeights.deep) / total) pool = CREATURES.deep;
+            else pool = CREATURES.abyss;
+        } else {
+            pool = CREATURES.surface;
+        }
+    } else {
+        // Fallback to depth-based selection
+        if (depth < 20) pool = CREATURES.surface;
+        else if (depth < 55) pool = CREATURES.mid;
+        else if (depth < 90) pool = CREATURES.deep;
+        else pool = CREATURES.abyss;
+    }
 
     let roll = Math.random();
 
     // Apply lure bonus
     if (lure) {
-        const zoneMatch = (lure.bonus === 'surface' && depth < 20) ||
-                         (lure.bonus === 'mid' && depth >= 20 && depth < 55) ||
-                         (lure.bonus === 'deep' && depth >= 55 && depth < 90) ||
-                         (lure.bonus === 'abyss' && depth >= 90);
+        const zoneMatch = (lure.bonus === 'surface' && pool === CREATURES.surface) ||
+                         (lure.bonus === 'mid' && pool === CREATURES.mid) ||
+                         (lure.bonus === 'deep' && pool === CREATURES.deep) ||
+                         (lure.bonus === 'abyss' && pool === CREATURES.abyss);
         if (zoneMatch) roll *= lure.multiplier;
     }
 
     // Apply location bonus
     const locBonus = game.locationBonuses[game.currentLocation];
     if (locBonus) roll += locBonus.bonus;
+
+    // Apply transformation bonus (fish bite more eagerly for transformed players)
+    roll *= getTransformationBiteBonus();
 
     for (const creature of pool) {
         if (roll <= creature.rarity) return creature;

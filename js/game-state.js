@@ -131,6 +131,34 @@ const game = {
         foundAllLore: false,
         caughtUnnamed: false,
         reachedVoid: false,
-        transformationStarted: false
+        transformationStarted: false,
+        visitedLocations: []
+    },
+
+    // Endings state
+    ending: {
+        triggered: false,
+        current: null,  // 'deepOne', 'survivor', or 'prophet'
+        phase: 'none',  // 'none', 'fadeout', 'scene', 'credits', 'complete'
+        timer: 0,
+        textIndex: 0,
+        canContinue: false
+    },
+
+    // Endless mode (after ending)
+    endlessMode: false,
+
+    // Achievements
+    achievements: {
+        unlocked: [],  // Array of achievement IDs
+        stats: {
+            totalGoldEarned: 50,
+            petCount: 0,
+            nightCatches: 0,
+            stormCatches: 0
+        },
+        notification: null,  // { achievement: obj, timer: number }
+        viewerOpen: false,
+        viewerPage: 0
     }
 };

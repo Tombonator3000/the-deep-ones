@@ -10,6 +10,12 @@ let lastTime = 0;
 function update(deltaTime) {
     if (game.state === 'title') return;
 
+    // Handle ending state separately
+    if (game.state === 'ending') {
+        updateEnding(deltaTime);
+        return;
+    }
+
     game.time += deltaTime;
 
     // Update camera
@@ -27,9 +33,26 @@ function update(deltaTime) {
     updateSanityEffects();
     updateMinigame(deltaTime);
     updateTransformation();
+    updateAchievementNotification();
+
+    // Check endings
+    checkEnding();
+
+    // Check achievements
+    checkAchievements();
 
     // Update location
     game.currentLocation = getCurrentLocation();
+
+    // Track visited locations for achievements
+    if (!game.storyFlags.visitedLocations.includes(game.currentLocation)) {
+        game.storyFlags.visitedLocations.push(game.currentLocation);
+    }
+
+    // Track void visit
+    if (game.currentLocation === 'void') {
+        game.storyFlags.reachedVoid = true;
+    }
 
     // Check dock proximity
     game.nearDock = Math.abs(game.boatX - CONFIG.dockX) < 100;
@@ -96,6 +119,12 @@ function render() {
 
     if (game.state === 'title') return;
 
+    // Handle ending rendering
+    if (game.state === 'ending') {
+        drawEndingScene();
+        return;
+    }
+
     // Draw layers with fallbacks
     game.layers.forEach(layer => {
         const fallback = FALLBACKS[layer.id];
@@ -132,6 +161,17 @@ function render() {
     drawDogIndicator();
     drawTransformationIndicator();
 
+    // Draw endless mode indicator
+    if (game.endlessMode) {
+        ctx.fillStyle = 'rgba(80, 60, 100, 0.7)';
+        ctx.fillRect(CONFIG.canvas.width - 120, 10, 110, 25);
+        ctx.fillStyle = '#c0a0d0';
+        ctx.font = '12px VT323';
+        ctx.textAlign = 'center';
+        ctx.fillText('ENDLESS MODE', CONFIG.canvas.width - 65, 27);
+        ctx.textAlign = 'left';
+    }
+
     // Draw minigame
     drawMinigame();
 
@@ -142,9 +182,11 @@ function render() {
     drawLoreCollection();
     drawJournal();
     drawVillageMenu();
+    drawAchievementsViewer();
 
-    // Draw save notification
+    // Draw notifications
     drawSaveNotification();
+    drawAchievementNotification();
 }
 
 function gameLoop(timestamp) {

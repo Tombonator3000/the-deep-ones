@@ -147,6 +147,10 @@ function petDog() {
     game.sanity = Math.min(100, game.sanity + 3);
     game.dog.isBarking = true;
     game.dog.barkReason = 'excited';
+
+    // Track pet count for achievement
+    game.achievements.stats.petCount++;
+
     setTimeout(() => { game.dog.isBarking = false; }, 1000);
 }
 
@@ -605,4 +609,428 @@ function villageMenuAction() {
             closeVillageMenu();
             break;
     }
+}
+
+// ============================================================
+// ENDINGS SYSTEM
+// ============================================================
+
+const ENDING_SCENES = {
+    deepOne: [
+        "The water calls...",
+        "Your skin splits. Gills open.",
+        "The cold embrace of the deep.",
+        "They welcome you. Brothers. Sisters.",
+        "You descend into darkness.",
+        "This is not an ending.",
+        "This is becoming."
+    ],
+    survivor: [
+        "You row towards the horizon.",
+        "Innsmouth shrinks behind you.",
+        "The whispers fade.",
+        "You survived what others could not.",
+        "But the dreams will never stop.",
+        "Some nights, you still hear them.",
+        "The sea remembers."
+    ],
+    prophet: [
+        "You stand between worlds.",
+        "Neither human nor Deep One.",
+        "You have seen the truth.",
+        "The Old Ones are patient.",
+        "They have always been here.",
+        "And you... you understand.",
+        "The bridge has been built."
+    ]
+};
+
+function checkEnding() {
+    if (game.ending.triggered || game.endlessMode) return;
+
+    // Check for Deep One ending (sanity = 0)
+    if (game.sanity <= 0) {
+        triggerEnding('deepOne');
+        return;
+    }
+
+    // Check for Survivor ending (caught The Unnamed with sanity > 30)
+    if (game.storyFlags.caughtUnnamed && game.sanity > 30) {
+        // Only trigger if player chooses to leave (near edge of map going left)
+        if (game.boatX < 100) {
+            triggerEnding('survivor');
+            return;
+        }
+    }
+
+    // Check for Prophet ending (all lore + The Unnamed + sanity 20-40)
+    const allLoreFound = game.loreFound.length >= LORE_FRAGMENTS.length;
+    if (allLoreFound && game.storyFlags.caughtUnnamed && game.sanity >= 20 && game.sanity <= 40) {
+        triggerEnding('prophet');
+        return;
+    }
+}
+
+function triggerEnding(endingType) {
+    game.ending.triggered = true;
+    game.ending.current = endingType;
+    game.ending.phase = 'fadeout';
+    game.ending.timer = 0;
+    game.ending.textIndex = 0;
+    game.state = 'ending';
+
+    // Unlock ending achievement
+    if (endingType === 'deepOne') unlockAchievement('endingDeepOne');
+    else if (endingType === 'survivor') unlockAchievement('endingSurvivor');
+    else if (endingType === 'prophet') unlockAchievement('endingProphet');
+
+    autoSave();
+}
+
+function updateEnding(deltaTime) {
+    if (!game.ending.triggered) return;
+
+    game.ending.timer += deltaTime;
+
+    if (game.ending.phase === 'fadeout') {
+        if (game.ending.timer > 2000) {
+            game.ending.phase = 'scene';
+            game.ending.timer = 0;
+        }
+    } else if (game.ending.phase === 'scene') {
+        const scenes = ENDING_SCENES[game.ending.current];
+        const textDuration = 3000;
+
+        if (game.ending.timer > textDuration) {
+            game.ending.timer = 0;
+            game.ending.textIndex++;
+
+            if (game.ending.textIndex >= scenes.length) {
+                game.ending.phase = 'credits';
+                game.ending.timer = 0;
+            }
+        }
+    } else if (game.ending.phase === 'credits') {
+        if (game.ending.timer > 8000) {
+            game.ending.canContinue = true;
+        }
+    }
+}
+
+function drawEndingScene() {
+    if (!game.ending.triggered) return;
+
+    const fadeAlpha = game.ending.phase === 'fadeout'
+        ? Math.min(1, game.ending.timer / 2000)
+        : 1;
+
+    // Black background
+    ctx.fillStyle = `rgba(5, 8, 15, ${fadeAlpha})`;
+    ctx.fillRect(0, 0, CONFIG.canvas.width, CONFIG.canvas.height);
+
+    if (game.ending.phase === 'scene') {
+        const scenes = ENDING_SCENES[game.ending.current];
+        const text = scenes[game.ending.textIndex];
+        const textAlpha = Math.min(1, game.ending.timer / 500);
+
+        ctx.fillStyle = `rgba(150, 180, 200, ${textAlpha})`;
+        ctx.font = '20px VT323';
+        ctx.textAlign = 'center';
+        ctx.fillText(text, CONFIG.canvas.width / 2, CONFIG.canvas.height / 2);
+    } else if (game.ending.phase === 'credits') {
+        const ending = ENDINGS[game.ending.current];
+
+        // Title
+        ctx.fillStyle = '#a0c0d0';
+        ctx.font = '28px "Press Start 2P"';
+        ctx.textAlign = 'center';
+        ctx.fillText(ending.name, CONFIG.canvas.width / 2, 150);
+
+        // Subtitle
+        ctx.fillStyle = '#708090';
+        ctx.font = '16px VT323';
+        ctx.fillText(`- ${ending.subtitle} -`, CONFIG.canvas.width / 2, 185);
+
+        // Description
+        ctx.fillStyle = '#6080a0';
+        ctx.font = '16px VT323';
+        ctx.fillText(ending.description, CONFIG.canvas.width / 2, 250);
+
+        // Credits
+        ctx.fillStyle = '#506070';
+        ctx.font = '14px VT323';
+        ctx.fillText('THE DEEP ONES', CONFIG.canvas.width / 2, 350);
+        ctx.fillText('A Lovecraftian Fishing Game', CONFIG.canvas.width / 2, 375);
+        ctx.fillText('v0.8', CONFIG.canvas.width / 2, 400);
+
+        // Continue prompt
+        if (game.ending.canContinue) {
+            ctx.fillStyle = '#80a0b0';
+            ctx.font = '14px VT323';
+            ctx.fillText('[SPACE] Enter Endless Mode', CONFIG.canvas.width / 2, 500);
+            ctx.fillText('[ESC] Return to Title', CONFIG.canvas.width / 2, 525);
+        }
+    }
+
+    ctx.textAlign = 'left';
+}
+
+function startEndlessMode() {
+    game.ending.phase = 'complete';
+    game.endlessMode = true;
+    game.state = 'sailing';
+    game.sanity = 50;  // Reset sanity to playable level
+    showSaveNotification('Endless Mode Unlocked!');
+    autoSave();
+}
+
+// ============================================================
+// ACHIEVEMENTS SYSTEM
+// ============================================================
+
+function unlockAchievement(achievementKey) {
+    const achievement = ACHIEVEMENTS[achievementKey];
+    if (!achievement) return;
+
+    // Check if already unlocked
+    if (game.achievements.unlocked.includes(achievement.id)) return;
+
+    // Unlock it
+    game.achievements.unlocked.push(achievement.id);
+
+    // Show notification
+    game.achievements.notification = {
+        achievement: achievement,
+        timer: 180  // 3 seconds at 60fps
+    };
+
+    autoSave();
+}
+
+function checkAchievements() {
+    if (game.state === 'title' || game.state === 'ending') return;
+
+    const stats = game.achievements.stats;
+    const discovered = game.journal.discovered;
+
+    // First catch
+    if (game.caughtCreatures.length >= 1) {
+        unlockAchievement('firstCatch');
+    }
+
+    // Surface creatures
+    const surfaceNames = CREATURES.surface.map(c => c.name);
+    if (surfaceNames.every(n => discovered.includes(n))) {
+        unlockAchievement('surfaceMaster');
+    }
+
+    // Mid creatures
+    const midNames = CREATURES.mid.map(c => c.name);
+    if (midNames.every(n => discovered.includes(n))) {
+        unlockAchievement('midExplorer');
+    }
+
+    // Deep creatures
+    const deepNames = CREATURES.deep.map(c => c.name);
+    if (deepNames.every(n => discovered.includes(n))) {
+        unlockAchievement('deepDiver');
+    }
+
+    // Abyss creatures
+    const abyssNames = CREATURES.abyss.map(c => c.name);
+    if (abyssNames.every(n => discovered.includes(n))) {
+        unlockAchievement('abyssWalker');
+    }
+
+    // Wealth
+    if (stats.totalGoldEarned >= 100) unlockAchievement('firstHundred');
+    if (stats.totalGoldEarned >= 1000) unlockAchievement('thousandaire');
+    if (stats.totalGoldEarned >= 5000) unlockAchievement('richBeyondReason');
+
+    // Exploration
+    if (game.storyFlags.reachedVoid) unlockAchievement('reachVoid');
+    if (game.storyFlags.visitedLocations.length >= Object.keys(CONFIG.locations).length) {
+        unlockAchievement('allLocations');
+    }
+
+    // Lore
+    if (game.loreFound.length >= 1) unlockAchievement('firstLore');
+    if (game.loreFound.length >= Math.floor(LORE_FRAGMENTS.length / 2)) unlockAchievement('halfLore');
+    if (game.loreFound.length >= LORE_FRAGMENTS.length) unlockAchievement('allLore');
+
+    // Sanity
+    if (game.sanity < 10) unlockAchievement('brinkOfMadness');
+    if (game.storyFlags.transformationStarted) unlockAchievement('transformation');
+
+    // Special
+    if (stats.petCount >= 50) unlockAchievement('goodBoy');
+    if (stats.stormCatches >= 1) unlockAchievement('stormChaser');
+    if (stats.nightCatches >= 10) unlockAchievement('nightFisher');
+}
+
+function updateAchievementNotification() {
+    if (game.achievements.notification) {
+        game.achievements.notification.timer--;
+        if (game.achievements.notification.timer <= 0) {
+            game.achievements.notification = null;
+        }
+    }
+}
+
+function drawAchievementNotification() {
+    if (!game.achievements.notification) return;
+
+    const notif = game.achievements.notification;
+    const achievement = notif.achievement;
+
+    // Slide-in animation
+    const slideProgress = Math.min(1, (180 - notif.timer) / 30);
+    const slideOut = notif.timer < 30 ? (30 - notif.timer) / 30 : 0;
+    const xOffset = (1 - slideProgress + slideOut) * 250;
+
+    const x = CONFIG.canvas.width - 240 + xOffset;
+    const y = 130;
+    const w = 230;
+    const h = 60;
+
+    // Background
+    ctx.fillStyle = 'rgba(40, 60, 80, 0.95)';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = '#80a0c0';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, w, h);
+
+    // Icon
+    ctx.font = '24px serif';
+    ctx.fillText(achievement.icon, x + 15, y + 40);
+
+    // Text
+    ctx.fillStyle = '#d0c080';
+    ctx.font = '12px VT323';
+    ctx.fillText('ACHIEVEMENT UNLOCKED', x + 50, y + 20);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '14px VT323';
+    ctx.fillText(achievement.name, x + 50, y + 38);
+
+    ctx.fillStyle = '#a0a0a0';
+    ctx.font = '11px VT323';
+    ctx.fillText(achievement.desc, x + 50, y + 52);
+}
+
+// ============================================================
+// LOCATION-BASED CREATURES
+// ============================================================
+
+function getLocationCreaturePool() {
+    const loc = game.currentLocation;
+    const locData = CONFIG.locations[loc];
+    if (!locData) return null;
+
+    // Each location has preferred zones
+    const zoneWeights = {
+        sandbank: { surface: 1.0, mid: 0, deep: 0, abyss: 0 },
+        shallows: { surface: 0.8, mid: 0.2, deep: 0, abyss: 0 },
+        sunsetCove: { surface: 0.6, mid: 0.4, deep: 0, abyss: 0 },
+        dock: { surface: 0.9, mid: 0.1, deep: 0, abyss: 0 },
+        reef: { surface: 0.2, mid: 0.7, deep: 0.1, abyss: 0 },
+        shipwreck: { surface: 0.1, mid: 0.3, deep: 0.5, abyss: 0.1 },
+        trench: { surface: 0, mid: 0.1, deep: 0.6, abyss: 0.3 },
+        void: { surface: 0, mid: 0, deep: 0.2, abyss: 0.8 }
+    };
+
+    return zoneWeights[loc] || { surface: 0.5, mid: 0.3, deep: 0.15, abyss: 0.05 };
+}
+
+// ============================================================
+// ACHIEVEMENTS VIEWER
+// ============================================================
+
+function openAchievementsViewer() {
+    game.achievements.viewerOpen = true;
+    game.achievements.viewerPage = 0;
+}
+
+function closeAchievementsViewer() {
+    game.achievements.viewerOpen = false;
+}
+
+function drawAchievementsViewer() {
+    if (!game.achievements.viewerOpen) return;
+
+    const w = 600, h = 500;
+    const x = (CONFIG.canvas.width - w) / 2;
+    const y = (CONFIG.canvas.height - h) / 2;
+
+    // Background
+    ctx.fillStyle = 'rgba(15, 20, 25, 0.98)';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = '#6080a0';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x, y, w, h);
+
+    // Title
+    ctx.font = '16px "Press Start 2P"';
+    ctx.fillStyle = '#a0c0d0';
+    ctx.textAlign = 'center';
+    ctx.fillText('ACHIEVEMENTS', x + w/2, y + 30);
+
+    // Stats
+    ctx.font = '12px VT323';
+    ctx.fillStyle = '#8090a0';
+    const allAchievements = Object.values(ACHIEVEMENTS);
+    ctx.fillText(`Unlocked: ${game.achievements.unlocked.length}/${allAchievements.length}`, x + w/2, y + 50);
+
+    // Achievement list
+    ctx.textAlign = 'left';
+    const itemsPerPage = 6;
+    const startIdx = game.achievements.viewerPage * itemsPerPage;
+    const pageAchievements = allAchievements.slice(startIdx, startIdx + itemsPerPage);
+
+    pageAchievements.forEach((achievement, i) => {
+        const itemY = y + 80 + i * 65;
+        const isUnlocked = game.achievements.unlocked.includes(achievement.id);
+
+        // Background
+        ctx.fillStyle = isUnlocked ? 'rgba(60, 80, 60, 0.4)' : 'rgba(30, 35, 40, 0.4)';
+        ctx.fillRect(x + 15, itemY, w - 30, 55);
+
+        if (isUnlocked) {
+            ctx.strokeStyle = '#80a080';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x + 15, itemY, w - 30, 55);
+        }
+
+        // Icon
+        ctx.font = '28px serif';
+        ctx.fillStyle = isUnlocked ? '#ffffff' : '#404040';
+        ctx.fillText(achievement.icon, x + 30, itemY + 38);
+
+        // Name
+        ctx.fillStyle = isUnlocked ? '#d0e0d0' : '#606060';
+        ctx.font = '16px VT323';
+        ctx.fillText(achievement.name, x + 75, itemY + 22);
+
+        // Description
+        ctx.fillStyle = isUnlocked ? '#a0b0a0' : '#505050';
+        ctx.font = '13px VT323';
+        ctx.fillText(achievement.desc, x + 75, itemY + 42);
+
+        // Status
+        if (isUnlocked) {
+            ctx.fillStyle = '#80c080';
+            ctx.font = '12px VT323';
+            ctx.textAlign = 'right';
+            ctx.fillText('UNLOCKED', x + w - 30, itemY + 30);
+            ctx.textAlign = 'left';
+        }
+    });
+
+    // Pagination
+    const totalPages = Math.ceil(allAchievements.length / itemsPerPage);
+    ctx.fillStyle = '#6080a0';
+    ctx.font = '12px VT323';
+    ctx.textAlign = 'center';
+    ctx.fillText(`[←/→] Page ${game.achievements.viewerPage + 1}/${totalPages} | [A/ESC] Close`, x + w/2, y + h - 15);
+    ctx.textAlign = 'left';
 }

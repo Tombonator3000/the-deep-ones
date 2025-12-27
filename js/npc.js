@@ -302,6 +302,7 @@ function shopAction() {
         if (game.inventory.length > 0 && game.shop.selectedIndex < game.inventory.length) {
             const fish = game.inventory.splice(game.shop.selectedIndex, 1)[0];
             game.money += fish.value;
+            game.achievements.stats.totalGoldEarned += fish.value;  // Track for achievements
             game.shop.npcDialog = getRandomDialog('selling');
             if (game.shop.selectedIndex >= game.inventory.length) {
                 game.shop.selectedIndex = Math.max(0, game.inventory.length - 1);
@@ -345,6 +346,7 @@ function sellAllFish() {
     let total = 0;
     game.inventory.forEach(fish => total += fish.value);
     game.money += total;
+    game.achievements.stats.totalGoldEarned += total;  // Track for achievements
     game.inventory = [];
     game.shop.selectedIndex = 0;
     game.shop.npcDialog = getRandomDialog('selling');

@@ -94,6 +94,73 @@ const SHOP = {
     ]
 };
 
+// Endings configuration
+const ENDINGS = {
+    deepOne: {
+        id: 'deep_one',
+        name: 'The Deep One',
+        subtitle: 'Embrace',
+        requirement: 'Sanity reaches 0',
+        description: 'You have become one with the sea. The transformation is complete.',
+        unlocksEndless: true
+    },
+    survivor: {
+        id: 'survivor',
+        name: 'The Survivor',
+        subtitle: 'Resist',
+        requirement: 'Catch The Unnamed while sanity > 30',
+        description: 'You have seen the abyss and turned away. Innsmouth fades in your wake.',
+        unlocksEndless: true
+    },
+    prophet: {
+        id: 'prophet',
+        name: 'The Prophet',
+        subtitle: 'Transcend',
+        requirement: 'Find all lore, catch The Unnamed, and maintain sanity 20-40',
+        description: 'Neither human nor Deep One. You understand now. You are the bridge.',
+        unlocksEndless: true,
+        secret: true
+    }
+};
+
+// Achievements configuration
+const ACHIEVEMENTS = {
+    // Fishing achievements
+    firstCatch: { id: 'first_catch', name: 'First Bite', desc: 'Catch your first fish', icon: '🐟' },
+    surfaceMaster: { id: 'surface_master', name: 'Surface Dweller', desc: 'Catch all surface creatures', icon: '🌊' },
+    midExplorer: { id: 'mid_explorer', name: 'Into the Blue', desc: 'Catch all mid-depth creatures', icon: '🌀' },
+    deepDiver: { id: 'deep_diver', name: 'Depths Unknown', desc: 'Catch all deep creatures', icon: '⚫' },
+    abyssWalker: { id: 'abyss_walker', name: 'Abyss Walker', desc: 'Catch all abyss creatures', icon: '👁️' },
+
+    // Wealth achievements
+    firstHundred: { id: 'first_hundred', name: 'Getting Started', desc: 'Earn 100 gold', icon: '🪙' },
+    thousandaire: { id: 'thousandaire', name: 'Thousandaire', desc: 'Earn 1000 gold', icon: '💰' },
+    richBeyondReason: { id: 'rich_beyond', name: 'Rich Beyond Reason', desc: 'Earn 5000 gold', icon: '👑' },
+
+    // Exploration achievements
+    reachVoid: { id: 'reach_void', name: 'Edge of Nothing', desc: 'Reach The Void', icon: '🕳️' },
+    allLocations: { id: 'all_locations', name: 'Wanderer', desc: 'Visit all locations', icon: '🗺️' },
+
+    // Lore achievements
+    firstLore: { id: 'first_lore', name: 'Curious Mind', desc: 'Find your first lore fragment', icon: '📜' },
+    halfLore: { id: 'half_lore', name: 'Truth Seeker', desc: 'Find half of all lore', icon: '📖' },
+    allLore: { id: 'all_lore', name: 'Forbidden Knowledge', desc: 'Find all lore fragments', icon: '📕' },
+
+    // Sanity achievements
+    brinkOfMadness: { id: 'brink', name: 'Brink of Madness', desc: 'Reach sanity below 10', icon: '🌀' },
+    transformation: { id: 'transformed', name: 'Changed', desc: 'Begin transformation', icon: '🧬' },
+
+    // Special achievements
+    goodBoy: { id: 'good_boy', name: 'Good Boy', desc: 'Pet the dog 50 times', icon: '🐕' },
+    stormChaser: { id: 'storm_chaser', name: 'Storm Chaser', desc: 'Catch a fish during a storm', icon: '⛈️' },
+    nightFisher: { id: 'night_fisher', name: 'Night Fisher', desc: 'Catch 10 fish at night', icon: '🌙' },
+
+    // Ending achievements
+    endingDeepOne: { id: 'ending_deep', name: 'The Deep One', desc: 'Achieve the Deep One ending', icon: '🐙' },
+    endingSurvivor: { id: 'ending_survivor', name: 'The Survivor', desc: 'Achieve the Survivor ending', icon: '🚶' },
+    endingProphet: { id: 'ending_prophet', name: 'The Prophet', desc: 'Achieve the Prophet ending', icon: '👁️‍🗨️' }
+};
+
 const NPC_DIALOGS = {
     greeting: [
         "Ah, another early riser. The fish bite best when the world sleeps.",
