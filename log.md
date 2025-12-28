@@ -2,6 +2,83 @@
 
 ---
 
+## 2025-12-28 — Refactor: drawShopInterior() Modularization
+
+### Problem
+`drawShopInterior()` in `js/npc.js` was 142 lines long with multiple responsibilities:
+- 10+ distinct visual components drawn in one function
+- Magic numbers scattered throughout (colors, sizes, positions)
+- Nested loops for patterns (walls, floor, nets, barrel)
+- Difficult to maintain and extend
+
+### Solution
+
+#### 1. Created `SHOP_INTERIOR` Configuration Object
+Centralized all layout values, colors, and dimensions:
+- `wall`: Panel colors, sizes, height ratio
+- `floor`: Plank colors, widths
+- `window`: Position, size, frame thickness, weather effects
+- `counter`: Height/width ratios, colors
+- `lantern`: Position, glow settings
+- `sign`: Position, size, colors
+- `net`: Grid dimensions, spacing
+- `barrel`: Position, radius, band colors
+
+#### 2. Extracted 7 Focused Helper Functions
+| Function | Lines | Responsibility |
+|----------|-------|----------------|
+| `drawShopWalls()` | 20 | Back wall with wood paneling pattern |
+| `drawShopFloor()` | 16 | Floor with plank lines |
+| `drawShopWindow()` | 34 | Window with sky view and rain effects |
+| `drawShopCounter()` | 20 | Counter with detail lines |
+| `drawShopLantern()` | 29 | Hanging lantern with radial glow |
+| `drawShopSign()` | 21 | Wall sign with text |
+| `drawShopNets()` | 23 | Fishing net pattern |
+| `drawShopBarrel()` | 29 | Corner barrel with metal bands |
+
+#### 3. Simplified Main Function
+`drawShopInterior()` is now 12 lines - a simple coordinator:
+```javascript
+function drawShopInterior(w, h) {
+    drawShopWalls(w, h);
+    drawShopFloor(w, h);
+    drawShopWindow(w, h);
+    drawShopShelves(50, h * 0.35, 200, h * 0.35);
+    drawShopCounter(w, h);
+    drawCounterItems(w * 0.15, h * SHOP_INTERIOR.counter.heightRatio - 30);
+    drawShopLantern(w, h);
+    drawShopSign(w);
+    drawShopNets(w);
+    drawShopBarrel(w, h);
+}
+```
+
+### Benefits
+- **Maintainability**: Each component can be modified independently
+- **Readability**: Clear function names describe what each part does
+- **Configurability**: All values in one place via `SHOP_INTERIOR` object
+- **Testability**: Smaller functions are easier to debug
+- **Extensibility**: Easy to add new shop elements
+
+### Files Modified
+- `js/npc.js`:
+  - Added `SHOP_INTERIOR` config object (lines 5-81)
+  - Replaced monolithic `drawShopInterior()` with coordinator (12 lines)
+  - Added 7 new helper functions for shop components
+
+### Testing
+1. Open shop via dock → [E] → "Old Marsh's Bait & Tackle"
+2. Verify all visual elements render correctly:
+   - Wood paneling on walls
+   - Floor planks
+   - Window with sky/water view
+   - Lantern with flickering glow
+   - Sign, nets, barrel, counter
+3. Test during rain/storm - verify rain effect in window
+4. Functionality unchanged - same behavior, cleaner code
+
+---
+
 ## 2025-12-28 — Fullscreen Bait Shop & Simplified Fishing
 
 ### Features Added
