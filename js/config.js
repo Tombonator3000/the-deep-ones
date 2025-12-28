@@ -8,7 +8,7 @@ const CONFIG = {
     useSprites: false,
     showDebug: true,
     assetPath: '',
-    dockX: 1000,
+    dockX: 1500,  // Must match CONFIG.locations.dock.x
     worldWidth: 6000,
     worldMinX: 50,
     worldMaxX: 5950,

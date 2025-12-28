@@ -219,10 +219,19 @@ function setupInputHandlers() {
             return;
         }
 
-        // Sprite toggle
+        // Sprite toggle - only allow if sprites are actually loaded
         if (e.key.toLowerCase() === 's' && !e.shiftKey) {
-            CONFIG.useSprites = !CONFIG.useSprites;
-            updateDebugPanel();
+            // Check if any sprites are actually loaded before allowing toggle
+            const loadedCount = Object.values(loadedAssets.status).filter(s => s === 'loaded').length;
+            if (loadedCount > 0 || !CONFIG.useSprites) {
+                // Only toggle ON if sprites are loaded, always allow toggle OFF
+                if (!CONFIG.useSprites && loadedCount === 0) {
+                    console.log('No sprites loaded - staying in procedural mode');
+                    return;
+                }
+                CONFIG.useSprites = !CONFIG.useSprites;
+                updateDebugPanel();
+            }
             return;
         }
 
@@ -504,15 +513,17 @@ function setupTouchControls() {
 }
 
 function handleTouchKeyDown(key) {
-    // Create a fake keyboard event and pass it through the normal input system
-    const fakeEvent = {
+    // Dispatch a keyboard event with proper properties for bubble and capture
+    const event = new KeyboardEvent('keydown', {
         key: key,
+        code: key === ' ' ? 'Space' : key,
+        keyCode: key === ' ' ? 32 : key.charCodeAt(0),
+        which: key === ' ' ? 32 : key.charCodeAt(0),
         shiftKey: false,
-        preventDefault: () => {}
-    };
-
-    // Trigger the same handlers as keyboard
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: key }));
+        bubbles: true,
+        cancelable: true
+    });
+    document.dispatchEvent(event);
 }
 
 function startHoldAction(key) {
@@ -551,7 +562,8 @@ function updateTouchActionButton() {
             actionBtn.textContent = 'REEL';
             break;
         case 'reeling':
-            actionBtn.textContent = 'PULL';
+            // During minigame, show hint to use arrow buttons
+            actionBtn.textContent = '◀ ▶';
             break;
         case 'caught':
             actionBtn.textContent = 'OK';
