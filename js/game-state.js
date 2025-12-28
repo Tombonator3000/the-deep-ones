@@ -8,7 +8,7 @@ const game = {
     money: 50,
     sanity: 100,
     depth: 0,
-    targetDepth: 30,
+    targetDepth: 0,  // Start at surface - use ArrowDown to go deeper
     boatX: 1500,
     cameraX: 0,
     time: 0,
