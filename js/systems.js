@@ -611,63 +611,26 @@ function updateLoreBottles() {
     });
 }
 
-// Minigame System
-// Minigame types for different zones
-const MINIGAME_TYPES = {
-    surface: {
-        name: 'standard',
-        description: 'Keep the marker in the zone!',
-        staminaDrain: 0.5,
-        tensionGain: 0.3
-    },
-    mid: {
-        name: 'erratic',
-        description: 'The fish moves unpredictably!',
-        staminaDrain: 0.4,
-        tensionGain: 0.35,
-        erraticChance: 0.05  // Chance to suddenly change direction
-    },
-    deep: {
-        name: 'tugOfWar',
-        description: 'Fight against the pull!',
-        staminaDrain: 0.35,
-        tensionGain: 0.4,
-        pullStrength: 0.02  // Constant pull on player zone
-    },
-    abyss: {
-        name: 'tentacles',
-        description: 'Avoid the interference!',
-        staminaDrain: 0.3,
-        tensionGain: 0.5,
-        interferenceChance: 0.03  // Chance to obscure part of the bar
-    }
-};
-
-function getMinigameType(creature) {
-    // Determine minigame type based on creature value
-    if (creature.value >= 500) return MINIGAME_TYPES.abyss;
-    if (creature.value >= 180) return MINIGAME_TYPES.deep;
-    if (creature.value >= 60) return MINIGAME_TYPES.mid;
-    return MINIGAME_TYPES.surface;
-}
+// Minigame System - Simplified "Cast n Chill" style
+// Simple progress-based fishing - no losing fish, just reel them in!
 
 function startMinigame(creature) {
-    const mgType = getMinigameType(creature);
-
     game.minigame.active = true;
-    game.minigame.type = mgType.name;
-    game.minigame.targetZone = 0.5;
-    game.minigame.playerZone = 0.5;
-    game.minigame.tension = 0;
-    game.minigame.fishStamina = 100;
-    game.minigame.difficulty = 1 - creature.rarity + (creature.sanityLoss / 100);
-    game.minigame.zoneSize = Math.max(0.08, 0.2 - game.minigame.difficulty * 0.1);
-    game.minigame.speed = 0.015 + game.minigame.difficulty * 0.02;
-    game.minigame.direction = Math.random() > 0.5 ? 1 : -1;
-    game.minigame.staminaDrain = mgType.staminaDrain;
-    game.minigame.tensionGain = mgType.tensionGain;
-    game.minigame.interference = null;  // For abyss type
-    game.minigame.pull = 0;  // For deep type
+    game.minigame.progress = 0;  // 0 to 100
+    game.minigame.reeling = false;  // Is player actively reeling?
+    game.minigame.fishWiggle = 0;  // Visual wiggle effect
+    game.minigame.splashTimer = 0;  // Splash effect timer
+
+    // Base reel speed - bigger/rarer fish are slightly slower
+    // Surface fish: ~2-3 seconds, Abyss fish: ~4-5 seconds
+    const baseSpeed = 1.5;  // Progress per frame
+    const rarityMod = 1 - (creature.rarity * 0.3);  // Rarer = slightly slower
+    const depthMod = creature.value >= 500 ? 0.7 : creature.value >= 180 ? 0.8 : creature.value >= 60 ? 0.9 : 1.0;
+    game.minigame.reelSpeed = baseSpeed * rarityMod * depthMod;
+
+    // Auto-reel speed (when not pressing) - slower but still progresses
+    game.minigame.autoSpeed = game.minigame.reelSpeed * 0.3;
+
     game.pendingCatch = creature;
 
     // Trigger bite sound
@@ -679,63 +642,32 @@ function updateMinigame(deltaTime) {
 
     const mg = game.minigame;
 
-    // Base movement
-    mg.targetZone += mg.direction * mg.speed;
-    if (mg.targetZone > 0.9 || mg.targetZone < 0.1) mg.direction *= -1;
-
-    // Type-specific behaviors
-    switch (mg.type) {
-        case 'erratic':
-            // More frequent direction changes
-            if (Math.random() < 0.05) mg.direction *= -1;
-            // Occasional speed bursts
-            if (Math.random() < 0.02) {
-                mg.targetZone += mg.direction * 0.1;
-                mg.targetZone = Math.max(0.1, Math.min(0.9, mg.targetZone));
-            }
-            break;
-
-        case 'tugOfWar':
-            // Constant pull towards center or edge
-            mg.pull = Math.sin(game.time * 0.003) * 0.015;
-            mg.playerZone += mg.pull;
-            mg.playerZone = Math.max(0, Math.min(1, mg.playerZone));
-            break;
-
-        case 'tentacles':
-            // Create interference zones that block visibility
-            if (!mg.interference && Math.random() < 0.02) {
-                mg.interference = {
-                    position: Math.random(),
-                    size: 0.15 + Math.random() * 0.1,
-                    timer: 60
-                };
-            }
-            if (mg.interference) {
-                mg.interference.timer--;
-                if (mg.interference.timer <= 0) mg.interference = null;
-            }
-            break;
-
-        default:
-            // Standard: occasional direction change
-            if (Math.random() < 0.02) mg.direction *= -1;
-    }
-
-    const inZone = Math.abs(mg.playerZone - mg.targetZone) < mg.zoneSize;
-
-    if (inZone) {
-        mg.fishStamina -= mg.staminaDrain;
-        mg.tension = Math.min(100, mg.tension + mg.tensionGain);
+    // Progress always increases - faster when reeling
+    if (mg.reeling) {
+        mg.progress += mg.reelSpeed;
         // Occasional reel sound
-        if (Math.random() < 0.03) triggerReelSound();
+        if (Math.random() < 0.08) triggerReelSound();
     } else {
-        mg.fishStamina = Math.min(100, mg.fishStamina + 0.1);
-        mg.tension = Math.max(0, mg.tension - 0.5);
+        // Auto progress even when not pressing (but slower)
+        mg.progress += mg.autoSpeed;
     }
 
-    if (mg.tension >= 100) { endMinigame(false); return; }
-    if (mg.fishStamina <= 0) { endMinigame(true); return; }
+    // Visual effects
+    mg.fishWiggle = Math.sin(game.time * 0.15) * (100 - mg.progress) * 0.1;
+    mg.splashTimer = Math.max(0, mg.splashTimer - 1);
+
+    // Create occasional splash effect while reeling
+    if (mg.reeling && Math.random() < 0.05) {
+        mg.splashTimer = 10;
+    }
+
+    // Clamp progress
+    mg.progress = Math.min(100, mg.progress);
+
+    // Fish caught when progress reaches 100
+    if (mg.progress >= 100) {
+        endMinigame(true);
+    }
 }
 
 function endMinigame(success) {
@@ -1806,10 +1738,11 @@ function updateFishStruggleParticles() {
         return p.life > 0;
     });
 
-    // Add new particles when fish is struggling hard
-    if (game.minigame.active && game.minigame.tension > 60) {
-        const intensity = (game.minigame.tension - 60) / 40;  // 0 to 1
-        if (Math.random() < intensity * 0.3) {
+    // Add new particles when actively reeling
+    if (game.minigame.active && game.minigame.reeling) {
+        // More particles near the end of reeling
+        const intensity = game.minigame.progress / 100;
+        if (Math.random() < intensity * 0.2) {
             const boatX = game.boatX - game.cameraX;
             const hookY = CONFIG.waterLine + 50 + (game.depth / 120) * 200;
             addFishStruggleParticle(boatX + 60, hookY);
@@ -1846,42 +1779,42 @@ function drawFishStruggleParticles() {
     });
 }
 
-// Visual indicator on the fish during minigame when struggling
+// Visual indicator on the fish during minigame when reeling
 function drawFishStruggleIndicator() {
-    if (!game.minigame.active || game.minigame.tension < 50) return;
+    if (!game.minigame.active || !game.minigame.reeling) return;
 
     const mg = game.minigame;
-    const barWidth = 300;
+    const barWidth = 320;
     const x = (CONFIG.canvas.width - barWidth) / 2;
-    const y = CONFIG.canvas.height - 100;
-    const fishX = x + mg.targetZone * barWidth;
+    const y = CONFIG.canvas.height - 110;
+    const fishX = x + 10 + (barWidth - 20) * (mg.progress / 100);
+    const fishY = y + 35 / 2;
 
-    const intensity = (mg.tension - 50) / 50;  // 0 to 1
-    const numParticles = Math.floor(intensity * 8) + 2;
+    // Sparkle particles when reeling
+    const intensity = mg.progress / 100;
+    const numParticles = 3 + Math.floor(intensity * 4);
 
-    // Draw burst particles around the fish icon
     for (let i = 0; i < numParticles; i++) {
-        const angle = (game.time * 0.02 + i * (Math.PI * 2 / numParticles)) % (Math.PI * 2);
-        const distance = 10 + intensity * 15 + Math.sin(game.time * 0.1 + i) * 5;
+        const angle = (game.time * 0.03 + i * (Math.PI * 2 / numParticles)) % (Math.PI * 2);
+        const distance = 12 + Math.sin(game.time * 0.15 + i) * 4;
         const px = fishX + Math.cos(angle) * distance;
-        const py = y + 15 + Math.sin(angle) * distance * 0.5;
+        const py = fishY + Math.sin(angle) * distance * 0.6;
 
-        const alpha = 0.3 + intensity * 0.5;
-        ctx.fillStyle = mg.tension > 80
-            ? `rgba(255, 100, 80, ${alpha})`
-            : `rgba(255, 180, 80, ${alpha})`;
+        const alpha = 0.4 + Math.sin(game.time * 0.1 + i) * 0.2;
+        ctx.fillStyle = `rgba(150, 220, 255, ${alpha})`;
 
         ctx.beginPath();
-        ctx.arc(px, py, 2 + intensity * 2, 0, Math.PI * 2);
+        ctx.arc(px, py, 2, 0, Math.PI * 2);
         ctx.fill();
     }
 
-    // Pulsing glow around fish
-    if (mg.tension > 70) {
+    // Subtle glow when nearly done
+    if (mg.progress > 75) {
         const pulse = (Math.sin(game.time * 0.1) + 1) / 2;
-        ctx.fillStyle = `rgba(255, 100, 50, ${0.1 + pulse * 0.15})`;
+        const glowIntensity = (mg.progress - 75) / 25;
+        ctx.fillStyle = `rgba(100, 200, 150, ${0.1 * glowIntensity + pulse * 0.1})`;
         ctx.beginPath();
-        ctx.arc(fishX, y + 15, 20 + pulse * 10, 0, Math.PI * 2);
+        ctx.arc(fishX, fishY, 20 + pulse * 5, 0, Math.PI * 2);
         ctx.fill();
     }
 }

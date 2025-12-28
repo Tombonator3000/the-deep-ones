@@ -2,6 +2,83 @@
 
 ---
 
+## 2025-12-28 — Fullscreen Bait Shop & Simplified Fishing
+
+### Features Added
+
+#### 1. Fullscreen Bait Shop Interior
+- Replaced small popup shop UI with fullscreen shop interior scene
+- Procedural graphics showing cozy fishing shop atmosphere:
+  - Dark wood paneling walls with detailed textures
+  - Window showing outside weather/sky (responds to time of day and weather)
+  - Shelves with bait jars, lure boxes, and fishing rods
+  - Counter with fish bucket, scale, and coins
+  - Barrel in corner
+  - Hanging lantern with flickering glow and light effects
+  - "Fresh Bait / Local Tackle" sign
+  - Fishing nets on wall
+- Old Marsh NPC rendered larger with apron, hat, beard, and pipe smoke
+- Shop UI panel on right side with same functionality
+- Creates immersive "entering the shop" feeling
+
+#### 2. Simplified Fishing Minigame (Cast n Chill Style)
+- Replaced complex zone-tracking minigame with simple progress bar
+- New mechanics:
+  - Progress bar fills automatically (slower)
+  - Hold SPACE to reel faster (progress fills ~3x faster)
+  - Fish always caught when bar reaches 100%
+  - No more losing fish or tension mechanics
+  - Rarer/deeper fish take slightly longer but still easy
+- Visual improvements:
+  - Fish icon moves along progress bar
+  - Fish wiggles less as you reel it in
+  - Splash effects when actively reeling
+  - Sparkle particles around fish when reeling
+  - Glow effect when near completion
+  - Percentage display on progress bar
+- Much more relaxed and accessible fishing experience
+- Average catch time: 2-5 seconds depending on fish rarity
+
+### Files Modified
+- `js/npc.js`:
+  - Complete rewrite of `drawShopUI()` for fullscreen view
+  - Added `drawShopInterior()` - shop background scene
+  - Added `drawShopShelves()` - shelf details with items
+  - Added `drawCounterItems()` - counter decorations
+  - Added `drawShopMarsh()` - larger NPC in shop
+
+- `js/systems.js`:
+  - Replaced `MINIGAME_TYPES` with simplified progress system
+  - Rewrote `startMinigame()` for progress-based mechanics
+  - Rewrote `updateMinigame()` for auto-progress + reel boost
+  - Updated `updateFishStruggleParticles()` for new mechanics
+  - Updated `drawFishStruggleIndicator()` for sparkle effects
+
+- `js/rendering.js`:
+  - Rewrote `drawMinigame()` with new progress bar UI
+
+- `js/input.js`:
+  - Updated `handleMinigameInput()` for hold-to-reel
+  - Added `handleMinigameKeyUp()` for release detection
+  - Added keyup event listener in `setupInputHandlers()`
+  - Updated touch controls for minigame reeling
+  - Updated `updateTouchActionButton()` for minigame state
+
+- `js/game-state.js`:
+  - Updated `minigame` object with new properties:
+    - `progress`, `reeling`, `reelSpeed`, `autoSpeed`, `fishWiggle`, `splashTimer`
+
+### Testing
+1. Press E near dock to open village menu
+2. Select "Old Marsh's Bait & Tackle" - should see fullscreen shop
+3. Navigate with TAB, arrows, SPACE - shop functionality unchanged
+4. ESC to exit shop
+5. Cast line with SPACE, wait for bite
+6. Hold SPACE to reel faster, or let it auto-progress
+7. Fish always caught - much faster and simpler!
+
+---
+
 ## 2025-12-28 — Fix: Invalid RGBA Color Format in Water Reflections
 
 ### Problem

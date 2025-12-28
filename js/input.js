@@ -5,11 +5,20 @@
 function handleMinigameInput(e) {
     if (!game.minigame.active) return false;
 
-    if (e.key === 'ArrowLeft') {
-        game.minigame.playerZone = Math.max(0, game.minigame.playerZone - 0.03);
+    // Simplified minigame - SPACE to reel faster
+    if (e.key === ' ' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        game.minigame.reeling = true;
         return true;
-    } else if (e.key === 'ArrowRight') {
-        game.minigame.playerZone = Math.min(1, game.minigame.playerZone + 0.03);
+    }
+    return false;
+}
+
+// Handle key release for minigame
+function handleMinigameKeyUp(e) {
+    if (!game.minigame.active) return false;
+
+    if (e.key === ' ' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        game.minigame.reeling = false;
         return true;
     }
     return false;
@@ -427,6 +436,11 @@ function setupInputHandlers() {
                 break;
         }
     });
+
+    // Keyup handler for minigame (stop reeling)
+    document.addEventListener('keyup', (e) => {
+        handleMinigameKeyUp(e);
+    });
 }
 
 function cycleTime() {
@@ -471,9 +485,13 @@ function setupTouchControls() {
             btn.classList.add('pressed');
             handleTouchKeyDown(key);
 
-            // For movement keys, enable continuous movement
+            // For movement keys AND space during minigame, enable continuous action
             if (key === 'ArrowLeft' || key === 'ArrowRight' || key === 'ArrowUp' || key === 'ArrowDown') {
                 startHoldAction(key);
+            }
+            // Enable continuous reeling during minigame
+            if (key === ' ' && game.minigame && game.minigame.active) {
+                game.minigame.reeling = true;
             }
         }, { passive: false });
 
@@ -482,12 +500,19 @@ function setupTouchControls() {
             e.preventDefault();
             btn.classList.remove('pressed');
             stopHoldAction(key);
+            // Stop reeling when releasing
+            if (key === ' ' && game.minigame) {
+                game.minigame.reeling = false;
+            }
         }, { passive: false });
 
         // Touch cancel
         btn.addEventListener('touchcancel', (e) => {
             btn.classList.remove('pressed');
             stopHoldAction(key);
+            if (key === ' ' && game.minigame) {
+                game.minigame.reeling = false;
+            }
         });
 
         // Mouse events for testing on desktop
@@ -499,16 +524,26 @@ function setupTouchControls() {
             if (key === 'ArrowLeft' || key === 'ArrowRight' || key === 'ArrowUp' || key === 'ArrowDown') {
                 startHoldAction(key);
             }
+            // Enable continuous reeling during minigame
+            if (key === ' ' && game.minigame && game.minigame.active) {
+                game.minigame.reeling = true;
+            }
         });
 
         btn.addEventListener('mouseup', (e) => {
             btn.classList.remove('pressed');
             stopHoldAction(key);
+            if (key === ' ' && game.minigame) {
+                game.minigame.reeling = false;
+            }
         });
 
         btn.addEventListener('mouseleave', (e) => {
             btn.classList.remove('pressed');
             stopHoldAction(key);
+            if (key === ' ' && game.minigame) {
+                game.minigame.reeling = false;
+            }
         });
     });
 
@@ -562,6 +597,12 @@ function updateTouchActionButton() {
     const actionBtn = document.getElementById('touch-action');
     if (!actionBtn) return;
 
+    // Check if minigame is active
+    if (game.minigame && game.minigame.active) {
+        actionBtn.textContent = 'REEL';
+        return;
+    }
+
     switch (game.state) {
         case 'sailing':
             actionBtn.textContent = 'CAST';
@@ -570,8 +611,7 @@ function updateTouchActionButton() {
             actionBtn.textContent = 'REEL';
             break;
         case 'reeling':
-            // During minigame, show hint to use arrow buttons
-            actionBtn.textContent = '◀ ▶';
+            actionBtn.textContent = 'REEL';
             break;
         case 'caught':
             actionBtn.textContent = 'OK';
