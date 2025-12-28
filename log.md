@@ -2,6 +2,96 @@
 
 ---
 
+## 2025-12-28 — Player Display & Control Fixes
+
+### Problem
+Flere problemer rapportert:
+1. Spiller/båt ikke synlig på skjermen
+2. Ingen knapper fungerte
+3. Kunne ikke styre snøre opp/ned eller caste
+4. Grafikken ble rar når man trykket "S"
+
+### Årsaker identifisert
+
+#### 1. Inkonsistent dock-posisjon
+- `CONFIG.dockX = 1000` men `CONFIG.locations.dock.x = 1500`
+- Spilleren startet på x=1500 (ved dokken visuelt)
+- Men dock-proximity sjekken brukte x=1000
+- Resulterte i feil nearDock deteksjon
+
+#### 2. S-tasten sprite-toggle
+- "S" toggler `CONFIG.useSprites` mellom true/false
+- Ingen sprites er lastet (alle faller tilbake til prosedyral)
+- Når sprites var aktivert uten lastet grafikk, ble ting rart
+
+#### 3. Touch-kontroller event-håndtering
+- KeyboardEvent manglet `bubbles: true` property
+- Events bobled ikke korrekt til document listener
+- Førte til at touch-knapper ikke alltid registrerte
+
+#### 4. Forvirrende minigame-knapp
+- Knappen viste "PULL" under minigame
+- Impliserte en handling, men Space gjør ingenting under minigame
+- Spillere visste ikke at de skulle bruke ← → piltaster
+
+### Løsninger
+
+#### 1. Fikset CONFIG.dockX (js/config.js)
+```javascript
+// Før:
+dockX: 1000,
+
+// Etter:
+dockX: 1500,  // Must match CONFIG.locations.dock.x
+```
+
+#### 2. Sikret S-tasten sprite-toggle (js/input.js)
+- Sjekker nå om sprites faktisk er lastet før toggle
+- Forhindrer aktivering av sprite-modus uten tilgjengelige sprites
+- Logger melding til console hvis ingen sprites
+
+#### 3. Forbedret touch event-håndtering (js/input.js)
+```javascript
+const event = new KeyboardEvent('keydown', {
+    key: key,
+    code: key === ' ' ? 'Space' : key,
+    keyCode: key === ' ' ? 32 : key.charCodeAt(0),
+    which: key === ' ' ? 32 : key.charCodeAt(0),
+    shiftKey: false,
+    bubbles: true,       // Viktig!
+    cancelable: true
+});
+```
+
+#### 4. Endret minigame-knapp tekst (js/input.js)
+- "PULL" → "◀ ▶" under minigame
+- Indikerer at spilleren skal bruke piltastene
+
+#### 5. Oppdatert kontrollhint (game.html)
+```html
+<!-- Før: -->
+[SPACE] Cast | [Arrows] Move | [E] Harbor | [P] Pet | [M] Mute | [F] Fullscreen | [O] Settings | [H] Help
+
+<!-- Etter: -->
+[SPACE] Cast/Reel | [↑↓] Depth | [←→] Move | [J] Journal | [T] Time
+```
+
+### Endringer
+- `js/config.js`: Fikset dockX til 1500
+- `js/input.js`: Sikret sprite-toggle, forbedret touch events, endret minigame-knapp
+- `game.html`: Oppdatert kontrollhint
+
+### Testing
+1. Start spillet og trykk "NEW GAME"
+2. Båten skal vises ved dokken
+3. [E] skal fungere for å åpne harbor-menyen
+4. SPACE skal caste snøret
+5. ↑↓ skal justere dybde under fisking
+6. Touch-kontroller skal fungere på mobil
+7. S-tasten skal ikke ødelegge grafikken (hvis ingen sprites)
+
+---
+
 ## 2025-12-28 — Celestial Orbit System (Sol/Måne-bane)
 
 ### Gjort
