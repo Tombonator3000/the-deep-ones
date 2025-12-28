@@ -2,6 +2,107 @@
 
 ---
 
+## 2025-12-28 — Deep Audit After Refactoring
+
+### Problem
+Etter refaktorering av `drawBoatProcedural()`:
+1. Spiller/båt dukker fremdeles ikke opp på skjermen
+2. Kan ikke styre snøre opp/ned eller caste
+
+### Audit-funn
+
+#### 1. Kode-syntaks: OK ✓
+Alle JavaScript-filer passerer `node --check` - ingen syntaksfeil.
+
+#### 2. Refaktorering: OK ✓
+`drawBoatProcedural()` og hjelpefunksjonene (`drawBoatHull`, `drawFisher`, `drawBoatDog`, `drawBoatFishingRod`, `drawBoatLantern`) er korrekt implementert:
+- Alle funksjoner er definert i rendering.js
+- `getTransformationVisuals()` kalles korrekt fra systems.js
+- Script-rekkefølge er korrekt (systems.js lastes før rendering.js)
+
+#### 3. Potensielle problemer identifisert
+
+##### a) cameraX ikke initialisert ved første render
+- `game.cameraX` var initialisert til 0 i game-state.js
+- Ved spillstart: `game.boatX = 1500`, `game.cameraX = 0`
+- Båtens skjermposisjon: `x = 1500 - 0 = 1500` (UTENFOR skjermen!)
+- Første `update()` oppdaterer `game.cameraX`, men potensielt timing-problem
+
+##### b) Manglende guards i drawBoatProcedural
+- `getTransformationVisuals()` kunne potensielt returnere undefined
+- Ingen fallback-verdier hvis funksjonen feilet
+
+### Løsninger
+
+#### 1. Initialiserer cameraX umiddelbart i startGame/continueGame (js/main.js)
+```javascript
+// I startGame():
+game.boatX = CONFIG.dockX;
+
+// NYTT: Initialiserer cameraX umiddelbart
+game.cameraX = game.boatX - CONFIG.canvas.width / 2;
+game.cameraX = Math.max(0, Math.min(game.cameraX, CONFIG.worldWidth - CONFIG.canvas.width));
+```
+
+#### 2. Guards rundt game.camera i startGame (js/main.js)
+```javascript
+if (game.camera) {
+    game.camera.y = 0;
+    game.camera.targetY = 0;
+    game.camera.mode = 'surface';
+}
+```
+
+#### 3. Fallback-verdier i drawBoatProcedural (js/rendering.js)
+```javascript
+let transVis;
+try {
+    transVis = getTransformationVisuals();
+} catch (e) {
+    console.warn('getTransformationVisuals failed, using defaults:', e);
+}
+
+// Fallback hvis transVis er undefined
+if (!transVis || !transVis.skinColor) {
+    transVis = {
+        skinColor: '#d4a574',
+        eyeSize: 1,
+        hasGills: false,
+        hasWebbing: false,
+        glowIntensity: 0
+    };
+}
+```
+
+### Verifisering av kontroller
+Fiskelinje-kontrollene er korrekt implementert i input.js:
+- **ArrowUp**: Reduserer `game.targetDepth` når fishing
+- **ArrowDown**: Øker `game.targetDepth` når fishing
+- **Space**: Toggler mellom sailing/waiting/caught states
+
+Depth-oppdatering i update() er korrekt:
+- `game.depth += (game.targetDepth - game.depth) * 0.02`
+
+### Endringer
+- `js/main.js`:
+  - Initialiserer cameraX umiddelbart ved spillstart
+  - Guards rundt game.camera tilgang
+  - Console.log for debugging ved spillstart
+- `js/rendering.js`:
+  - Fallback-verdier i drawBoatProcedural()
+  - try/catch rundt getTransformationVisuals()
+
+### Test-instruksjoner
+1. Åpne game.html i browser
+2. Åpne Developer Console (F12)
+3. Klikk "NEW GAME"
+4. Sjekk console for `[THE DEEP ONES] Game started - boatX: 1500, cameraX: 1000, state: sailing`
+5. Båten skal være synlig i senter av skjermen
+6. Trykk SPACE for å caste
+7. Trykk Arrow Up/Down for å justere dybde
+
+---
+
 ## 2025-12-28 — Deep Audit & Multiple Fixes
 
 ### Problem
