@@ -2,6 +2,53 @@
 
 ---
 
+## 2025-12-28 — Fix: Invalid RGBA Color Format in Water Reflections
+
+### Problem
+Konsoll-feil: `SyntaxError: Failed to execute 'addColorStop' on 'CanvasGradient'`
+- Feilmeldingen viste `rgba(#2a2040, #4a3a60, #8a6080, 0.02...)` som ugyldig farge
+- Spiller/båt dukket ikke opp på skjermen pga. render-feil
+
+### Årsak
+Bug i `drawEnhancedWaterReflection()` i `js/systems.js`:
+- Koden brukte `palette.sky[0], palette.sky[1], palette.sky[2]` som om de var RGB-verdier
+- Men `palette.sky` er en array med hex-farger (`['#2a2040', '#4a3a60', ...]`)
+- Resulterte i ugyldig CSS: `rgba(#2a2040, #4a3a60, #8a6080, 0.02)`
+
+### Løsning
+
+#### 1. Ny hjelpefunksjon `hexToRgba()` (js/systems.js)
+```javascript
+function hexToRgba(hex, alpha) {
+    if (!hex || typeof hex !== 'string') {
+        return `rgba(100, 150, 200, ${alpha})`;  // Fallback color
+    }
+    const r = parseInt(hex.slice(1, 3), 16) || 0;
+    const g = parseInt(hex.slice(3, 5), 16) || 0;
+    const b = parseInt(hex.slice(5, 7), 16) || 0;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+```
+
+#### 2. Fikset `drawEnhancedWaterReflection()` (js/systems.js)
+- Bruker nå én hex-farge fra paletten (midterste)
+- Konverterer korrekt med `hexToRgba()`
+- Lagt til safety-guards for edge cases
+
+### Endringer
+- `js/systems.js`:
+  - Ny `hexToRgba()` funksjon etter `lerpHexColor()`
+  - Fikset farge-håndtering i `drawEnhancedWaterReflection()`
+  - Lagt til null-sjekker for palette
+
+### Testing
+1. Start spillet og trykk "NEW GAME"
+2. Båten skal nå vises korrekt på skjermen
+3. Ingen `SyntaxError` i konsollen
+4. Vannrefleksjoner skal fungere uten feil
+
+---
+
 ## 2025-12-28 — Deep Audit After Refactoring
 
 ### Problem

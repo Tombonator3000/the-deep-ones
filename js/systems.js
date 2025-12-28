@@ -173,6 +173,22 @@ function lerpHexColor(hex1, hex2, t) {
 }
 
 /**
+ * Converts hex color to rgba string
+ * @param {string} hex - Hex color like '#2a2040'
+ * @param {number} alpha - Alpha value 0-1
+ * @returns {string} - rgba string like 'rgba(42, 32, 64, 0.5)'
+ */
+function hexToRgba(hex, alpha) {
+    if (!hex || typeof hex !== 'string') {
+        return `rgba(100, 150, 200, ${alpha})`;  // Fallback color
+    }
+    const r = parseInt(hex.slice(1, 3), 16) || 0;
+    const g = parseInt(hex.slice(3, 5), 16) || 0;
+    const b = parseInt(hex.slice(5, 7), 16) || 0;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/**
  * Beregner månefarge/lysstyrke
  */
 function getMoonColor(heightRatio) {
@@ -2075,7 +2091,15 @@ function drawEnhancedWaterReflection() {
     // Sky/cloud reflection on water
     const palette = getTimePalette();
 
+    // Safety check for palette and palette.sky
+    if (!palette || !palette.sky || !Array.isArray(palette.sky) || palette.sky.length === 0) {
+        return; // Skip drawing if palette is not available
+    }
+
     // Create shimmering sky reflection
+    // Use middle sky color from palette (it's an array of hex colors, not RGB components)
+    const skyColor = palette.sky[Math.floor(palette.sky.length / 2)] || '#6090c0';
+
     for (let i = 0; i < 8; i++) {
         const shimmerX = (i * 150 + game.time * 0.02) % (CONFIG.canvas.width + 200) - 100;
         const shimmerY = reflectionY + 5 + Math.sin(game.time * 0.002 + i) * 3;
@@ -2084,7 +2108,7 @@ function drawEnhancedWaterReflection() {
 
         const gradient = ctx.createLinearGradient(shimmerX, shimmerY, shimmerX + shimmerWidth, shimmerY + 30);
         gradient.addColorStop(0, 'transparent');
-        gradient.addColorStop(0.5, `rgba(${palette.sky[0]}, ${palette.sky[1]}, ${palette.sky[2]}, ${shimmerAlpha})`);
+        gradient.addColorStop(0.5, hexToRgba(skyColor, shimmerAlpha));
         gradient.addColorStop(1, 'transparent');
 
         ctx.fillStyle = gradient;
