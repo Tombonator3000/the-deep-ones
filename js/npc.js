@@ -139,54 +139,401 @@ function drawOldMarsh(dockX) {
 function drawShopUI() {
     if (!game.shop.open) return;
 
-    const w = 500, h = 400;
-    const x = (CONFIG.canvas.width - w) / 2;
-    const y = (CONFIG.canvas.height - h) / 2;
+    const w = CONFIG.canvas.width;
+    const h = CONFIG.canvas.height;
 
-    ctx.fillStyle = 'rgba(15, 20, 18, 0.98)';
-    ctx.fillRect(x, y, w, h);
-    ctx.strokeStyle = '#5a8a6a';
+    // Draw fullscreen shop interior background
+    drawShopInterior(w, h);
+
+    // Draw Old Marsh NPC
+    drawShopMarsh(w, h);
+
+    // Draw UI panel on the right side
+    const panelW = 420, panelH = h - 80;
+    const panelX = w - panelW - 30;
+    const panelY = 40;
+
+    // Semi-transparent panel background
+    ctx.fillStyle = 'rgba(15, 12, 10, 0.92)';
+    ctx.fillRect(panelX, panelY, panelW, panelH);
+    ctx.strokeStyle = '#6a5a4a';
     ctx.lineWidth = 3;
-    ctx.strokeRect(x, y, w, h);
+    ctx.strokeRect(panelX, panelY, panelW, panelH);
 
-    ctx.font = '16px "Press Start 2P"';
-    ctx.fillStyle = '#8aba9a';
+    // Title
+    ctx.font = '14px "Press Start 2P"';
+    ctx.fillStyle = '#c0a080';
     ctx.textAlign = 'center';
-    ctx.fillText("MARSH'S BAIT & TACKLE", x + w/2, y + 30);
+    ctx.fillText("MARSH'S BAIT & TACKLE", panelX + panelW/2, panelY + 28);
 
+    // Gold display
+    ctx.font = '16px VT323';
+    ctx.fillStyle = '#d0c080';
+    ctx.fillText(`Gold: ${game.money}`, panelX + panelW/2, panelY + 50);
+
+    // Tabs
     const tabs = ['SELL', 'RODS', 'LURES', 'BOATS'];
-    const tabWidth = w / 4;
+    const tabWidth = panelW / 4;
     tabs.forEach((tab, i) => {
-        const tabX = x + i * tabWidth;
+        const tabX = panelX + i * tabWidth;
         const isActive = game.shop.tab === tab.toLowerCase();
-        ctx.fillStyle = isActive ? 'rgba(90, 140, 110, 0.3)' : 'rgba(30, 40, 35, 0.5)';
-        ctx.fillRect(tabX, y + 45, tabWidth, 25);
-        ctx.fillStyle = isActive ? '#aaddaa' : '#6a8a7a';
-        ctx.font = '12px VT323';
-        ctx.fillText(tab, tabX + tabWidth/2, y + 62);
+        ctx.fillStyle = isActive ? 'rgba(100, 80, 60, 0.6)' : 'rgba(40, 30, 25, 0.5)';
+        ctx.fillRect(tabX, panelY + 60, tabWidth, 28);
+        ctx.fillStyle = isActive ? '#e0d0b0' : '#8a7a6a';
+        ctx.font = '14px VT323';
+        ctx.fillText(tab, tabX + tabWidth/2, panelY + 80);
     });
 
+    // NPC Dialog bubble
     if (game.shop.npcDialog) {
-        ctx.fillStyle = 'rgba(40, 50, 45, 0.8)';
-        ctx.fillRect(x + 20, y + 80, w - 40, 40);
-        ctx.fillStyle = '#c0d0c0';
+        ctx.fillStyle = 'rgba(50, 40, 35, 0.9)';
+        ctx.fillRect(panelX + 15, panelY + 95, panelW - 30, 45);
+        ctx.strokeStyle = '#8a7a6a';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(panelX + 15, panelY + 95, panelW - 30, 45);
+        ctx.fillStyle = '#d0c0a0';
         ctx.font = '14px VT323';
-        ctx.fillText(`"${game.shop.npcDialog}"`, x + w/2, y + 105);
+        ctx.fillText(`"${game.shop.npcDialog}"`, panelX + panelW/2, panelY + 122);
     }
 
-    const contentY = y + 130;
+    // Content area
+    const contentY = panelY + 150;
+    const contentW = panelW - 40;
     ctx.textAlign = 'left';
 
-    if (game.shop.tab === 'sell') drawSellTab(x + 20, contentY, w - 40);
-    else if (game.shop.tab === 'rods') drawEquipmentTab(x + 20, contentY, w - 40, SHOP.rods, 'rod');
-    else if (game.shop.tab === 'lures') drawLuresTab(x + 20, contentY, w - 40);
-    else if (game.shop.tab === 'boats') drawEquipmentTab(x + 20, contentY, w - 40, SHOP.boats, 'boat');
+    if (game.shop.tab === 'sell') drawSellTab(panelX + 20, contentY, contentW);
+    else if (game.shop.tab === 'rods') drawEquipmentTab(panelX + 20, contentY, contentW, SHOP.rods, 'rod');
+    else if (game.shop.tab === 'lures') drawLuresTab(panelX + 20, contentY, contentW);
+    else if (game.shop.tab === 'boats') drawEquipmentTab(panelX + 20, contentY, contentW, SHOP.boats, 'boat');
 
-    ctx.fillStyle = '#5a7a6a';
+    // Controls at bottom
+    ctx.fillStyle = '#6a5a4a';
     ctx.font = '12px VT323';
     ctx.textAlign = 'center';
-    ctx.fillText('[TAB] Switch tabs | [UP/DOWN] Select | [SPACE] Action | [ESC] Close', x + w/2, y + h - 15);
+    ctx.fillText('[TAB] Switch | [↑/↓] Select | [SPACE] Action | [ESC] Leave', panelX + panelW/2, panelY + panelH - 12);
     ctx.textAlign = 'left';
+}
+
+// Draw the shop interior background
+function drawShopInterior(w, h) {
+    // Back wall - dark wood paneling
+    ctx.fillStyle = '#2a2018';
+    ctx.fillRect(0, 0, w, h);
+
+    // Wood panel pattern on back wall
+    ctx.fillStyle = '#3a2a1a';
+    for (let i = 0; i < w; i += 60) {
+        ctx.fillRect(i, 0, 2, h * 0.7);
+    }
+    for (let i = 0; i < h * 0.7; i += 40) {
+        ctx.fillStyle = '#2a1a10';
+        ctx.fillRect(0, i, w, 2);
+    }
+
+    // Floor - darker planks
+    ctx.fillStyle = '#1a1510';
+    ctx.fillRect(0, h * 0.7, w, h * 0.3);
+    // Floor planks
+    ctx.fillStyle = '#251a12';
+    for (let i = 0; i < w; i += 80) {
+        ctx.fillRect(i, h * 0.7, 3, h * 0.3);
+    }
+
+    // Window on left side with outside view
+    const winX = 50, winY = 80, winW = 180, winH = 200;
+    // Window frame
+    ctx.fillStyle = '#4a3a28';
+    ctx.fillRect(winX - 8, winY - 8, winW + 16, winH + 16);
+    // Window glass - show sky/water based on time
+    const palette = typeof getTimePalette === 'function' ? getTimePalette() : { sky: ['#4a6080'] };
+    const skyColor = palette.sky[1] || '#4a6080';
+    ctx.fillStyle = skyColor;
+    ctx.fillRect(winX, winY, winW, winH * 0.5);
+    // Water in window
+    ctx.fillStyle = '#1a3a4a';
+    ctx.fillRect(winX, winY + winH * 0.5, winW, winH * 0.5);
+    // Window cross bars
+    ctx.fillStyle = '#3a2a1a';
+    ctx.fillRect(winX + winW/2 - 3, winY, 6, winH);
+    ctx.fillRect(winX, winY + winH/2 - 3, winW, 6);
+    // Rain effect if raining
+    if (game.weather && (game.weather.current === 'rain' || game.weather.current === 'storm')) {
+        ctx.fillStyle = 'rgba(150, 180, 200, 0.3)';
+        for (let i = 0; i < 10; i++) {
+            const rx = winX + Math.random() * winW;
+            const ry = winY + Math.random() * winH;
+            ctx.fillRect(rx, ry, 1, 8);
+        }
+    }
+
+    // Shelves on left wall with items
+    drawShopShelves(50, h * 0.35, 200, h * 0.35);
+
+    // Counter in front
+    const counterY = h * 0.65;
+    ctx.fillStyle = '#4a3a28';
+    ctx.fillRect(0, counterY, w * 0.55, h - counterY);
+    // Counter top
+    ctx.fillStyle = '#5a4a38';
+    ctx.fillRect(0, counterY, w * 0.55, 12);
+    // Counter front detail
+    ctx.fillStyle = '#3a2a1a';
+    for (let i = 0; i < w * 0.55; i += 50) {
+        ctx.fillRect(i, counterY + 12, 2, h - counterY - 12);
+    }
+
+    // Items on counter
+    drawCounterItems(w * 0.15, counterY - 30);
+
+    // Hanging lantern
+    const lanternX = w * 0.3;
+    const lanternY = 50;
+    const flicker = 0.7 + Math.sin(game.time * 0.05) * 0.15;
+    // Chain
+    ctx.strokeStyle = '#5a5a5a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(lanternX, 0);
+    ctx.lineTo(lanternX, lanternY);
+    ctx.stroke();
+    // Lantern body
+    ctx.fillStyle = '#3a3530';
+    ctx.fillRect(lanternX - 12, lanternY, 24, 35);
+    // Lantern glow
+    ctx.fillStyle = `rgba(255, 200, 100, ${flicker * 0.8})`;
+    ctx.fillRect(lanternX - 8, lanternY + 5, 16, 25);
+    // Light effect
+    const gradient = ctx.createRadialGradient(lanternX, lanternY + 20, 0, lanternX, lanternY + 20, 150);
+    gradient.addColorStop(0, `rgba(255, 200, 100, ${flicker * 0.15})`);
+    gradient.addColorStop(1, 'rgba(255, 200, 100, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(lanternX - 150, lanternY - 50, 300, 300);
+
+    // Sign on wall
+    ctx.fillStyle = '#3a3028';
+    ctx.fillRect(w * 0.35, 30, 150, 50);
+    ctx.strokeStyle = '#5a4a38';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(w * 0.35, 30, 150, 50);
+    ctx.fillStyle = '#a09070';
+    ctx.font = '12px VT323';
+    ctx.textAlign = 'center';
+    ctx.fillText('FRESH BAIT', w * 0.35 + 75, 50);
+    ctx.fillText('LOCAL TACKLE', w * 0.35 + 75, 68);
+    ctx.textAlign = 'left';
+
+    // Fishing nets on wall
+    ctx.strokeStyle = '#5a5040';
+    ctx.lineWidth = 1;
+    const netX = w * 0.55, netY = 100;
+    for (let i = 0; i < 8; i++) {
+        for (let j = 0; j < 6; j++) {
+            ctx.beginPath();
+            ctx.moveTo(netX + i * 15, netY + j * 15);
+            ctx.lineTo(netX + (i + 1) * 15, netY + (j + 1) * 15);
+            ctx.moveTo(netX + (i + 1) * 15, netY + j * 15);
+            ctx.lineTo(netX + i * 15, netY + (j + 1) * 15);
+            ctx.stroke();
+        }
+    }
+
+    // Barrel in corner
+    const barrelX = 280, barrelY = h * 0.5;
+    ctx.fillStyle = '#4a3a25';
+    ctx.beginPath();
+    ctx.ellipse(barrelX, barrelY + 50, 30, 15, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(barrelX - 30, barrelY, 60, 50);
+    ctx.beginPath();
+    ctx.ellipse(barrelX, barrelY, 30, 15, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Barrel bands
+    ctx.strokeStyle = '#6a5a4a';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(barrelX, barrelY + 15, 30, 12, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(barrelX, barrelY + 40, 30, 12, 0, 0, Math.PI * 2);
+    ctx.stroke();
+}
+
+// Draw shelves with fishing equipment
+function drawShopShelves(x, y, w, h) {
+    const shelfCount = 3;
+    const shelfH = h / shelfCount;
+
+    for (let i = 0; i < shelfCount; i++) {
+        const shelfY = y + i * shelfH;
+        // Shelf plank
+        ctx.fillStyle = '#4a3a28';
+        ctx.fillRect(x, shelfY + shelfH - 8, w, 8);
+        // Shelf bracket
+        ctx.fillStyle = '#3a2a1a';
+        ctx.beginPath();
+        ctx.moveTo(x, shelfY + shelfH);
+        ctx.lineTo(x + 15, shelfY + shelfH);
+        ctx.lineTo(x, shelfY + shelfH - 20);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(x + w, shelfY + shelfH);
+        ctx.lineTo(x + w - 15, shelfY + shelfH);
+        ctx.lineTo(x + w, shelfY + shelfH - 20);
+        ctx.closePath();
+        ctx.fill();
+
+        // Items on shelf
+        if (i === 0) {
+            // Jars of bait
+            for (let j = 0; j < 4; j++) {
+                const jarX = x + 20 + j * 40;
+                ctx.fillStyle = '#6a8a6a';
+                ctx.fillRect(jarX, shelfY + shelfH - 35, 25, 25);
+                ctx.fillStyle = '#8aa88a';
+                ctx.fillRect(jarX + 2, shelfY + shelfH - 33, 21, 8);
+                ctx.fillStyle = '#4a3a2a';
+                ctx.fillRect(jarX, shelfY + shelfH - 40, 25, 6);
+            }
+        } else if (i === 1) {
+            // Lure boxes
+            for (let j = 0; j < 3; j++) {
+                const boxX = x + 15 + j * 55;
+                ctx.fillStyle = '#8a6a4a';
+                ctx.fillRect(boxX, shelfY + shelfH - 28, 45, 18);
+                ctx.strokeStyle = '#5a4a3a';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(boxX, shelfY + shelfH - 28, 45, 18);
+            }
+        } else {
+            // Small rods
+            ctx.strokeStyle = '#6a5a4a';
+            ctx.lineWidth = 3;
+            for (let j = 0; j < 5; j++) {
+                ctx.beginPath();
+                ctx.moveTo(x + 20 + j * 35, shelfY + shelfH - 8);
+                ctx.lineTo(x + 20 + j * 35 + 20, shelfY + shelfH - 50);
+                ctx.stroke();
+            }
+        }
+    }
+}
+
+// Draw items on the counter
+function drawCounterItems(x, y) {
+    // Fish bucket
+    ctx.fillStyle = '#5a6a6a';
+    ctx.fillRect(x, y - 25, 35, 35);
+    ctx.fillStyle = '#7a8a8a';
+    ctx.beginPath();
+    ctx.ellipse(x + 17, y - 25, 17, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Handle
+    ctx.strokeStyle = '#4a5a5a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x + 17, y - 35, 12, Math.PI, 0);
+    ctx.stroke();
+
+    // Scale
+    const scaleX = x + 80;
+    ctx.fillStyle = '#8a7a5a';
+    ctx.fillRect(scaleX, y - 8, 50, 12);
+    // Scale plate
+    ctx.fillStyle = '#9a8a6a';
+    ctx.beginPath();
+    ctx.ellipse(scaleX + 25, y - 12, 22, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Coins
+    const coinX = x + 150;
+    ctx.fillStyle = '#d0b060';
+    for (let i = 0; i < 5; i++) {
+        ctx.beginPath();
+        ctx.ellipse(coinX + i * 4, y - 5 - i * 2, 8, 3, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+// Draw Old Marsh NPC in the shop
+function drawShopMarsh(w, h) {
+    const x = w * 0.25;
+    const y = h * 0.55;
+    const bob = Math.sin(game.time * 0.01) * 2;
+
+    // Body/coat
+    ctx.fillStyle = '#1a1815';
+    ctx.beginPath();
+    ctx.moveTo(x - 30, y + 80);
+    ctx.lineTo(x - 25, y - 20 + bob);
+    ctx.lineTo(x + 25, y - 20 + bob);
+    ctx.lineTo(x + 30, y + 80);
+    ctx.closePath();
+    ctx.fill();
+
+    // Apron
+    ctx.fillStyle = '#4a4a40';
+    ctx.beginPath();
+    ctx.moveTo(x - 20, y + bob);
+    ctx.lineTo(x - 18, y + 60);
+    ctx.lineTo(x + 18, y + 60);
+    ctx.lineTo(x + 20, y + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // Head
+    ctx.fillStyle = '#8a7a6a';
+    ctx.beginPath();
+    ctx.arc(x, y - 40 + bob, 22, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hat
+    ctx.fillStyle = '#3a3520';
+    ctx.beginPath();
+    ctx.ellipse(x, y - 55 + bob, 28, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(x - 15, y - 75 + bob, 30, 20);
+
+    // Eyes
+    ctx.fillStyle = '#2a3a3a';
+    const blink = Math.sin(game.time * 0.08) > 0.95 ? 0 : 1;
+    ctx.fillRect(x - 10, y - 42 + bob, 5, 4 * blink);
+    ctx.fillRect(x + 5, y - 42 + bob, 5, 4 * blink);
+
+    // Beard
+    ctx.fillStyle = '#6a6a5a';
+    ctx.beginPath();
+    ctx.moveTo(x - 12, y - 30 + bob);
+    ctx.quadraticCurveTo(x, y - 15 + bob, x + 12, y - 30 + bob);
+    ctx.quadraticCurveTo(x + 8, y - 20 + bob, x, y - 10 + bob);
+    ctx.quadraticCurveTo(x - 8, y - 20 + bob, x - 12, y - 30 + bob);
+    ctx.fill();
+
+    // Arms resting on counter
+    ctx.fillStyle = '#252520';
+    ctx.fillRect(x - 35, y + 30 + bob, 25, 15);
+    ctx.fillRect(x + 10, y + 30 + bob, 25, 15);
+
+    // Hands
+    ctx.fillStyle = '#8a7a6a';
+    ctx.beginPath();
+    ctx.arc(x - 38, y + 40 + bob, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + 38, y + 40 + bob, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Pipe smoke (occasionally)
+    if (Math.sin(game.time * 0.015) > 0.6) {
+        ctx.fillStyle = 'rgba(180, 180, 180, 0.25)';
+        for (let i = 0; i < 3; i++) {
+            const smokeY = y - 60 + bob - i * 15 - (game.time * 0.03) % 30;
+            const smokeX = x + 25 + Math.sin(game.time * 0.02 + i) * 5;
+            ctx.beginPath();
+            ctx.arc(smokeX, smokeY, 5 + i * 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
 }
 
 function drawSellTab(x, y, w) {

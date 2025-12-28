@@ -636,51 +636,93 @@ function drawLorePopup() {
     ctx.textAlign = 'left';
 }
 
-// Minigame Rendering
+// Minigame Rendering - Simplified progress bar
 function drawMinigame() {
     if (!game.minigame.active) return;
 
     const mg = game.minigame;
-    const barWidth = 300, barHeight = 30;
+    const barWidth = 320, barHeight = 35;
     const x = (CONFIG.canvas.width - barWidth) / 2;
-    const y = CONFIG.canvas.height - 100;
+    const y = CONFIG.canvas.height - 110;
 
-    ctx.fillStyle = 'rgba(20, 30, 40, 0.9)';
+    // Background panel
+    ctx.fillStyle = 'rgba(15, 25, 35, 0.92)';
+    ctx.fillRect(x - 15, y - 40, barWidth + 30, 100);
+    ctx.strokeStyle = '#4a7a6a';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x - 15, y - 40, barWidth + 30, 100);
+
+    // Title
+    ctx.font = '14px VT323';
+    ctx.fillStyle = '#8aba9a';
+    ctx.textAlign = 'center';
+    ctx.fillText('REELING IN...', x + barWidth/2, y - 20);
+
+    // Progress bar background
+    ctx.fillStyle = 'rgba(30, 50, 60, 0.9)';
     ctx.fillRect(x, y, barWidth, barHeight);
-    ctx.strokeStyle = '#4a6a5a';
+    ctx.strokeStyle = '#3a5a5a';
+    ctx.lineWidth = 1;
     ctx.strokeRect(x, y, barWidth, barHeight);
 
-    const fishX = x + mg.targetZone * barWidth;
-    const zoneWidth = mg.zoneSize * barWidth;
-    ctx.fillStyle = 'rgba(100, 150, 120, 0.5)';
-    ctx.fillRect(fishX - zoneWidth/2, y, zoneWidth, barHeight);
+    // Progress bar fill with gradient
+    const progressWidth = (barWidth - 4) * (mg.progress / 100);
+    const gradient = ctx.createLinearGradient(x, y, x + progressWidth, y);
+    gradient.addColorStop(0, '#4a8a6a');
+    gradient.addColorStop(0.5, '#6ab08a');
+    gradient.addColorStop(1, '#8ad0aa');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x + 2, y + 2, progressWidth, barHeight - 4);
 
-    const cursorX = x + mg.playerZone * barWidth;
-    ctx.fillStyle = '#f0d080';
-    ctx.fillRect(cursorX - 3, y - 5, 6, barHeight + 10);
+    // Shine effect on progress bar
+    if (mg.reeling) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.fillRect(x + 2, y + 2, progressWidth, (barHeight - 4) / 3);
+    }
 
-    ctx.fillStyle = '#8aba9a';
+    // Fish icon that moves with progress
+    const fishX = x + 10 + (barWidth - 20) * (mg.progress / 100) + mg.fishWiggle;
+    const fishY = y + barHeight / 2;
+
+    // Fish wiggle animation
+    ctx.save();
+    ctx.translate(fishX, fishY);
+    ctx.rotate(Math.sin(game.time * 0.1) * 0.1 * (100 - mg.progress) / 100);
+
+    // Draw fish
+    ctx.fillStyle = '#d0e0f0';
+    ctx.font = '22px VT323';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🐟', 0, 0);
+    ctx.restore();
+
+    // Splash effect when reeling
+    if (mg.splashTimer > 0) {
+        ctx.fillStyle = `rgba(150, 200, 255, ${mg.splashTimer / 15})`;
+        for (let i = 0; i < 3; i++) {
+            const splashX = fishX + Math.random() * 20 - 10;
+            const splashY = fishY + Math.random() * 10 - 15;
+            ctx.beginPath();
+            ctx.arc(splashX, splashY, 2 + Math.random() * 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    // Percentage text
     ctx.font = '16px VT323';
+    ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
-    ctx.fillText('🐟', fishX, y + 20);
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${Math.floor(mg.progress)}%`, x + barWidth / 2, y + barHeight / 2);
 
-    ctx.fillStyle = 'rgba(20, 30, 40, 0.9)';
-    ctx.fillRect(x, y - 25, barWidth, 15);
-    const tensionColor = mg.tension > 70 ? '#a04040' : (mg.tension > 40 ? '#a0a040' : '#40a060');
-    ctx.fillStyle = tensionColor;
-    ctx.fillRect(x + 2, y - 23, (barWidth - 4) * (mg.tension / 100), 11);
-
-    ctx.fillStyle = '#4a8a6a';
-    ctx.fillRect(x + 2, y + barHeight + 5, (barWidth - 4) * (mg.fishStamina / 100), 8);
-
+    // Instructions
     ctx.font = '12px VT323';
-    ctx.fillStyle = '#8a9a8a';
-    ctx.textAlign = 'left';
-    ctx.fillText('TENSION', x, y - 30);
-    ctx.fillText('FISH STAMINA', x, y + barHeight + 20);
+    ctx.fillStyle = mg.reeling ? '#aaddaa' : '#7a9a8a';
     ctx.textAlign = 'center';
-    ctx.fillText('[<- ->] Keep fish in green zone!', x + barWidth/2, y + barHeight + 35);
-    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    const instruction = mg.reeling ? 'Reeling! Keep holding!' : 'Hold [SPACE] to reel faster!';
+    ctx.fillText(instruction, x + barWidth / 2, y + barHeight + 18);
 }
 
 function drawCatchPopup() {

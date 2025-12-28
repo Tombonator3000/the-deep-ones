@@ -65,14 +65,12 @@ const game = {
 
     minigame: {
         active: false,
-        targetZone: 0.5,
-        playerZone: 0.5,
-        zoneSize: 0.15,
-        tension: 0,
-        fishStamina: 100,
-        difficulty: 1,
-        direction: 1,
-        speed: 0.02
+        progress: 0,         // 0-100 progress bar
+        reeling: false,      // Is player holding reel button?
+        reelSpeed: 1.5,      // Speed when reeling
+        autoSpeed: 0.5,      // Auto progress speed
+        fishWiggle: 0,       // Visual effect
+        splashTimer: 0       // Splash effect timer
     },
 
     sanityEffects: {
