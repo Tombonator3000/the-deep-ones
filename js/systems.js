@@ -1703,7 +1703,7 @@ function updateCameraPan() {
     if (game.state === 'waiting' || game.state === 'reeling' || game.minigame.active) {
         // Calculate target depth based on fishing line
         const rod = getCurrentRod ? getCurrentRod() : null;
-        const maxDepth = rod ? rod.maxDepth : 30;
+        const maxDepth = rod ? rod.depthMax : 30;
         const depthPercent = game.depth / maxDepth;
 
         // Pan down into the water when fishing

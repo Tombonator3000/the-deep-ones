@@ -1511,6 +1511,36 @@ drawEnhancedWaterReflection()
 
 ---
 
+## 2025-12-28 — Fix: Spawn Freeze Bug
+
+### Problem
+Spillet frøs og spilleren/båten spawnet ikke etter oppstart.
+
+### Årsak
+Bug i `updateCameraPan()` i `js/systems.js`:
+- Linje 1706 brukte `rod.maxDepth` i stedet for `rod.depthMax`
+- `maxDepth` ble `undefined` → beregningene ga `NaN`
+- Camera offset ble `NaN` → `ctx.translate(0, NaN)` forhindret all rendering
+
+### Løsning
+```javascript
+// Før (feil):
+const maxDepth = rod ? rod.maxDepth : 30;
+
+// Etter (riktig):
+const maxDepth = rod ? rod.depthMax : 30;
+```
+
+### Endringer
+- `js/systems.js` linje 1706: Rettet `rod.maxDepth` → `rod.depthMax`
+
+### Testing
+- Start spillet og trykk "NEW GAME"
+- Båten og fiskeren skal nå vises korrekt
+- Kast snøret og verifiser at kamera-pan fungerer
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown
