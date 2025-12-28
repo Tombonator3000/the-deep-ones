@@ -1630,6 +1630,64 @@ Problemet var i undervanns-kamera-panorering-systemet:
 
 ---
 
+## 2025-12-28 — Fix: Depth Controls & Camera Reset
+
+### Problem
+To problemer rapportert:
+1. Spiller/båt dukket ikke opp på skjermen
+2. Når man kastet snøret, gikk spillet ned til bunns og ble der - kunne ikke reele opp
+
+### Årsak
+1. **Reverserte piltaster**: ArrowUp/ArrowDown var reversert for dybdekontroll
+   - ArrowUp økte dybden (gikk dypere) - forvirrende!
+   - ArrowDown minsket dybden (gikk grunnere) - forvirrende!
+   - Brukere forventer naturlig at Up = oppover (grunnere) og Down = nedover (dypere)
+
+2. **Høy startdybde**: Når spilleren kastet snøret, ble targetDepth satt til 30m umiddelbart, som fikk kameraet til å panorere ned uten brukerens intensjon
+
+3. **Manglende kamera-reset**: Kameraet ble ikke eksplisitt tilbakestilt ved spillstart
+
+### Løsning
+
+#### 1. Byttet ArrowUp/ArrowDown dybdekontroll (js/input.js)
+```javascript
+// Nå (riktig):
+ArrowUp = decrease depth (go toward surface)
+ArrowDown = increase depth (go toward bottom)
+```
+
+#### 2. Snøret starter ved overflaten (js/input.js)
+- Når du kaster, er targetDepth nå 0 (overflate)
+- Spilleren må aktivt trykke ArrowDown for å gå dypere
+- Dette gir spilleren full kontroll
+
+#### 3. Eksplisitt kamera-reset ved spillstart (js/main.js)
+- startGame() og continueGame() resetter nå kamera til overflaten
+- Sikrer at spillet alltid starter i korrekt tilstand
+
+### Endringer
+- `js/input.js`:
+  - Byttet ArrowUp/ArrowDown logikk for dybdekontroll
+  - Endret initial targetDepth til 0 ved kasting
+- `js/main.js`:
+  - Lagt til eksplisitt kamera og dybde-reset i startGame()
+  - Lagt til eksplisitt kamera og dybde-reset i continueGame()
+
+### Testing
+1. Start spillet og trykk "NEW GAME"
+2. Båten og fiskeren skal vises umiddelbart
+3. Kast snøret med SPACE - snøret starter ved overflaten
+4. Trykk ArrowDown for å senke snøret (øke dybde)
+5. Trykk ArrowUp for å heve snøret (minske dybde)
+6. Trykk SPACE for å dra inn snøret helt
+
+### Notater
+- Dybdekontroll er nå intuitiv: Up = opp, Down = ned
+- Spilleren har full kontroll over dybden fra start
+- Kamera-systemet returnerer nå pålitelig til overflaten
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown

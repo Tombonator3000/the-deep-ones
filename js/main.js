@@ -331,6 +331,15 @@ function startGame(time) {
     else if (time === 'dusk') game.dayProgress = 0.6;
     else game.dayProgress = 0.85;
 
+    // Reset camera and depth to surface
+    game.depth = 0;
+    game.targetDepth = 0;
+    if (game.camera) {
+        game.camera.y = 0;
+        game.camera.targetY = 0;
+        game.camera.mode = 'surface';
+    }
+
     document.getElementById('title-screen').style.display = 'none';
 
     initLayers();
@@ -344,6 +353,15 @@ function continueGame() {
     if (loadGame()) {
         document.getElementById('title-screen').style.display = 'none';
         game.state = 'sailing';
+
+        // Reset camera and depth to surface (even when loading save)
+        game.depth = 0;
+        game.targetDepth = 0;
+        if (game.camera) {
+            game.camera.y = 0;
+            game.camera.targetY = 0;
+            game.camera.mode = 'surface';
+        }
 
         initLayers();
         initFish();

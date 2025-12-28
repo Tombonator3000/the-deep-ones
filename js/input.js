@@ -273,20 +273,23 @@ function setupInputHandlers() {
                 }
                 break;
             case 'ArrowUp':
+                // Arrow Up = reel up toward surface (decrease depth)
+                if (game.state === 'waiting' || game.state === 'reeling') {
+                    game.targetDepth = Math.max(0, game.targetDepth - 5);
+                }
+                break;
+            case 'ArrowDown':
+                // Arrow Down = lower line toward bottom (increase depth)
                 if (game.state === 'waiting' || game.state === 'reeling') {
                     const maxDepth = rod ? rod.depthMax : 30;
                     game.targetDepth = Math.min(maxDepth, game.targetDepth + 5);
                 }
                 break;
-            case 'ArrowDown':
-                if (game.state === 'waiting' || game.state === 'reeling') {
-                    game.targetDepth = Math.max(0, game.targetDepth - 5);
-                }
-                break;
             case ' ':
                 if (game.state === 'sailing') {
                     game.state = 'waiting';
-                    game.targetDepth = 30;
+                    game.targetDepth = 0;  // Start at surface, use Down arrow to go deeper
+                    game.depth = 0;
                     triggerSplashSound();
                     if (typeof playSplash === 'function') playSplash();
                 } else if (game.state === 'waiting') {
