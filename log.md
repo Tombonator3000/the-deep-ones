@@ -2165,6 +2165,35 @@ ArrowDown = increase depth (go toward bottom)
 
 ---
 
+## 2025-12-28 — Refactor: Modularize getCreature() for clarity
+
+### Gjort
+- Refaktorert `getCreature()` funksjonen fra 72 linjer med dyp nesting til 24 linjer med tydelig flyt
+- Ekstrahert 7 fokuserte hjelpefunksjoner for bedre lesbarhet og testbarhet
+
+### Endringer
+- `js/creatures.js` — Komplett refaktorering av creature selection system:
+  - `getPoolForDepth(depth)` — Enkel mapping fra dybde til creature pool
+  - `adjustWeightsForEquipment(weights, maxDepth)` — Justerer vekter basert på rod depth
+  - `selectPoolFromWeights(weights)` — Normaliserer og velger pool fra vekter
+  - `doesLureMatchZone(lure, pool)` — Sjekker om lure matcher sonen
+  - `applyRollModifiers(baseRoll, pool, lure)` — Appliserer alle roll-modifikere
+  - `createAdjustedPool(pool)` — Legger til time/weather-justert rarity
+  - `selectCreatureByRarity(adjustedPool, roll)` — Velger creature fra pool
+
+### Forbedringer
+- **Lesbarhet**: Hovedfunksjonen har nå 3 tydelige steg med kommentarer
+- **Testbarhet**: Hver hjelpefunksjon kan testes isolert
+- **Vedlikehold**: Enklere å endre en spesifikk del av logikken
+- **Gjenbruk**: `getPoolForDepth()` brukes nå også av `getCreatureForDepth()`
+
+### Notater
+- Samme oppførsel som før, ingen gameplay-endringer
+- Følger agents.md prinsippet: "Hold funksjoner små og fokuserte"
+- Cumulative probability-beregningen i `selectPoolFromWeights()` er nå eksplisitt og lettere å forstå
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown

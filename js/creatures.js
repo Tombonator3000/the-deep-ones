@@ -128,83 +128,137 @@ function checkCreatureInteraction(caughtCreature) {
 }
 
 function getCreatureForDepth(depth) {
-    let pool;
-    if (depth < 20) pool = CREATURES.surface;
-    else if (depth < 55) pool = CREATURES.mid;
-    else if (depth < 90) pool = CREATURES.deep;
-    else pool = CREATURES.abyss;
-    return pool[0];
+    return getPoolForDepth(depth)[0];
 }
+
+// ============================================================
+// CREATURE SELECTION HELPERS
+// ============================================================
+
+// Maps depth to creature pool
+function getPoolForDepth(depth) {
+    if (depth < 20) return CREATURES.surface;
+    if (depth < 55) return CREATURES.mid;
+    if (depth < 90) return CREATURES.deep;
+    return CREATURES.abyss;
+}
+
+// Adjusts location weights based on rod's max depth capability
+function adjustWeightsForEquipment(weights, maxDepth) {
+    const adjusted = { ...weights };
+
+    // Can't catch creatures from zones beyond equipment capability
+    if (maxDepth < 90) adjusted.abyss = 0;
+    if (maxDepth < 55) adjusted.deep = 0;
+    if (maxDepth < 20) adjusted.mid = 0;
+
+    return adjusted;
+}
+
+// Selects a pool based on normalized weights
+function selectPoolFromWeights(weights) {
+    const total = weights.surface + weights.mid + weights.deep + weights.abyss;
+    if (total <= 0) return CREATURES.surface;
+
+    const roll = Math.random();
+    let cumulative = 0;
+
+    cumulative += weights.surface / total;
+    if (roll < cumulative) return CREATURES.surface;
+
+    cumulative += weights.mid / total;
+    if (roll < cumulative) return CREATURES.mid;
+
+    cumulative += weights.deep / total;
+    if (roll < cumulative) return CREATURES.deep;
+
+    return CREATURES.abyss;
+}
+
+// Checks if lure matches the current zone
+function doesLureMatchZone(lure, pool) {
+    if (!lure) return false;
+
+    const zoneMap = {
+        'surface': CREATURES.surface,
+        'mid': CREATURES.mid,
+        'deep': CREATURES.deep,
+        'abyss': CREATURES.abyss
+    };
+
+    return zoneMap[lure.bonus] === pool;
+}
+
+// Applies all modifiers to the rarity roll
+function applyRollModifiers(baseRoll, pool, lure) {
+    let roll = baseRoll;
+
+    // Lure bonus - reduces roll making rarer creatures more likely
+    if (doesLureMatchZone(lure, pool)) {
+        roll *= lure.multiplier;
+    }
+
+    // Location bonus
+    const locBonus = game.locationBonuses[game.currentLocation];
+    if (locBonus) {
+        roll += locBonus.bonus;
+    }
+
+    // Transformation bonus
+    roll *= getTransformationBiteBonus();
+
+    return roll;
+}
+
+// Adds time/weather adjusted rarity to each creature
+function createAdjustedPool(pool) {
+    return pool.map(creature => ({
+        ...creature,
+        adjustedRarity: creature.rarity * getCreatureTimeWeatherBonus(creature)
+    }));
+}
+
+// Selects creature from pool using adjusted rarities
+function selectCreatureByRarity(adjustedPool, roll) {
+    let remaining = roll;
+
+    for (const creature of adjustedPool) {
+        if (remaining <= creature.adjustedRarity) {
+            return creature;
+        }
+        remaining -= creature.adjustedRarity;
+    }
+
+    // Fallback to last creature
+    return adjustedPool[adjustedPool.length - 1];
+}
+
+// ============================================================
+// MAIN CREATURE SELECTION
+// ============================================================
 
 function getCreature() {
     const rod = getCurrentRod();
     const lure = getCurrentLure();
-    const depth = game.depth;
+    const maxDepth = rod ? rod.depthMax : 30;
 
-    // Get location-based creature pool weights
+    // Step 1: Select creature pool
     const locationWeights = getLocationCreaturePool();
-
-    // Select pool based on location weights AND depth
     let pool;
-    let poolRoll = Math.random();
 
-    // Combine location preference with depth requirement
     if (locationWeights) {
-        // Adjust weights based on depth capability
-        const maxDepth = rod ? rod.depthMax : 30;
-        let adjustedWeights = { ...locationWeights };
-
-        // Can't catch deep creatures without proper equipment
-        if (maxDepth < 90) adjustedWeights.abyss = 0;
-        if (maxDepth < 55) adjustedWeights.deep = 0;
-        if (maxDepth < 20) adjustedWeights.mid = 0;
-
-        // Normalize weights
-        const total = adjustedWeights.surface + adjustedWeights.mid + adjustedWeights.deep + adjustedWeights.abyss;
-        if (total > 0) {
-            if (poolRoll < adjustedWeights.surface / total) pool = CREATURES.surface;
-            else if (poolRoll < (adjustedWeights.surface + adjustedWeights.mid) / total) pool = CREATURES.mid;
-            else if (poolRoll < (adjustedWeights.surface + adjustedWeights.mid + adjustedWeights.deep) / total) pool = CREATURES.deep;
-            else pool = CREATURES.abyss;
-        } else {
-            pool = CREATURES.surface;
-        }
+        const adjustedWeights = adjustWeightsForEquipment(locationWeights, maxDepth);
+        pool = selectPoolFromWeights(adjustedWeights);
     } else {
-        // Fallback to depth-based selection
-        if (depth < 20) pool = CREATURES.surface;
-        else if (depth < 55) pool = CREATURES.mid;
-        else if (depth < 90) pool = CREATURES.deep;
-        else pool = CREATURES.abyss;
+        pool = getPoolForDepth(game.depth);
     }
 
-    // Calculate adjusted rarities based on time/weather
-    const adjustedPool = pool.map(creature => ({
-        ...creature,
-        adjustedRarity: creature.rarity * getCreatureTimeWeatherBonus(creature)
-    }));
+    // Step 2: Adjust rarities for time/weather
+    const adjustedPool = createAdjustedPool(pool);
 
-    let roll = Math.random();
+    // Step 3: Apply modifiers and select creature
+    const baseRoll = Math.random();
+    const modifiedRoll = applyRollModifiers(baseRoll, pool, lure);
 
-    // Apply lure bonus
-    if (lure) {
-        const zoneMatch = (lure.bonus === 'surface' && pool === CREATURES.surface) ||
-                         (lure.bonus === 'mid' && pool === CREATURES.mid) ||
-                         (lure.bonus === 'deep' && pool === CREATURES.deep) ||
-                         (lure.bonus === 'abyss' && pool === CREATURES.abyss);
-        if (zoneMatch) roll *= lure.multiplier;
-    }
-
-    // Apply location bonus
-    const locBonus = game.locationBonuses[game.currentLocation];
-    if (locBonus) roll += locBonus.bonus;
-
-    // Apply transformation bonus (fish bite more eagerly for transformed players)
-    roll *= getTransformationBiteBonus();
-
-    // Use adjusted rarities for creature selection
-    for (const creature of adjustedPool) {
-        if (roll <= creature.adjustedRarity) return creature;
-        roll -= creature.adjustedRarity;
-    }
-    return adjustedPool[adjustedPool.length - 1];
+    return selectCreatureByRarity(adjustedPool, modifiedRoll);
 }
