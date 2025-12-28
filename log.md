@@ -1541,6 +1541,47 @@ const maxDepth = rod ? rod.depthMax : 30;
 
 ---
 
+## 2025-12-28 — Fix: Robust NaN-håndtering i Camera System
+
+### Problem
+Spillet fortsatte å fryse og spilleren spawnet ikke, selv etter forrige fix.
+
+### Årsak
+Potensielle NaN-verdier i camera-systemet kunne fortsatt oppstå under visse omstendigheter:
+- `getCurrentRod` kunne være undefined hvis kallt før npc.js var lastet
+- `game.depth` eller `cam.y` kunne bli NaN ved edge cases
+- Ingen defensive guards mot NaN-propagering
+- Feil i update/render kunne stoppe hele game loop
+
+### Løsning
+
+#### 1. Defensive guards i updateCameraPan() (js/systems.js)
+- Sjekker at camera-state eksisterer før bruk
+- Bruker `typeof getCurrentRod === 'function'` i stedet for bare truthy-sjekk
+- Fallback-verdier for alle variabler (maxDepth, depth, cam.maxPan, etc.)
+- Final NaN-guard som setter cam.y = 0 hvis NaN oppstår
+
+#### 2. Robust getCameraPanOffset() (js/systems.js)
+- Sjekker at game.camera eksisterer
+- Returnerer alltid gyldig tall (0 hvis NaN eller undefined)
+
+#### 3. Error-håndtering i gameLoop() (js/main.js)
+- try-catch rundt update() og render()
+- Logger feil til console uten å stoppe game loop
+- Spillet fortsetter å kjøre selv om en feil oppstår
+
+### Endringer
+- `js/systems.js`: Ny robust versjon av updateCameraPan() og getCameraPanOffset()
+- `js/main.js`: try-catch i gameLoop()
+
+### Testing
+- Start spillet og trykk "NEW GAME"
+- Båten og fiskeren skal vises korrekt
+- Kast snøret - kamera-pan skal fungere uten frysing
+- Åpne browser console (F12) for å se eventuelle feil-meldinger
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown

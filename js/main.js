@@ -306,8 +306,17 @@ function gameLoop(timestamp) {
     const deltaTime = timestamp - lastTime;
     lastTime = timestamp;
 
-    update(deltaTime);
-    render();
+    try {
+        update(deltaTime);
+    } catch (e) {
+        console.error('Update error:', e);
+    }
+
+    try {
+        render();
+    } catch (e) {
+        console.error('Render error:', e);
+    }
 
     requestAnimationFrame(gameLoop);
 }

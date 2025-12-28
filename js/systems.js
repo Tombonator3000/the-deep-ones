@@ -1699,19 +1699,26 @@ function drawAchievementsViewer() {
 function updateCameraPan() {
     const cam = game.camera;
 
+    // Guard against undefined camera state
+    if (!cam || typeof cam.y !== 'number') {
+        if (game.camera) game.camera.y = 0;
+        return;
+    }
+
     // Determine target pan based on game state
     if (game.state === 'waiting' || game.state === 'reeling' || game.minigame.active) {
         // Calculate target depth based on fishing line
-        const rod = getCurrentRod ? getCurrentRod() : null;
-        const maxDepth = rod ? rod.depthMax : 30;
-        const depthPercent = game.depth / maxDepth;
+        const rod = (typeof getCurrentRod === 'function') ? getCurrentRod() : null;
+        const maxDepth = (rod && typeof rod.depthMax === 'number') ? rod.depthMax : 30;
+        const depth = (typeof game.depth === 'number') ? game.depth : 0;
+        const depthPercent = depth / maxDepth;
 
         // Pan down into the water when fishing
-        cam.targetY = Math.min(cam.maxPan, depthPercent * cam.maxPan * 1.5);
+        cam.targetY = Math.min(cam.maxPan || 200, depthPercent * (cam.maxPan || 200) * 1.5);
         cam.mode = 'underwater';
     } else if (game.state === 'caught') {
         // Keep camera underwater briefly when catching
-        cam.targetY = Math.max(0, cam.targetY - 2);
+        cam.targetY = Math.max(0, (cam.targetY || 0) - 2);
         cam.mode = cam.targetY > 10 ? 'transitioning' : 'surface';
     } else {
         // Return to surface view
@@ -1720,15 +1727,21 @@ function updateCameraPan() {
     }
 
     // Smooth interpolation
-    const diff = cam.targetY - cam.y;
-    cam.y += diff * cam.panSpeed;
+    const diff = (cam.targetY || 0) - (cam.y || 0);
+    cam.y = (cam.y || 0) + diff * (cam.panSpeed || 0.03);
 
-    // Clamp values
-    cam.y = Math.max(0, Math.min(cam.maxPan, cam.y));
+    // Clamp values and guard against NaN
+    cam.y = Math.max(0, Math.min(cam.maxPan || 200, cam.y || 0));
+
+    // Final NaN guard
+    if (isNaN(cam.y)) {
+        cam.y = 0;
+    }
 }
 
 function getCameraPanOffset() {
-    return game.camera.y;
+    const y = game.camera ? game.camera.y : 0;
+    return (typeof y === 'number' && !isNaN(y)) ? y : 0;
 }
 
 // ============================================================
