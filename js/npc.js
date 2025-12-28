@@ -2,6 +2,84 @@
 // THE DEEP ONES - NPC & SHOP SYSTEM
 // ============================================================
 
+// Shop interior configuration - centralizes all layout values
+const SHOP_INTERIOR = {
+    // Wall settings
+    wall: {
+        color: '#2a2018',
+        panelColor: '#3a2a1a',
+        panelLineColor: '#2a1a10',
+        panelWidth: 60,
+        panelHeight: 40,
+        heightRatio: 0.7
+    },
+    // Floor settings
+    floor: {
+        color: '#1a1510',
+        plankColor: '#251a12',
+        plankWidth: 80,
+        plankLineWidth: 3
+    },
+    // Window settings
+    window: {
+        x: 50, y: 80,
+        width: 180, height: 200,
+        frameColor: '#4a3a28',
+        frameThickness: 8,
+        crossBarColor: '#3a2a1a',
+        crossBarWidth: 6,
+        waterColor: '#1a3a4a',
+        rainColor: 'rgba(150, 180, 200, 0.3)',
+        rainDropCount: 10
+    },
+    // Counter settings
+    counter: {
+        heightRatio: 0.65,
+        widthRatio: 0.55,
+        color: '#4a3a28',
+        topColor: '#5a4a38',
+        topHeight: 12,
+        detailColor: '#3a2a1a',
+        detailSpacing: 50
+    },
+    // Lantern settings
+    lantern: {
+        xRatio: 0.3,
+        y: 50,
+        chainColor: '#5a5a5a',
+        bodyColor: '#3a3530',
+        bodyWidth: 24,
+        bodyHeight: 35,
+        glowRadius: 150
+    },
+    // Sign settings
+    sign: {
+        xRatio: 0.35,
+        y: 30,
+        width: 150, height: 50,
+        bgColor: '#3a3028',
+        borderColor: '#5a4a38',
+        textColor: '#a09070'
+    },
+    // Fishing net settings
+    net: {
+        xRatio: 0.55,
+        y: 100,
+        gridX: 8, gridY: 6,
+        spacing: 15,
+        color: '#5a5040'
+    },
+    // Barrel settings
+    barrel: {
+        x: 280,
+        yRatio: 0.5,
+        radiusX: 30, radiusY: 15,
+        height: 50,
+        color: '#4a3a25',
+        bandColor: '#6a5a4a'
+    }
+};
+
 function getRandomDialog(category) {
     const dialogs = NPC_DIALOGS[category];
     return dialogs[Math.floor(Math.random() * dialogs.length)];
@@ -214,147 +292,225 @@ function drawShopUI() {
     ctx.textAlign = 'left';
 }
 
-// Draw the shop interior background
+// Draw the shop interior background - main coordinator function
 function drawShopInterior(w, h) {
-    // Back wall - dark wood paneling
-    ctx.fillStyle = '#2a2018';
+    drawShopWalls(w, h);
+    drawShopFloor(w, h);
+    drawShopWindow(w, h);
+    drawShopShelves(50, h * 0.35, 200, h * 0.35);
+    drawShopCounter(w, h);
+    drawCounterItems(w * 0.15, h * SHOP_INTERIOR.counter.heightRatio - 30);
+    drawShopLantern(w, h);
+    drawShopSign(w);
+    drawShopNets(w);
+    drawShopBarrel(w, h);
+}
+
+// Draw back wall with wood paneling pattern
+function drawShopWalls(w, h) {
+    const cfg = SHOP_INTERIOR.wall;
+    const wallHeight = h * cfg.heightRatio;
+
+    // Base wall color
+    ctx.fillStyle = cfg.color;
     ctx.fillRect(0, 0, w, h);
 
-    // Wood panel pattern on back wall
-    ctx.fillStyle = '#3a2a1a';
-    for (let i = 0; i < w; i += 60) {
-        ctx.fillRect(i, 0, 2, h * 0.7);
-    }
-    for (let i = 0; i < h * 0.7; i += 40) {
-        ctx.fillStyle = '#2a1a10';
-        ctx.fillRect(0, i, w, 2);
+    // Vertical panel lines
+    ctx.fillStyle = cfg.panelColor;
+    for (let x = 0; x < w; x += cfg.panelWidth) {
+        ctx.fillRect(x, 0, 2, wallHeight);
     }
 
-    // Floor - darker planks
-    ctx.fillStyle = '#1a1510';
-    ctx.fillRect(0, h * 0.7, w, h * 0.3);
-    // Floor planks
-    ctx.fillStyle = '#251a12';
-    for (let i = 0; i < w; i += 80) {
-        ctx.fillRect(i, h * 0.7, 3, h * 0.3);
+    // Horizontal panel lines
+    ctx.fillStyle = cfg.panelLineColor;
+    for (let y = 0; y < wallHeight; y += cfg.panelHeight) {
+        ctx.fillRect(0, y, w, 2);
     }
+}
 
-    // Window on left side with outside view
-    const winX = 50, winY = 80, winW = 180, winH = 200;
+// Draw floor with plank pattern
+function drawShopFloor(w, h) {
+    const cfg = SHOP_INTERIOR.floor;
+    const wallCfg = SHOP_INTERIOR.wall;
+    const floorY = h * wallCfg.heightRatio;
+    const floorHeight = h - floorY;
+
+    // Base floor color
+    ctx.fillStyle = cfg.color;
+    ctx.fillRect(0, floorY, w, floorHeight);
+
+    // Floor plank lines
+    ctx.fillStyle = cfg.plankColor;
+    for (let x = 0; x < w; x += cfg.plankWidth) {
+        ctx.fillRect(x, floorY, cfg.plankLineWidth, floorHeight);
+    }
+}
+
+// Draw window with outside view and weather effects
+function drawShopWindow() {
+    const cfg = SHOP_INTERIOR.window;
+    const { x, y, width, height } = cfg;
+
     // Window frame
-    ctx.fillStyle = '#4a3a28';
-    ctx.fillRect(winX - 8, winY - 8, winW + 16, winH + 16);
-    // Window glass - show sky/water based on time
+    ctx.fillStyle = cfg.frameColor;
+    ctx.fillRect(x - cfg.frameThickness, y - cfg.frameThickness,
+                 width + cfg.frameThickness * 2, height + cfg.frameThickness * 2);
+
+    // Window glass - show sky based on time of day
     const palette = typeof getTimePalette === 'function' ? getTimePalette() : { sky: ['#4a6080'] };
     const skyColor = palette.sky[1] || '#4a6080';
     ctx.fillStyle = skyColor;
-    ctx.fillRect(winX, winY, winW, winH * 0.5);
-    // Water in window
-    ctx.fillStyle = '#1a3a4a';
-    ctx.fillRect(winX, winY + winH * 0.5, winW, winH * 0.5);
+    ctx.fillRect(x, y, width, height * 0.5);
+
+    // Water in lower half of window
+    ctx.fillStyle = cfg.waterColor;
+    ctx.fillRect(x, y + height * 0.5, width, height * 0.5);
+
     // Window cross bars
-    ctx.fillStyle = '#3a2a1a';
-    ctx.fillRect(winX + winW/2 - 3, winY, 6, winH);
-    ctx.fillRect(winX, winY + winH/2 - 3, winW, 6);
-    // Rain effect if raining
+    ctx.fillStyle = cfg.crossBarColor;
+    ctx.fillRect(x + width / 2 - cfg.crossBarWidth / 2, y, cfg.crossBarWidth, height);
+    ctx.fillRect(x, y + height / 2 - cfg.crossBarWidth / 2, width, cfg.crossBarWidth);
+
+    // Rain effect when weather is rain or storm
     if (game.weather && (game.weather.current === 'rain' || game.weather.current === 'storm')) {
-        ctx.fillStyle = 'rgba(150, 180, 200, 0.3)';
-        for (let i = 0; i < 10; i++) {
-            const rx = winX + Math.random() * winW;
-            const ry = winY + Math.random() * winH;
+        ctx.fillStyle = cfg.rainColor;
+        for (let i = 0; i < cfg.rainDropCount; i++) {
+            const rx = x + Math.random() * width;
+            const ry = y + Math.random() * height;
             ctx.fillRect(rx, ry, 1, 8);
         }
     }
+}
 
-    // Shelves on left wall with items
-    drawShopShelves(50, h * 0.35, 200, h * 0.35);
+// Draw the shop counter
+function drawShopCounter(w, h) {
+    const cfg = SHOP_INTERIOR.counter;
+    const counterY = h * cfg.heightRatio;
+    const counterWidth = w * cfg.widthRatio;
+    const counterHeight = h - counterY;
 
-    // Counter in front
-    const counterY = h * 0.65;
-    ctx.fillStyle = '#4a3a28';
-    ctx.fillRect(0, counterY, w * 0.55, h - counterY);
-    // Counter top
-    ctx.fillStyle = '#5a4a38';
-    ctx.fillRect(0, counterY, w * 0.55, 12);
-    // Counter front detail
-    ctx.fillStyle = '#3a2a1a';
-    for (let i = 0; i < w * 0.55; i += 50) {
-        ctx.fillRect(i, counterY + 12, 2, h - counterY - 12);
+    // Counter body
+    ctx.fillStyle = cfg.color;
+    ctx.fillRect(0, counterY, counterWidth, counterHeight);
+
+    // Counter top edge
+    ctx.fillStyle = cfg.topColor;
+    ctx.fillRect(0, counterY, counterWidth, cfg.topHeight);
+
+    // Counter front detail lines
+    ctx.fillStyle = cfg.detailColor;
+    for (let x = 0; x < counterWidth; x += cfg.detailSpacing) {
+        ctx.fillRect(x, counterY + cfg.topHeight, 2, counterHeight - cfg.topHeight);
     }
+}
 
-    // Items on counter
-    drawCounterItems(w * 0.15, counterY - 30);
-
-    // Hanging lantern
-    const lanternX = w * 0.3;
-    const lanternY = 50;
+// Draw hanging lantern with glow effect
+function drawShopLantern(w) {
+    const cfg = SHOP_INTERIOR.lantern;
+    const lanternX = w * cfg.xRatio;
+    const lanternY = cfg.y;
     const flicker = 0.7 + Math.sin(game.time * 0.05) * 0.15;
-    // Chain
-    ctx.strokeStyle = '#5a5a5a';
+
+    // Chain from ceiling
+    ctx.strokeStyle = cfg.chainColor;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(lanternX, 0);
     ctx.lineTo(lanternX, lanternY);
     ctx.stroke();
+
     // Lantern body
-    ctx.fillStyle = '#3a3530';
-    ctx.fillRect(lanternX - 12, lanternY, 24, 35);
-    // Lantern glow
+    ctx.fillStyle = cfg.bodyColor;
+    ctx.fillRect(lanternX - cfg.bodyWidth / 2, lanternY, cfg.bodyWidth, cfg.bodyHeight);
+
+    // Inner glow
     ctx.fillStyle = `rgba(255, 200, 100, ${flicker * 0.8})`;
-    ctx.fillRect(lanternX - 8, lanternY + 5, 16, 25);
-    // Light effect
-    const gradient = ctx.createRadialGradient(lanternX, lanternY + 20, 0, lanternX, lanternY + 20, 150);
+    ctx.fillRect(lanternX - cfg.bodyWidth / 2 + 4, lanternY + 5, cfg.bodyWidth - 8, cfg.bodyHeight - 10);
+
+    // Radial light effect
+    const gradient = ctx.createRadialGradient(lanternX, lanternY + 20, 0, lanternX, lanternY + 20, cfg.glowRadius);
     gradient.addColorStop(0, `rgba(255, 200, 100, ${flicker * 0.15})`);
     gradient.addColorStop(1, 'rgba(255, 200, 100, 0)');
     ctx.fillStyle = gradient;
-    ctx.fillRect(lanternX - 150, lanternY - 50, 300, 300);
+    ctx.fillRect(lanternX - cfg.glowRadius, lanternY - 50, cfg.glowRadius * 2, cfg.glowRadius * 2);
+}
 
-    // Sign on wall
-    ctx.fillStyle = '#3a3028';
-    ctx.fillRect(w * 0.35, 30, 150, 50);
-    ctx.strokeStyle = '#5a4a38';
+// Draw wall sign
+function drawShopSign(w) {
+    const cfg = SHOP_INTERIOR.sign;
+    const signX = w * cfg.xRatio;
+
+    // Sign background
+    ctx.fillStyle = cfg.bgColor;
+    ctx.fillRect(signX, cfg.y, cfg.width, cfg.height);
+
+    // Sign border
+    ctx.strokeStyle = cfg.borderColor;
     ctx.lineWidth = 2;
-    ctx.strokeRect(w * 0.35, 30, 150, 50);
-    ctx.fillStyle = '#a09070';
+    ctx.strokeRect(signX, cfg.y, cfg.width, cfg.height);
+
+    // Sign text
+    ctx.fillStyle = cfg.textColor;
     ctx.font = '12px VT323';
     ctx.textAlign = 'center';
-    ctx.fillText('FRESH BAIT', w * 0.35 + 75, 50);
-    ctx.fillText('LOCAL TACKLE', w * 0.35 + 75, 68);
+    ctx.fillText('FRESH BAIT', signX + cfg.width / 2, cfg.y + 20);
+    ctx.fillText('LOCAL TACKLE', signX + cfg.width / 2, cfg.y + 38);
     ctx.textAlign = 'left';
+}
 
-    // Fishing nets on wall
-    ctx.strokeStyle = '#5a5040';
+// Draw fishing nets on wall
+function drawShopNets(w) {
+    const cfg = SHOP_INTERIOR.net;
+    const netX = w * cfg.xRatio;
+
+    ctx.strokeStyle = cfg.color;
     ctx.lineWidth = 1;
-    const netX = w * 0.55, netY = 100;
-    for (let i = 0; i < 8; i++) {
-        for (let j = 0; j < 6; j++) {
+
+    for (let i = 0; i < cfg.gridX; i++) {
+        for (let j = 0; j < cfg.gridY; j++) {
+            const x1 = netX + i * cfg.spacing;
+            const y1 = cfg.y + j * cfg.spacing;
+            const x2 = netX + (i + 1) * cfg.spacing;
+            const y2 = cfg.y + (j + 1) * cfg.spacing;
+
             ctx.beginPath();
-            ctx.moveTo(netX + i * 15, netY + j * 15);
-            ctx.lineTo(netX + (i + 1) * 15, netY + (j + 1) * 15);
-            ctx.moveTo(netX + (i + 1) * 15, netY + j * 15);
-            ctx.lineTo(netX + i * 15, netY + (j + 1) * 15);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.moveTo(x2, y1);
+            ctx.lineTo(x1, y2);
             ctx.stroke();
         }
     }
+}
 
-    // Barrel in corner
-    const barrelX = 280, barrelY = h * 0.5;
-    ctx.fillStyle = '#4a3a25';
+// Draw barrel in corner
+function drawShopBarrel(w, h) {
+    const cfg = SHOP_INTERIOR.barrel;
+    const barrelY = h * cfg.yRatio;
+
+    ctx.fillStyle = cfg.color;
+
+    // Bottom ellipse
     ctx.beginPath();
-    ctx.ellipse(barrelX, barrelY + 50, 30, 15, 0, 0, Math.PI * 2);
+    ctx.ellipse(cfg.x, barrelY + cfg.height, cfg.radiusX, cfg.radiusY, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillRect(barrelX - 30, barrelY, 60, 50);
+
+    // Body
+    ctx.fillRect(cfg.x - cfg.radiusX, barrelY, cfg.radiusX * 2, cfg.height);
+
+    // Top ellipse
     ctx.beginPath();
-    ctx.ellipse(barrelX, barrelY, 30, 15, 0, 0, Math.PI * 2);
+    ctx.ellipse(cfg.x, barrelY, cfg.radiusX, cfg.radiusY, 0, 0, Math.PI * 2);
     ctx.fill();
-    // Barrel bands
-    ctx.strokeStyle = '#6a5a4a';
+
+    // Metal bands
+    ctx.strokeStyle = cfg.bandColor;
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.ellipse(barrelX, barrelY + 15, 30, 12, 0, 0, Math.PI * 2);
+    ctx.ellipse(cfg.x, barrelY + 15, cfg.radiusX, cfg.radiusY - 3, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.beginPath();
-    ctx.ellipse(barrelX, barrelY + 40, 30, 12, 0, 0, Math.PI * 2);
+    ctx.ellipse(cfg.x, barrelY + 40, cfg.radiusX, cfg.radiusY - 3, 0, 0, Math.PI * 2);
     ctx.stroke();
 }
 
