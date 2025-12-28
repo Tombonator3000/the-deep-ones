@@ -26,54 +26,201 @@ const FALLBACKS = {
     },
 
     'sun': (ctx, offset, y, w, h, layer) => {
-        const palette = getTimePalette();
-        if (!palette.sun) return;
-        const sun = palette.sun;
-        const x = sun.x - offset;
+        // Bruk dynamisk celestial orbit system
+        const sunPos = getSunPosition();
+        if (!sunPos) return; // Sol er under horisonten
 
-        const glow = ctx.createRadialGradient(x, sun.y, 0, x, sun.y, 100);
-        glow.addColorStop(0, sun.glow);
-        glow.addColorStop(1, 'transparent');
-        ctx.fillStyle = glow;
+        const x = sunPos.x - offset * 0.1; // Minimal parallax for solen
+        const sunY = sunPos.y;
+
+        // Hent dynamisk farge basert på høyde
+        const sunColors = getSunColor(sunPos.heightRatio);
+
+        // Ytre glow - større når solen er lavt (atmosfærisk spredning)
+        const glowSize = 80 + (1 - sunPos.heightRatio) * 60;
+        const outerGlow = ctx.createRadialGradient(x, sunY, 0, x, sunY, glowSize);
+
+        // Parse glow-farge for gradient
+        if (sunPos.heightRatio < 0.3) {
+            // Ved horisonten - dramatisk oransje/rød glow
+            outerGlow.addColorStop(0, 'rgba(255, 150, 80, 0.8)');
+            outerGlow.addColorStop(0.3, 'rgba(255, 100, 50, 0.4)');
+            outerGlow.addColorStop(0.6, 'rgba(255, 80, 40, 0.15)');
+            outerGlow.addColorStop(1, 'transparent');
+        } else if (sunPos.heightRatio < 0.7) {
+            // Middag - varm gul glow
+            outerGlow.addColorStop(0, 'rgba(255, 240, 150, 0.6)');
+            outerGlow.addColorStop(0.4, 'rgba(255, 220, 100, 0.25)');
+            outerGlow.addColorStop(1, 'transparent');
+        } else {
+            // Senit - lys og mild glow
+            outerGlow.addColorStop(0, 'rgba(255, 255, 200, 0.5)');
+            outerGlow.addColorStop(0.5, 'rgba(255, 255, 180, 0.15)');
+            outerGlow.addColorStop(1, 'transparent');
+        }
+
+        ctx.fillStyle = outerGlow;
         ctx.beginPath();
-        ctx.arc(x, sun.y, 100, 0, Math.PI * 2);
+        ctx.arc(x, sunY, glowSize, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = sun.color;
+        // Indre glow
+        const innerGlow = ctx.createRadialGradient(x, sunY, 0, x, sunY, sunColors.size + 20);
+        if (sunPos.heightRatio < 0.3) {
+            innerGlow.addColorStop(0, '#fff8e0');
+            innerGlow.addColorStop(0.5, '#ffb060');
+            innerGlow.addColorStop(1, 'rgba(255, 120, 60, 0.3)');
+        } else {
+            innerGlow.addColorStop(0, '#fffff0');
+            innerGlow.addColorStop(0.5, '#ffffa0');
+            innerGlow.addColorStop(1, 'rgba(255, 255, 150, 0.2)');
+        }
+        ctx.fillStyle = innerGlow;
         ctx.beginPath();
-        ctx.arc(x, sun.y, 30, 0, Math.PI * 2);
+        ctx.arc(x, sunY, sunColors.size + 15, 0, Math.PI * 2);
         ctx.fill();
+
+        // Solkjernen
+        const coreGradient = ctx.createRadialGradient(x, sunY, 0, x, sunY, sunColors.size);
+        coreGradient.addColorStop(0, '#ffffff');
+        coreGradient.addColorStop(0.3, sunColors.core);
+        coreGradient.addColorStop(1, sunPos.heightRatio < 0.3 ? '#ff8040' : '#ffdd80');
+
+        ctx.fillStyle = coreGradient;
+        ctx.beginPath();
+        ctx.arc(x, sunY, sunColors.size, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Solstråler ved lav horisont (soloppgang/nedgang)
+        if (sunPos.heightRatio < 0.4) {
+            const rayIntensity = (0.4 - sunPos.heightRatio) / 0.4;
+            ctx.save();
+            ctx.translate(x, sunY);
+
+            for (let i = 0; i < 12; i++) {
+                const angle = (i / 12) * Math.PI * 2 + game.time * 0.0002;
+                const rayLength = 60 + Math.sin(game.time * 0.003 + i) * 20;
+
+                ctx.strokeStyle = `rgba(255, 180, 100, ${rayIntensity * 0.3})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(
+                    Math.cos(angle) * (sunColors.size + 10),
+                    Math.sin(angle) * (sunColors.size + 10)
+                );
+                ctx.lineTo(
+                    Math.cos(angle) * (sunColors.size + rayLength),
+                    Math.sin(angle) * (sunColors.size + rayLength)
+                );
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
     },
 
     'moon': (ctx, offset, y, w, h, layer) => {
-        const palette = getTimePalette();
-        if (!palette.moon) return;
-        const x = palette.moon.x - offset;
+        // Bruk dynamisk celestial orbit system
+        const moonPos = getMoonPosition();
+        if (!moonPos) return; // Måne er under horisonten (dagtid)
 
-        ctx.fillStyle = 'rgba(200, 210, 230, 0.15)';
+        const x = moonPos.x - offset * 0.05; // Minimal parallax for månen
+        const moonY = moonPos.y;
+
+        // Hent dynamisk farge basert på høyde
+        const moonColors = getMoonColor(moonPos.heightRatio);
+
+        // Ytre glow - subtil og kald
+        const glowSize = 50 + (1 - moonPos.heightRatio) * 30;
+        const glowAlpha = 0.1 + moonPos.heightRatio * 0.1;
+
+        const outerGlow = ctx.createRadialGradient(x, moonY, 0, x, moonY, glowSize);
+        outerGlow.addColorStop(0, `rgba(200, 210, 230, ${glowAlpha * 2})`);
+        outerGlow.addColorStop(0.5, `rgba(180, 190, 210, ${glowAlpha})`);
+        outerGlow.addColorStop(1, 'transparent');
+
+        ctx.fillStyle = outerGlow;
         ctx.beginPath();
-        ctx.arc(x, y, 50, 0, Math.PI * 2);
+        ctx.arc(x, moonY, glowSize, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = '#e0e8f0';
+        // Månens overflate med gradient
+        const moonSize = moonColors.size;
+        const moonGradient = ctx.createRadialGradient(
+            x - moonSize * 0.3, moonY - moonSize * 0.3, 0,
+            x, moonY, moonSize
+        );
+        moonGradient.addColorStop(0, '#f0f4f8');
+        moonGradient.addColorStop(0.7, '#e0e8f0');
+        moonGradient.addColorStop(1, '#c8d0d8');
+
+        ctx.fillStyle = moonGradient;
         ctx.beginPath();
-        ctx.arc(x, y, 25, 0, Math.PI * 2);
+        ctx.arc(x, moonY, moonSize, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = '#c0c8d0';
+        // Månekratere (subtile)
+        ctx.fillStyle = 'rgba(180, 190, 200, 0.4)';
         ctx.beginPath();
-        ctx.arc(x - 8, y - 5, 6, 0, Math.PI * 2);
+        ctx.arc(x - moonSize * 0.35, y - moonSize * 0.2, moonSize * 0.22, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(x + 10, y + 8, 4, 0, Math.PI * 2);
+        ctx.arc(x + moonSize * 0.4, moonY + moonSize * 0.3, moonSize * 0.15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x - moonSize * 0.1, moonY + moonSize * 0.35, moonSize * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + moonSize * 0.2, moonY - moonSize * 0.25, moonSize * 0.1, 0, Math.PI * 2);
         ctx.fill();
 
+        // Månelys-refleksjon på horisonten når månen er lav
+        if (moonPos.heightRatio < 0.4) {
+            const reflectionIntensity = (0.4 - moonPos.heightRatio) / 0.4;
+            const reflectY = CONFIG.waterLine - 10;
+
+            // Vertikal lyssøyle fra månen til horisonten
+            const moonBeam = ctx.createLinearGradient(x, moonY + moonSize, x, reflectY);
+            moonBeam.addColorStop(0, `rgba(200, 210, 230, ${reflectionIntensity * 0.1})`);
+            moonBeam.addColorStop(1, `rgba(180, 200, 220, ${reflectionIntensity * 0.05})`);
+
+            ctx.fillStyle = moonBeam;
+            ctx.beginPath();
+            ctx.moveTo(x - 15, moonY + moonSize);
+            ctx.lineTo(x + 15, moonY + moonSize);
+            ctx.lineTo(x + 30, reflectY);
+            ctx.lineTo(x - 30, reflectY);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Horror-element: Ved lav sanity, månens "ansikt"
         if (game.sanity < 25) {
             const alpha = (25 - game.sanity) / 25;
-            ctx.fillStyle = `rgba(30, 20, 40, ${alpha})`;
-            ctx.fillRect(x - 10, y - 8, 4, 4);
-            ctx.fillRect(x + 6, y - 8, 4, 4);
-            ctx.fillRect(x - 8, y + 10, 16, 3);
+
+            // Uhyggelige øyne
+            ctx.fillStyle = `rgba(30, 20, 40, ${alpha * 0.8})`;
+            ctx.beginPath();
+            ctx.arc(x - moonSize * 0.3, moonY - moonSize * 0.1, moonSize * 0.12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + moonSize * 0.3, moonY - moonSize * 0.1, moonSize * 0.12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Røde pupiller
+            ctx.fillStyle = `rgba(150, 50, 50, ${alpha * 0.7})`;
+            ctx.beginPath();
+            ctx.arc(x - moonSize * 0.3, moonY - moonSize * 0.1, moonSize * 0.05, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + moonSize * 0.3, moonY - moonSize * 0.1, moonSize * 0.05, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Uhyggelig munn
+            ctx.strokeStyle = `rgba(30, 20, 40, ${alpha * 0.6})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x, moonY + moonSize * 0.2, moonSize * 0.25, 0.2 * Math.PI, 0.8 * Math.PI);
+            ctx.stroke();
         }
     },
 

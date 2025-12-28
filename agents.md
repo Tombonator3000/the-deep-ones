@@ -43,11 +43,12 @@ Bruk conventional commits:
 
 ## Nåværende Status
 
-**Versjon:** 0.9 (Touch Controls & Mobile Support)
+**Versjon:** 1.1 (Celestial Orbit System)
 
 **Ferdig:**
 - [x] Parallax layer system
 - [x] 4 tider på døgnet
+- [x] Celestial orbit (sol/måne følger bue over himmelen)
 - [x] 16 creatures med descriptions
 - [x] Sanity system med utvidede effekter
 - [x] Fishing mechanics med minigame

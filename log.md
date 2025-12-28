@@ -2,6 +2,71 @@
 
 ---
 
+## 2025-12-28 — Celestial Orbit System (Sol/Måne-bane)
+
+### Gjort
+
+#### 1. Celestial Orbit System (js/systems.js)
+- Sol og måne følger nå en naturlig bue over himmelen
+- Posisjon beregnes dynamisk basert på `dayProgress`
+- **Solen**:
+  - Synlig fra dawn (0) til dusk (0.75)
+  - Stiger i øst (høyre), høyest midt på dagen, går ned i vest (venstre)
+  - Bruker sinus-kurve for naturlig buebevegelse
+- **Månen**:
+  - Synlig fra dusk (0.5) til dawn (0.25)
+  - Følger samme bue-logikk som solen
+
+#### 2. Dynamiske sol-farger basert på høyde
+- Lav ved horisont: varm oransje/rød (soloppgang/nedgang)
+- Middels høyde: gylden gul
+- Senit: lys gul/hvit
+- Atmosfærisk effekt: solen er større ved horisonten
+- Solstråler tegnes ved lav horisont for dramatisk effekt
+
+#### 3. Forbedret måne-rendering
+- Gradient-basert måneskive med kratere
+- Glow-effekt som varierer med høyde
+- Månelys-søyle mot horisonten når månen er lav
+- Horror-element: uhyggelig "ansikt" på månen ved lav sanity (<25)
+
+#### 4. Hjelpefunksjoner
+- `getSunPosition()` — Returnerer x, y, heightRatio, isRising/isSetting
+- `getMoonPosition()` — Samme struktur som sol
+- `getSunColor(heightRatio)` — Dynamisk farge basert på høyde
+- `getMoonColor(heightRatio)` — Månens farger og glow
+- `lerpHexColor(hex1, hex2, t)` — Interpolering mellom hex-farger
+
+### Endringer
+
+**js/systems.js:**
+- Lagt til CELESTIAL ORBIT SYSTEM seksjon (~100 linjer)
+- Nye funksjoner: getSunPosition(), getMoonPosition(), getSunColor(), getMoonColor(), lerpColor(), lerpHexColor()
+
+**js/fallbacks.js:**
+- Fullstendig refaktorert `FALLBACKS.sun` til å bruke dynamisk posisjon
+- Fullstendig refaktorert `FALLBACKS.moon` til å bruke dynamisk posisjon
+- Sol: Ytre glow, indre glow, kjerne med gradient, stråler ved horisont
+- Måne: Gradient-overflate, kratere, månelys-søyle, horror-ansikt
+
+### Tekniske beslutninger
+- Sol bruker 0-0.75 av dayProgress (dawn→day→dusk)
+- Måne bruker 0.5-1.0 + 0-0.25 (dusk→night→dawn)
+- Minimal parallax på himmellegemer (0.1x for sol, 0.05x for måne)
+- Bueberegning bruker `Math.sin(progress * PI)` for naturlig kurve
+
+### Testing
+- Test ved å endre `game.dayProgress` manuelt eller bruke [T] for å bytte tid
+- Observer at sol/måne beveger seg gradvis over himmelen
+- Ved tidsskifte ser man overgangen mellom himmellegemer
+
+### Neste prioritet
+- [ ] Claude API-integrasjon for dynamisk NPC-dialog
+- [ ] Flere endings variants
+- [ ] Sprite-art for alle creatures
+
+---
+
 ## 2024-12-27 — v1.0 Full Feature Release
 
 ### Gjort
