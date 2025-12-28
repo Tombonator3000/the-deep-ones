@@ -2,7 +2,92 @@
 
 ---
 
-## 2025-12-28 — Player Display & Control Fixes
+## 2025-12-28 — Deep Audit & Multiple Fixes
+
+### Problem
+Nye rapporterte problemer etter tidligere fix:
+1. Spiller/båt dukker fremdeles ikke opp på skjermen
+2. Ingen knapper fungerer
+3. Kan ikke styre snøre opp/ned eller caste
+4. Grafikken blir rar når man trykker "S"
+5. Brygge med butikk synes ikke
+
+### Årsaker identifisert
+
+#### 1. Feil parallax-faktor på bryggen
+- `drawDock()` brukte `game.cameraX * 0.4` (40% parallax)
+- Båten bruker `game.cameraX * 1.0` (full parallax)
+- Resulterte i at bryggen og båten var på forskjellige skjermposisjoner
+- Båten startet på x=500 (senter), men bryggen var på x=1100 (høyre side)
+
+#### 2. S-tasten sprite-toggle bugget
+- Logikken for å forhindre sprite-toggle uten lastede sprites var feil
+- Kunne toggle sprites ON selv om ingen var lastet
+- Førte til at prosedyral grafikk ikke ble tegnet
+
+#### 3. Feil initialverdier
+- `game.targetDepth` startet på 30m i stedet for 0m
+- Kameraet kunne ha feil tilstand fra tidligere sessions
+
+#### 4. Manglende tvungen reset ved spillstart
+- Sprites ble ikke eksplisitt satt til OFF ved spillstart
+- Båtposisjon ble ikke reset til dock ved ny game
+
+### Løsninger
+
+#### 1. Fikset dock parallax (js/npc.js)
+```javascript
+// Før (feil):
+const dockX = CONFIG.dockX - game.cameraX * 0.4;
+
+// Etter (riktig):
+const dockX = CONFIG.dockX - game.cameraX;  // Full 1.0 parallax
+```
+
+#### 2. Forbedret S-tasten logikk (js/input.js)
+```javascript
+// Ny logikk:
+// - Alltid tillat toggle OFF (til procedural)
+// - Kun tillat toggle ON hvis sprites faktisk er lastet
+if (CONFIG.useSprites) {
+    CONFIG.useSprites = false;  // Always allow OFF
+} else if (loadedCount > 0) {
+    CONFIG.useSprites = true;   // Only ON if sprites exist
+}
+```
+
+#### 3. Fikset initialverdier (js/game-state.js)
+```javascript
+// Før:
+targetDepth: 30,
+
+// Etter:
+targetDepth: 0,  // Start at surface
+```
+
+#### 4. Tvungen reset i startGame/continueGame (js/main.js)
+- Legger til `CONFIG.useSprites = false` ved oppstart
+- Legger til `game.boatX = CONFIG.dockX` ved NEW GAME
+- Fjerner conditional `if (game.camera)` - alltid reset kamera
+
+### Endringer
+- `js/npc.js`: Endret dock parallax fra 0.4 til 1.0
+- `js/input.js`: Forbedret S-tasten sprite toggle logikk
+- `js/game-state.js`: Endret initial targetDepth fra 30 til 0
+- `js/main.js`: Lagt til tvungen sprite-off og båt-reset ved spillstart
+
+### Testing
+1. Start spillet og trykk "NEW GAME"
+2. Båten skal vises ved bryggen (senter av skjermen)
+3. Bryggen skal være synlig ved siden av båten
+4. Trykk SPACE for å caste snøret
+5. Bruk pil opp/ned for å justere dybde
+6. Trykk S - skal ikke endre grafikken (ingen sprites)
+7. Trykk E ved bryggen for å åpne Innsmouth Harbor
+
+---
+
+## 2025-12-28 — Player Display & Control Fixes (Earlier)
 
 ### Problem
 Flere problemer rapportert:

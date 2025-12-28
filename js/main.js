@@ -334,11 +334,15 @@ function startGame(time) {
     // Reset camera and depth to surface
     game.depth = 0;
     game.targetDepth = 0;
-    if (game.camera) {
-        game.camera.y = 0;
-        game.camera.targetY = 0;
-        game.camera.mode = 'surface';
-    }
+    game.camera.y = 0;
+    game.camera.targetY = 0;
+    game.camera.mode = 'surface';
+
+    // Reset boat to dock position
+    game.boatX = CONFIG.dockX;
+
+    // Force procedural mode (no sprites loaded)
+    CONFIG.useSprites = false;
 
     document.getElementById('title-screen').style.display = 'none';
 
@@ -357,11 +361,12 @@ function continueGame() {
         // Reset camera and depth to surface (even when loading save)
         game.depth = 0;
         game.targetDepth = 0;
-        if (game.camera) {
-            game.camera.y = 0;
-            game.camera.targetY = 0;
-            game.camera.mode = 'surface';
-        }
+        game.camera.y = 0;
+        game.camera.targetY = 0;
+        game.camera.mode = 'surface';
+
+        // Force procedural mode (no sprites loaded)
+        CONFIG.useSprites = false;
 
         initLayers();
         initFish();

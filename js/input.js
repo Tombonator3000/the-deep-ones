@@ -219,18 +219,26 @@ function setupInputHandlers() {
             return;
         }
 
-        // Sprite toggle - only allow if sprites are actually loaded
+        // Sprite toggle - ONLY allow if sprites are actually loaded
         if (e.key.toLowerCase() === 's' && !e.shiftKey) {
-            // Check if any sprites are actually loaded before allowing toggle
+            // Count how many sprites are actually loaded (not failed)
             const loadedCount = Object.values(loadedAssets.status).filter(s => s === 'loaded').length;
-            if (loadedCount > 0 || !CONFIG.useSprites) {
-                // Only toggle ON if sprites are loaded, always allow toggle OFF
-                if (!CONFIG.useSprites && loadedCount === 0) {
-                    console.log('No sprites loaded - staying in procedural mode');
-                    return;
-                }
-                CONFIG.useSprites = !CONFIG.useSprites;
+
+            // If currently using sprites and want to turn OFF, always allow
+            if (CONFIG.useSprites) {
+                CONFIG.useSprites = false;
+                console.log('Switched to procedural mode');
                 updateDebugPanel();
+                return;
+            }
+
+            // If want to turn ON sprites, only allow if any are loaded
+            if (loadedCount > 0) {
+                CONFIG.useSprites = true;
+                console.log('Switched to sprite mode');
+                updateDebugPanel();
+            } else {
+                console.log('No sprites loaded - cannot switch to sprite mode');
             }
             return;
         }

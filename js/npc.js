@@ -21,7 +21,8 @@ function getCurrentLure() {
 }
 
 function drawDock() {
-    const dockX = CONFIG.dockX - game.cameraX * 0.4;
+    // Dock must use same camera factor (1.0) as the boat for proper alignment
+    const dockX = CONFIG.dockX - game.cameraX;
     if (dockX < -150 || dockX > CONFIG.canvas.width + 50) return;
 
     const palette = getTimePalette();
