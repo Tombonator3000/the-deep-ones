@@ -1582,6 +1582,54 @@ Potensielle NaN-verdier i camera-systemet kunne fortsatt oppstå under visse oms
 
 ---
 
+## 2025-12-28 — Fix: Player Visibility & Camera Stuck Bug
+
+### Problem
+To relaterte bugs:
+1. Spilleren/båten dukket ikke alltid opp på skjermen
+2. Når man kastet snøret, panorerte kameraet ned og ble der (returnerte ikke til overflaten)
+
+### Årsak
+Problemet var i undervanns-kamera-panorering-systemet:
+1. **For aggressiv panorering**: `depthPercent * maxPan * 1.5` kunne gi opptil 300px offset
+2. **For treg retur**: `panSpeed = 0.03` var for tregt til å returnere til overflaten
+3. **Manglende reset**: Kameraet ble ikke eksplisitt reset når spilleren gikk tilbake til 'sailing' state
+
+### Løsning
+
+#### 1. Redusert kamera-pan i updateCameraPan() (js/systems.js)
+- Redusert maksimal pan fra 200px til 100px
+- Redusert pan-multiplier fra 1.5 til 0.8
+- Økt returhastighet (0.1 ved retur til overflaten)
+- La til snap-to-zero når nær overflaten
+- Forbedret NaN-guards
+
+#### 2. Eksplisitt kamera-reset (js/input.js)
+- Reset `camera.targetY` til 0 når spilleren avslutter fisking (space i 'waiting' state)
+- Reset `camera.targetY` til 0 etter fangst (space i 'caught' state)
+- Reset `targetDepth` til 0 ved begge tilfeller
+
+#### 3. Kamera-reset i endMinigame() (js/systems.js)
+- Reset kamera når fisken slipper unna og spilleren returnerer til 'sailing'
+
+#### 4. Oppdatert standardverdier (js/game-state.js)
+- Økt `panSpeed` fra 0.03 til 0.05
+- Redusert `maxPan` fra 200 til 100
+
+### Endringer
+- `js/systems.js`: Ny robust versjon av updateCameraPan(), kamera-reset i endMinigame()
+- `js/input.js`: Eksplisitt kamera-reset ved state-endringer
+- `js/game-state.js`: Oppdaterte standardverdier for kamera
+
+### Testing
+- Start spillet og trykk "NEW GAME"
+- Båten og fiskeren skal vises umiddelbart
+- Kast snøret med SPACE - kameraet skal panorere nedover
+- Trykk SPACE igjen - kameraet skal returnere til overflaten
+- Fang en fisk - kameraet skal returnere til overflaten etter popup
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown

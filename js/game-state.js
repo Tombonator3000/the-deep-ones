@@ -224,9 +224,9 @@ const game = {
     camera: {
         y: 0,              // Current vertical offset
         targetY: 0,        // Target for smooth lerp
-        panSpeed: 0.03,    // Speed of panning
+        panSpeed: 0.05,    // Speed of panning (increased for smoother feel)
         mode: 'surface',   // 'surface' | 'underwater' | 'transitioning'
-        maxPan: 200        // Maximum pan depth in pixels
+        maxPan: 100        // Maximum pan depth in pixels (reduced for better visibility)
     },
 
     // Trophy tracking per fish species

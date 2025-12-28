@@ -292,6 +292,11 @@ function setupInputHandlers() {
                 } else if (game.state === 'waiting') {
                     game.state = 'sailing';
                     game.depth = 0;
+                    game.targetDepth = 0;
+                    // Reset camera to surface
+                    if (game.camera) {
+                        game.camera.targetY = 0;
+                    }
                 } else if (game.state === 'caught') {
                     const c = game.currentCatch;
                     game.sanity = Math.max(0, game.sanity - c.sanityLoss);
@@ -368,6 +373,11 @@ function setupInputHandlers() {
                     game.currentCatch = null;
                     game.state = 'sailing';
                     game.depth = 0;
+                    game.targetDepth = 0;
+                    // Reset camera to surface
+                    if (game.camera) {
+                        game.camera.targetY = 0;
+                    }
                     autoSave();
                 }
                 break;
