@@ -753,6 +753,11 @@ function endMinigame(success) {
     } else {
         game.state = 'sailing';
         game.depth = 0;
+        game.targetDepth = 0;
+        // Reset camera to surface
+        if (game.camera) {
+            game.camera.targetY = 0;
+        }
         addSoundEffect('*snap* It got away...', CONFIG.canvas.width / 2, CONFIG.waterLine - 50, {
             color: '#a06060',
             duration: 60,
@@ -1700,9 +1705,13 @@ function updateCameraPan() {
     const cam = game.camera;
 
     // Guard against undefined camera state
-    if (!cam || typeof cam.y !== 'number') {
-        if (game.camera) game.camera.y = 0;
+    if (!cam) {
         return;
+    }
+
+    // Ensure cam.y is a valid number
+    if (typeof cam.y !== 'number' || isNaN(cam.y)) {
+        cam.y = 0;
     }
 
     // Determine target pan based on game state
@@ -1710,28 +1719,39 @@ function updateCameraPan() {
         // Calculate target depth based on fishing line
         const rod = (typeof getCurrentRod === 'function') ? getCurrentRod() : null;
         const maxDepth = (rod && typeof rod.depthMax === 'number') ? rod.depthMax : 30;
-        const depth = (typeof game.depth === 'number') ? game.depth : 0;
-        const depthPercent = depth / maxDepth;
+        const depth = (typeof game.depth === 'number' && !isNaN(game.depth)) ? game.depth : 0;
 
-        // Pan down into the water when fishing
-        cam.targetY = Math.min(cam.maxPan || 200, depthPercent * (cam.maxPan || 200) * 1.5);
+        // Safely calculate depth percent (0 to 1)
+        const depthPercent = maxDepth > 0 ? Math.min(1, Math.max(0, depth / maxDepth)) : 0;
+
+        // Reduced pan amount - max 100px instead of 200px for better visibility
+        const maxPan = Math.min(cam.maxPan || 200, 100);
+
+        // Pan down into the water when fishing (reduced multiplier from 1.5 to 0.8)
+        cam.targetY = depthPercent * maxPan * 0.8;
         cam.mode = 'underwater';
     } else if (game.state === 'caught') {
-        // Keep camera underwater briefly when catching
-        cam.targetY = Math.max(0, (cam.targetY || 0) - 2);
-        cam.mode = cam.targetY > 10 ? 'transitioning' : 'surface';
+        // Quickly return camera when catching - faster reduction
+        cam.targetY = Math.max(0, (cam.targetY || 0) * 0.8);
+        cam.mode = cam.targetY > 5 ? 'transitioning' : 'surface';
     } else {
-        // Return to surface view
+        // Return to surface view immediately
         cam.targetY = 0;
         cam.mode = 'surface';
     }
 
-    // Smooth interpolation
-    const diff = (cam.targetY || 0) - (cam.y || 0);
-    cam.y = (cam.y || 0) + diff * (cam.panSpeed || 0.03);
+    // Smooth interpolation with faster return speed when going back to surface
+    const diff = (cam.targetY || 0) - cam.y;
+    const speed = cam.targetY < cam.y ? 0.1 : (cam.panSpeed || 0.05);  // Faster when returning up
+    cam.y = cam.y + diff * speed;
 
-    // Clamp values and guard against NaN
-    cam.y = Math.max(0, Math.min(cam.maxPan || 200, cam.y || 0));
+    // Snap to 0 if very close to surface
+    if (cam.targetY === 0 && Math.abs(cam.y) < 1) {
+        cam.y = 0;
+    }
+
+    // Clamp values
+    cam.y = Math.max(0, Math.min(100, cam.y));
 
     // Final NaN guard
     if (isNaN(cam.y)) {
