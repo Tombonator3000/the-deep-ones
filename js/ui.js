@@ -209,6 +209,7 @@ function drawHotkeyHelp() {
         { key: 'SPACE', desc: 'Cast line / Confirm / Continue' },
         { key: 'E', desc: 'Open Innsmouth Harbor menu' },
         { key: 'P', desc: 'Pet your dog (+3 sanity)' },
+        { key: 'I', desc: 'Toggle idle fishing mode' },
         { key: 'J', desc: 'Open Fishing Journal' },
         { key: 'L', desc: 'Open Lore Collection' },
         { key: 'A', desc: 'Open Achievements' },

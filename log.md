@@ -1036,6 +1036,416 @@ Komplett Game Design Document basert på Cast n Chill + Deep Regrets inspirasjon
 
 ---
 
+## 2025-12-28 — Cast n Chill Analyse (Research)
+
+### Formål
+Analysere Cast n Chill for å identifisere grafiske teknikker, gameplay-mekanikker og designvalg vi kan lære av for The Deep Ones.
+
+### Cast n Chill — Oversikt
+
+**Utvikler:** Wombat Brawler (2-person Aussie-studio)
+**Utgivelse:** Juni 2025 på Steam
+**Sjanger:** Cozy idle/active fishing game
+**Inspirasjonskilde for:** The Deep Ones' visuelle stil og fiskemekanikk
+
+---
+
+### 1. Grafikk & Pixel Art Stil
+
+#### Landskapsmaleri-tilnærming
+- Ekstremt detaljert pixel art i "maleri"-stil
+- Hvert område føles som et levende kunstverk
+- Fokus på naturskjønnhet: trær, fjell, skyer, vann
+- Sesongbaserte paletter (høstløv, solnedgang, nattehimmel)
+
+#### Vanneffekter (hovedattraksjonen)
+- **Refleksjoner**: Trær, skyer og fjell speiles i vannoverflaten
+- **Dynamiske bølger**: Subtil bevegelse i vannoverflaten
+- **Ripples**: Ender og fisk lager krusninger i vannet
+- **Morgentåke**: Atmosfærisk tåke som svever over vannet
+- Anmeldere kaller vanneffekten "mind-blowing" for pixel art
+
+#### Detaljnivå
+- Fugler som lander og letter
+- Ender som svømmer forbi
+- Fisk detaljert tegnet i journal
+- Båten har subtil bob-animasjon
+- Hunden som følgesvenn med egne animasjoner
+
+---
+
+### 2. Parallax & Dybde-system
+
+#### Lagdelt bakgrunn
+- Bruker klassisk parallax scrolling med multiple lag
+- Bakgrunnslag beveger seg saktere enn forgrunnen
+- Skaper illusjon av en "langt større naturlig verden"
+- Beskrevet som "incredible landscapes across multiple layers"
+
+#### Dybdeeffekt
+- Nære elementer (båt, vann) i fullt tempo
+- Trær/land i middels tempo
+- Fjell i sakte tempo
+- Himmel/skyer i veldig sakte tempo
+- Resulterer i "huge amount of depth"
+
+#### Lærdom for The Deep Ones
+Vi har allerede 15+ parallax-lag, men kan forbedre:
+- Mer detaljerte overgangsanimasjoner mellom lag
+- Bedre dybdefølelse i undervannslayerne
+- Atmosfæriske effekter som binder lagene sammen
+
+---
+
+### 3. Kamera & Undervanns-panorering ⭐
+
+**NØKKELFUNN: Cast n Chill har dynamisk kamera-panorering!**
+
+#### Hvordan det fungerer
+1. **Startmodus**: Med enkel "bobber" ser du kun overflaten
+2. **Med oppgradert lure**: Når du kaster, SYNKER kameraet ned under vann
+3. **Undervannsvisning**: Du ser luren din synke ned, fisk svømmer rundt
+4. **Dybdebasert**: Kameraet følger luren til riktig dybde
+5. **Valgfritt**: Settings har "Only above" for å slå av undervannsview
+
+#### Visuell overgang
+- Gradvis panorering fra overflate til dybde
+- Lysforhold endres (mørkere dypere ned)
+- Fisk vises som animerte sprites på sine respektive dybder
+- Undervannsbakgrunn med tang, steiner, lyseffekter
+
+#### Implementering for The Deep Ones
+```
+FORSLAG: Undervanns-panorering ved kasting
+
+Når spiller kaster:
+1. Kamera begynner å panorere ned (smooth lerp)
+2. Vannoverflate-linjen beveger seg oppover på skjermen
+3. Undervannsverdenen blir synlig
+4. Kameraet stopper ved snørets dybde
+5. Fisk/creatures vises på sin dybde
+
+Ved "bite" eller reel-in:
+1. Kamera følger snøret/fisken
+2. Ved fangst, panorerer tilbake til overflatevisning
+
+Konfigurasjon:
+- panSpeed: 0.05 (hastighet på panorering)
+- maxPanDepth: avhengig av fiskestang
+- returnDelay: 1.5s etter fangst
+```
+
+---
+
+### 4. Fiskemekanikk
+
+#### Kast & Venting
+- Kaster ut snøret til valgt punkt
+- Lure synker til sin naturlige dybde
+- Fisk tiltrekkes av riktig lure-type
+- Visuelt: du SER fisken nærme seg luren under vann
+
+#### Reeling-mekanikk
+- **Venstre museklikk/hold**: Reel inn snøret
+- **Høyre museklikk/hold**: Slipp ut snøret (gi slakk)
+- Ingen drag-system (kritisert av noen spillere)
+
+#### Fiskekamp-indikator ⭐
+- Når fisk kjemper hardt: **"Fyrverkeri"-lignende partikler** fra fiskens hode
+- Visuell indikator som er mer intuitiv enn en bar
+- Må slippe ut snøret når dette skjer
+- Reel inn når fisken roer seg
+
+#### Lærdom for The Deep Ones
+Vår nåværende minigame bruker tension-bar. Alternativ:
+- Legg til partikkel-effekt på fisken når den kjemper
+- Kombiner bar med visuelle indikatorer
+- "Glow" eller "shake" på snøret ved høy tension
+
+---
+
+### 5. Gameplay Loop & Progresjon
+
+#### Kjerneloop
+```
+Fisk → Selg hos Rusty's → Kjøp utstyr → Nye områder → Repeat
+```
+
+#### Progresjonselementer
+- **13 unike lokasjoner** (vi har 8)
+- **50 fiskearter** i journal (vi har 16 + 7 tid/vær)
+- **Trophy-fisk**: Største fangst per art lagres
+- **Lisenssystem**: Må kjøpe tilgang til nye områder
+
+#### Idle vs Active modus
+- **Active**: Full kontroll, raskere progresjon
+- **Idle/Passive**: Spillet fisker automatisk
+- Offline progression: Tjener penger mens du er borte
+
+#### Lærdom for The Deep Ones
+- Vurder "idle fishing"-modus som gir sanity-tap over tid
+- Trophy-tracking per fisketype (største/mest verdifulle)
+- Mer tydelig progresjons-gate mellom områder
+
+---
+
+### 6. Tid & Atmosfære
+
+#### Tid på døgnet
+- Påvirker hvilke fisk som er tilgjengelige
+- Legendary fish kun på spesifikke tider
+- Visuell endring: soloppgang, dag, solnedgang, natt
+- **Snooze-knapp**: Kan endre tid manuelt
+
+#### Atmosfæriske detaljer
+- Stjerner reflekteres i vannet om natten
+- Fjell "blusher" med høstfarger
+- Morgentåke som letter
+- Solnedgangsglow på alt
+
+---
+
+### 7. Hva vi kan implementere
+
+#### Høy prioritet (stor impact)
+
+1. **Undervanns-panorering ved kasting**
+   - Kameraet følger snøret ned
+   - Viser undervannsverdenen aktivt
+   - Gjør fisking mer visuelt engasjerende
+   - Matcher vår eksisterende undervannsgrafikk
+
+2. **Forbedrede vannrefleksjoner**
+   - Vi har `drawWaterReflection()` allerede
+   - Kan legge til refleksjon av himmel/skyer
+   - Dynamisk bølge-distorsjon på refleksjoner
+
+3. **Visuell fiskekamp-indikator**
+   - Partikler/glow når fisk kjemper
+   - Supplement til tension-bar, ikke erstatning
+   - Mer atmosfærisk og intuitivt
+
+#### Medium prioritet
+
+4. **Trophy-tracking**
+   - Lagre største fangst per fisketype
+   - Vis i journal med vekt/verdi
+   - Achievement for "alle trophies"
+
+5. **Bedre fisk-visualisering**
+   - Se fisken nærme seg luren under vann
+   - Animert fiskebevegelse før bite
+
+6. **Ripple-effekter**
+   - Når bobber lander
+   - Når fisk fanges
+   - Når regn treffer vannet
+
+#### Lavere prioritet (nice to have)
+
+7. **Idle fishing-modus**
+   - Automatisk fisking over tid
+   - Balansert med sanity-tap
+   - Passer til mobil-gameplay
+
+8. **Flere lokasjoner**
+   - Utvide fra 8 til 12+ områder
+   - Mer variasjon i visuell stil
+
+---
+
+### 8. Teknisk implementeringsplan
+
+#### Undervanns-panorering (hovedfeature)
+```javascript
+// Ny state i game-state.js
+camera: {
+    y: 0,              // Vertikal offset
+    targetY: 0,        // Mål for smooth lerp
+    panSpeed: 0.03,    // Hastighet på panorering
+    mode: 'surface'    // 'surface' | 'underwater' | 'transitioning'
+}
+
+// I systems.js
+function updateCameraPan() {
+    if (game.fishing.casting || game.fishing.lineOut) {
+        // Beregn måldybde basert på snøret
+        const targetDepth = calculateLineDepth();
+        game.camera.targetY = Math.min(targetDepth * 2, 300);
+        game.camera.mode = 'underwater';
+    } else {
+        game.camera.targetY = 0;
+        game.camera.mode = 'surface';
+    }
+
+    // Smooth interpolation
+    game.camera.y += (game.camera.targetY - game.camera.y) * game.camera.panSpeed;
+}
+
+// I rendering.js - modifiser alle render-kall
+function render() {
+    ctx.save();
+    ctx.translate(0, -game.camera.y);
+    // ... eksisterende render-kode
+    ctx.restore();
+}
+```
+
+#### Fiskekamp-partikler
+```javascript
+// I creatures.js eller systems.js
+function drawFishStruggleEffect(fish) {
+    if (game.minigame.tension > 70) {
+        // Tegn "fyrverkeri"-partikler fra fiskens posisjon
+        for (let i = 0; i < 5; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * 15 + 5;
+            ctx.beginPath();
+            ctx.arc(
+                fish.x + Math.cos(angle) * distance,
+                fish.y + Math.sin(angle) * distance,
+                2, 0, Math.PI * 2
+            );
+            ctx.fillStyle = `rgba(255, ${100 + Math.random() * 100}, 50, ${0.5 + Math.random() * 0.5})`;
+            ctx.fill();
+        }
+    }
+}
+```
+
+---
+
+### Sammenligning: Cast n Chill vs The Deep Ones
+
+| Aspekt | Cast n Chill | The Deep Ones | Vårt fokus |
+|--------|--------------|---------------|------------|
+| Tone | 100% cozy | Cozy → Horror | ✓ Unikt |
+| Pixel art | Landskapsmaleri | Lovecraftian | ✓ Egen stil |
+| Parallax | Multi-layer | 15+ layers | ✓ Allerede sterkt |
+| Undervannspan | ✓ Ja | ✗ Nei (ennå) | **Prioritet** |
+| Fiskekamp | Visuell | Tension bar | Kan forbedre |
+| Idle mode | ✓ Ja | ✗ Nei | Vurderes |
+| Progresjon | Lineær | Sanity-drevet | ✓ Unikt |
+| NPCer | Statisk dialog | Dynamisk | ✓ Bedre |
+| Endings | Ingen | 3 endings | ✓ Bedre |
+
+---
+
+### Konklusjon
+
+Cast n Chill's største styrke er den **visuelle presentasjonen av fisking**, spesielt:
+1. Undervanns-panorering som gjør fisking til en visuell opplevelse
+2. Vannrefleksjoner som gir liv til overflaten
+3. "Se fisken bite" fremfor bare å vente på RNG
+
+The Deep Ones har allerede sterke unike elementer (horror, sanity, transformasjon, endings), men kan låne Cast n Chills undervanns-panorering for å gjøre fiskingen mer engasjerende.
+
+**Anbefalt neste steg:**
+Implementer undervanns-kamera-panorering som hovedfeature.
+
+### Kilder
+- [Steam Store](https://store.steampowered.com/app/3483740/Cast_n_Chill/)
+- [VideoGamer Preview](https://www.videogamer.com/previews/cast-n-chill-fishing-for-compliments-charming-pixel-art-balmy-atmosphere/)
+- [Well-Played Review](https://www.well-played.com.au/cast-n-chill-review/)
+- [Vice Review](https://www.vice.com/en/article/cast-n-chill-is-an-idle-and-active-fishing-game-that-has-become-my-new-go-to-when-i-want-to-relax-review/)
+- [The Indie Informer](https://the-indie-in-former.com/2025/06/20/cast-n-chill-is-the-perfect-playable-screensaver/)
+
+---
+
+## 2025-12-28 — Cast n Chill Features Implementert
+
+### Gjort
+Implementert alle planlagte features fra Cast n Chill-analysen:
+
+1. **Undervanns-panorering** ⭐
+   - Kameraet panorerer ned under vann når du fisker
+   - Smooth lerp-basert bevegelse
+   - Følger snørets dybde
+   - Returnerer til overflaten ved fangst
+
+2. **Forbedrede vannrefleksjoner**
+   - Sky/himmel-shimmer på vannoverflaten
+   - Båtrefleksjon med bølge-distorsjon
+   - Ripple-ringer rundt båten
+   - Sol/måne-refleksjonsbane ved dag/dusk
+
+3. **Fiskekamp-partikler**
+   - "Fyrverkeri"-effekt når fisk kjemper hardt (tension > 60%)
+   - Partikler rundt fiske-ikonet i minigame
+   - Pulserende glow ved høy tension (> 70%)
+   - Orange/gule partikler med gravity
+
+4. **Trophy-tracking per fisk**
+   - Lagrer beste verdi og antall fangster per art
+   - "FIRST CATCH!" melding for nye arter
+   - "NEW RECORD!" ved ny beste fangst
+   - Vises i catch-popup
+   - Lagres/lastes med save-systemet
+
+5. **Idle fishing-modus** [I]
+   - Automatisk fisking hvert 15. sekund
+   - 60% base fangstsjanse
+   - Økt sanity-drain (1.5x) som trade-off
+   - Progress-bar viser tid til neste fangst
+   - Stopper automatisk ved full inventory
+
+### Endringer
+
+| Fil | Endring |
+|-----|---------|
+| `game-state.js` | Ny state: camera, trophies, fishStruggleParticles, idleFishing |
+| `systems.js` | +450 linjer: updateCameraPan, trophy-system, idle-fishing, enhanced reflections |
+| `main.js` | Integrert camera pan i render, la til nye update-calls |
+| `rendering.js` | Utvidet catch popup med trophy info |
+| `input.js` | Ny hotkey [I] for idle fishing, addTrophy ved fangst |
+| `ui.js` | Oppdatert hotkey-hjelp med [I] |
+| `save.js` | Lagrer/laster trophies |
+
+### Nye funksjoner
+
+```javascript
+// Camera panning
+updateCameraPan()
+getCameraPanOffset()
+
+// Fish struggle
+updateFishStruggleParticles()
+drawFishStruggleParticles()
+drawFishStruggleIndicator()
+
+// Trophies
+addTrophy(creature)
+getTrophyInfo(name)
+getAllTrophies()
+getTrophyProgress()
+drawTrophyInfo(creature, x, y)
+
+// Idle fishing
+toggleIdleFishing()
+updateIdleFishing(deltaTime)
+drawIdleFishingIndicator()
+
+// Enhanced reflections
+drawEnhancedWaterReflection()
+```
+
+### Nye hotkeys
+- **[I]** — Toggle idle fishing mode
+
+### Testing
+- Start spillet og cast snøret - kameraet skal panorere ned
+- Få en fisk på kroken med høy tension - se partikkel-effekter
+- Fang en fisk - se trophy info i popup
+- Trykk [I] for å aktivere idle mode
+
+### Notater
+- Idle mode er balansert med økt sanity-drain
+- Kamera-pan er subtil men merkbar
+- Partikkel-effekten intensiveres med tension
+- Trophies lagres persistent
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown

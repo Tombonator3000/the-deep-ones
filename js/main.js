@@ -37,6 +37,11 @@ function update(deltaTime) {
     updateSoundEffects();
     updateStreak();
 
+    // Update new Cast n Chill inspired systems
+    updateCameraPan();
+    updateFishStruggleParticles();
+    updateIdleFishing(deltaTime);
+
     // Update events system
     if (typeof updateEvents === 'function') {
         updateEvents(deltaTime);
@@ -160,6 +165,12 @@ function render() {
         applyBigCatchShake();
     }
 
+    // Apply underwater camera panning (Cast n Chill inspired)
+    const cameraPanOffset = getCameraPanOffset();
+    if (cameraPanOffset > 0) {
+        ctx.translate(0, -cameraPanOffset);
+    }
+
     // Draw layers with fallbacks
     game.layers.forEach(layer => {
         const fallback = FALLBACKS[layer.id];
@@ -178,8 +189,10 @@ function render() {
     // Draw fish
     drawFish();
 
-    // Draw water reflection
-    if (typeof drawWaterReflection === 'function') {
+    // Draw enhanced water reflection (Cast n Chill inspired)
+    if (typeof drawEnhancedWaterReflection === 'function') {
+        drawEnhancedWaterReflection();
+    } else if (typeof drawWaterReflection === 'function') {
         drawWaterReflection();
     }
 
@@ -188,6 +201,9 @@ function render() {
 
     // Draw fishing line
     drawFishingLine();
+
+    // Draw fish struggle particles (Cast n Chill inspired)
+    drawFishStruggleParticles();
 
     // Draw weather effects
     drawWeatherEffects();
@@ -205,7 +221,7 @@ function render() {
         drawGlitchEffect();
     }
 
-    ctx.restore();  // Restore from screen shake
+    ctx.restore();  // Restore from screen shake and camera pan
 
     // Draw UI elements
     drawLocationIndicator();
@@ -239,8 +255,12 @@ function render() {
         ctx.textAlign = 'left';
     }
 
-    // Draw minigame
+    // Draw minigame with fish struggle indicator
     drawMinigame();
+    drawFishStruggleIndicator();
+
+    // Draw idle fishing indicator
+    drawIdleFishingIndicator();
 
     // Draw popups
     drawCatchPopup();
