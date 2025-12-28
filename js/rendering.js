@@ -650,10 +650,10 @@ function drawCatchPopup() {
     const py = 100;
 
     ctx.fillStyle = 'rgba(5, 10, 8, 0.95)';
-    ctx.fillRect(px - 5, py - 5, 360, 170);
+    ctx.fillRect(px - 5, py - 5, 360, 190);
     ctx.strokeStyle = '#5a8a6a';
     ctx.lineWidth = 3;
-    ctx.strokeRect(px, py, 350, 160);
+    ctx.strokeRect(px, py, 350, 180);
 
     ctx.fillStyle = '#aaddaa';
     ctx.font = '12px "Press Start 2P"';
@@ -676,7 +676,12 @@ function drawCatchPopup() {
     ctx.font = '16px VT323';
     ctx.fillText(c.desc, px + 20, py + 120);
 
+    // Trophy info (Cast n Chill inspired)
+    if (typeof drawTrophyInfo === 'function') {
+        drawTrophyInfo(c, px + 20, py + 145);
+    }
+
     ctx.fillStyle = '#5a6a5a';
     ctx.font = '14px VT323';
-    ctx.fillText('[SPACE] continue', px + 220, py + 150);
+    ctx.fillText('[SPACE] continue', px + 220, py + 170);
 }

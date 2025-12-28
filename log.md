@@ -1352,6 +1352,100 @@ Implementer undervanns-kamera-panorering som hovedfeature.
 
 ---
 
+## 2025-12-28 — Cast n Chill Features Implementert
+
+### Gjort
+Implementert alle planlagte features fra Cast n Chill-analysen:
+
+1. **Undervanns-panorering** ⭐
+   - Kameraet panorerer ned under vann når du fisker
+   - Smooth lerp-basert bevegelse
+   - Følger snørets dybde
+   - Returnerer til overflaten ved fangst
+
+2. **Forbedrede vannrefleksjoner**
+   - Sky/himmel-shimmer på vannoverflaten
+   - Båtrefleksjon med bølge-distorsjon
+   - Ripple-ringer rundt båten
+   - Sol/måne-refleksjonsbane ved dag/dusk
+
+3. **Fiskekamp-partikler**
+   - "Fyrverkeri"-effekt når fisk kjemper hardt (tension > 60%)
+   - Partikler rundt fiske-ikonet i minigame
+   - Pulserende glow ved høy tension (> 70%)
+   - Orange/gule partikler med gravity
+
+4. **Trophy-tracking per fisk**
+   - Lagrer beste verdi og antall fangster per art
+   - "FIRST CATCH!" melding for nye arter
+   - "NEW RECORD!" ved ny beste fangst
+   - Vises i catch-popup
+   - Lagres/lastes med save-systemet
+
+5. **Idle fishing-modus** [I]
+   - Automatisk fisking hvert 15. sekund
+   - 60% base fangstsjanse
+   - Økt sanity-drain (1.5x) som trade-off
+   - Progress-bar viser tid til neste fangst
+   - Stopper automatisk ved full inventory
+
+### Endringer
+
+| Fil | Endring |
+|-----|---------|
+| `game-state.js` | Ny state: camera, trophies, fishStruggleParticles, idleFishing |
+| `systems.js` | +450 linjer: updateCameraPan, trophy-system, idle-fishing, enhanced reflections |
+| `main.js` | Integrert camera pan i render, la til nye update-calls |
+| `rendering.js` | Utvidet catch popup med trophy info |
+| `input.js` | Ny hotkey [I] for idle fishing, addTrophy ved fangst |
+| `ui.js` | Oppdatert hotkey-hjelp med [I] |
+| `save.js` | Lagrer/laster trophies |
+
+### Nye funksjoner
+
+```javascript
+// Camera panning
+updateCameraPan()
+getCameraPanOffset()
+
+// Fish struggle
+updateFishStruggleParticles()
+drawFishStruggleParticles()
+drawFishStruggleIndicator()
+
+// Trophies
+addTrophy(creature)
+getTrophyInfo(name)
+getAllTrophies()
+getTrophyProgress()
+drawTrophyInfo(creature, x, y)
+
+// Idle fishing
+toggleIdleFishing()
+updateIdleFishing(deltaTime)
+drawIdleFishingIndicator()
+
+// Enhanced reflections
+drawEnhancedWaterReflection()
+```
+
+### Nye hotkeys
+- **[I]** — Toggle idle fishing mode
+
+### Testing
+- Start spillet og cast snøret - kameraet skal panorere ned
+- Få en fisk på kroken med høy tension - se partikkel-effekter
+- Fang en fisk - se trophy info i popup
+- Trykk [I] for å aktivere idle mode
+
+### Notater
+- Idle mode er balansert med økt sanity-drain
+- Kamera-pan er subtil men merkbar
+- Partikkel-effekten intensiveres med tension
+- Trophies lagres persistent
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown

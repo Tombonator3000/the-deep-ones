@@ -218,5 +218,31 @@ const game = {
         bigCatchShake: 0,
         glitchIntensity: 0,
         waterReflection: true
+    },
+
+    // Underwater camera panning (Cast n Chill inspired)
+    camera: {
+        y: 0,              // Current vertical offset
+        targetY: 0,        // Target for smooth lerp
+        panSpeed: 0.03,    // Speed of panning
+        mode: 'surface',   // 'surface' | 'underwater' | 'transitioning'
+        maxPan: 200        // Maximum pan depth in pixels
+    },
+
+    // Trophy tracking per fish species
+    trophies: {
+        // Will store: { creatureName: { bestValue: number, count: number } }
+    },
+
+    // Fish struggle particles
+    fishStruggleParticles: [],
+
+    // Idle fishing mode
+    idleFishing: {
+        active: false,
+        timer: 0,
+        catchInterval: 15000,  // 15 seconds between auto-catches
+        lastCatchTime: 0,
+        sanityDrainMultiplier: 1.5  // Faster sanity drain when idle
     }
 };

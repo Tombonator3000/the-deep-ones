@@ -341,6 +341,11 @@ function setupInputHandlers() {
                     game.caughtCreatures.push(c);
                     if (c.rarity < 0.15) game.lastRareCatch = true;
 
+                    // Add to trophy tracking (Cast n Chill inspired)
+                    if (typeof addTrophy === 'function') {
+                        addTrophy(c);
+                    }
+
                     // Trigger visual effects for rare/valuable catches
                     if (c.value >= 180 && typeof game.visualEffects !== 'undefined') {
                         game.visualEffects.bigCatchShake = 0.5;
@@ -382,6 +387,13 @@ function setupInputHandlers() {
             case 'p':
             case 'P':
                 petDog();
+                break;
+            case 'i':
+            case 'I':
+                // Toggle idle fishing mode (Cast n Chill inspired)
+                if (typeof toggleIdleFishing === 'function' && game.state === 'sailing') {
+                    toggleIdleFishing();
+                }
                 break;
         }
     });

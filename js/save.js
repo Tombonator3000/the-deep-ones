@@ -46,7 +46,9 @@ function saveGame() {
             triggered: game.ending.triggered,
             current: game.ending.current
         },
-        endlessMode: game.endlessMode
+        endlessMode: game.endlessMode,
+        // Trophy tracking (Cast n Chill inspired)
+        trophies: { ...game.trophies }
     };
 
     try {
@@ -127,6 +129,11 @@ function loadGame() {
 
         // Restore endless mode
         game.endlessMode = saveData.endlessMode || false;
+
+        // Restore trophy tracking (Cast n Chill inspired)
+        if (saveData.trophies) {
+            game.trophies = { ...saveData.trophies };
+        }
 
         // Update inventory max based on boat
         const boat = getCurrentBoat();

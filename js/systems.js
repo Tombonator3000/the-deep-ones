@@ -1507,3 +1507,427 @@ function drawAchievementsViewer() {
     ctx.fillText(`[←/→] Page ${game.achievements.viewerPage + 1}/${totalPages} | [A/ESC] Close`, x + w/2, y + h - 15);
     ctx.textAlign = 'left';
 }
+
+// ============================================================
+// UNDERWATER CAMERA PANNING (Cast n Chill inspired)
+// ============================================================
+
+function updateCameraPan() {
+    const cam = game.camera;
+
+    // Determine target pan based on game state
+    if (game.state === 'waiting' || game.state === 'reeling' || game.minigame.active) {
+        // Calculate target depth based on fishing line
+        const rod = getCurrentRod ? getCurrentRod() : null;
+        const maxDepth = rod ? rod.maxDepth : 30;
+        const depthPercent = game.depth / maxDepth;
+
+        // Pan down into the water when fishing
+        cam.targetY = Math.min(cam.maxPan, depthPercent * cam.maxPan * 1.5);
+        cam.mode = 'underwater';
+    } else if (game.state === 'caught') {
+        // Keep camera underwater briefly when catching
+        cam.targetY = Math.max(0, cam.targetY - 2);
+        cam.mode = cam.targetY > 10 ? 'transitioning' : 'surface';
+    } else {
+        // Return to surface view
+        cam.targetY = 0;
+        cam.mode = 'surface';
+    }
+
+    // Smooth interpolation
+    const diff = cam.targetY - cam.y;
+    cam.y += diff * cam.panSpeed;
+
+    // Clamp values
+    cam.y = Math.max(0, Math.min(cam.maxPan, cam.y));
+}
+
+function getCameraPanOffset() {
+    return game.camera.y;
+}
+
+// ============================================================
+// FISH STRUGGLE PARTICLES
+// ============================================================
+
+function addFishStruggleParticle(x, y) {
+    game.fishStruggleParticles.push({
+        x: x + (Math.random() - 0.5) * 20,
+        y: y + (Math.random() - 0.5) * 10,
+        vx: (Math.random() - 0.5) * 3,
+        vy: -Math.random() * 2 - 1,
+        life: 30 + Math.random() * 20,
+        maxLife: 50,
+        size: 2 + Math.random() * 3,
+        color: Math.random() > 0.5 ? 'orange' : 'yellow'
+    });
+}
+
+function updateFishStruggleParticles() {
+    game.fishStruggleParticles = game.fishStruggleParticles.filter(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.05;  // Slight gravity
+        p.life--;
+        return p.life > 0;
+    });
+
+    // Add new particles when fish is struggling hard
+    if (game.minigame.active && game.minigame.tension > 60) {
+        const intensity = (game.minigame.tension - 60) / 40;  // 0 to 1
+        if (Math.random() < intensity * 0.3) {
+            const boatX = game.boatX - game.cameraX;
+            const hookY = CONFIG.waterLine + 50 + (game.depth / 120) * 200;
+            addFishStruggleParticle(boatX + 60, hookY);
+        }
+    }
+}
+
+function drawFishStruggleParticles() {
+    const panOffset = getCameraPanOffset();
+
+    game.fishStruggleParticles.forEach(p => {
+        const alpha = p.life / p.maxLife;
+
+        // Determine color
+        let color;
+        if (p.color === 'orange') {
+            color = `rgba(255, ${150 + Math.random() * 50}, 50, ${alpha})`;
+        } else {
+            color = `rgba(255, ${200 + Math.random() * 55}, 100, ${alpha})`;
+        }
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y - panOffset, p.size * alpha, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Sparkle effect
+        if (Math.random() < 0.3) {
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.5})`;
+            ctx.beginPath();
+            ctx.arc(p.x + (Math.random() - 0.5) * 5, p.y - panOffset + (Math.random() - 0.5) * 5, 1, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    });
+}
+
+// Visual indicator on the fish during minigame when struggling
+function drawFishStruggleIndicator() {
+    if (!game.minigame.active || game.minigame.tension < 50) return;
+
+    const mg = game.minigame;
+    const barWidth = 300;
+    const x = (CONFIG.canvas.width - barWidth) / 2;
+    const y = CONFIG.canvas.height - 100;
+    const fishX = x + mg.targetZone * barWidth;
+
+    const intensity = (mg.tension - 50) / 50;  // 0 to 1
+    const numParticles = Math.floor(intensity * 8) + 2;
+
+    // Draw burst particles around the fish icon
+    for (let i = 0; i < numParticles; i++) {
+        const angle = (game.time * 0.02 + i * (Math.PI * 2 / numParticles)) % (Math.PI * 2);
+        const distance = 10 + intensity * 15 + Math.sin(game.time * 0.1 + i) * 5;
+        const px = fishX + Math.cos(angle) * distance;
+        const py = y + 15 + Math.sin(angle) * distance * 0.5;
+
+        const alpha = 0.3 + intensity * 0.5;
+        ctx.fillStyle = mg.tension > 80
+            ? `rgba(255, 100, 80, ${alpha})`
+            : `rgba(255, 180, 80, ${alpha})`;
+
+        ctx.beginPath();
+        ctx.arc(px, py, 2 + intensity * 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Pulsing glow around fish
+    if (mg.tension > 70) {
+        const pulse = (Math.sin(game.time * 0.1) + 1) / 2;
+        ctx.fillStyle = `rgba(255, 100, 50, ${0.1 + pulse * 0.15})`;
+        ctx.beginPath();
+        ctx.arc(fishX, y + 15, 20 + pulse * 10, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+// ============================================================
+// TROPHY TRACKING SYSTEM
+// ============================================================
+
+function addTrophy(creature) {
+    const name = creature.name;
+
+    if (!game.trophies[name]) {
+        game.trophies[name] = {
+            bestValue: creature.value,
+            count: 1,
+            firstCaughtTime: game.time
+        };
+    } else {
+        game.trophies[name].count++;
+        if (creature.value > game.trophies[name].bestValue) {
+            game.trophies[name].bestValue = creature.value;
+            // Notify of new record
+            addSoundEffect('NEW RECORD!', CONFIG.canvas.width / 2, 120, {
+                color: '#ffd700',
+                duration: 80,
+                size: 18
+            });
+        }
+    }
+}
+
+function getTrophyInfo(creatureName) {
+    return game.trophies[creatureName] || null;
+}
+
+function getAllTrophies() {
+    return Object.entries(game.trophies).map(([name, data]) => ({
+        name,
+        ...data
+    }));
+}
+
+function getTrophyProgress() {
+    const allCreatures = [...CREATURES.surface, ...CREATURES.mid, ...CREATURES.deep, ...CREATURES.abyss];
+    const caughtCount = Object.keys(game.trophies).length;
+    return {
+        caught: caughtCount,
+        total: allCreatures.length,
+        percentage: Math.round((caughtCount / allCreatures.length) * 100)
+    };
+}
+
+// Draw trophy info in catch popup
+function drawTrophyInfo(creature, x, y) {
+    const trophy = getTrophyInfo(creature.name);
+
+    if (trophy && trophy.count > 1) {
+        ctx.fillStyle = '#b0a060';
+        ctx.font = '12px VT323';
+        ctx.fillText(`Catch #${trophy.count}`, x, y);
+
+        if (creature.value >= trophy.bestValue) {
+            ctx.fillStyle = '#ffd700';
+            ctx.fillText(' BEST!', x + 70, y);
+        } else {
+            ctx.fillStyle = '#808060';
+            ctx.fillText(` Best: ${trophy.bestValue}g`, x + 70, y);
+        }
+    } else if (!trophy) {
+        ctx.fillStyle = '#60c080';
+        ctx.font = '12px VT323';
+        ctx.fillText('FIRST CATCH!', x, y);
+    }
+}
+
+// ============================================================
+// IDLE FISHING MODE
+// ============================================================
+
+function toggleIdleFishing() {
+    game.idleFishing.active = !game.idleFishing.active;
+
+    if (game.idleFishing.active) {
+        game.idleFishing.timer = 0;
+        game.idleFishing.lastCatchTime = game.time;
+        addSoundEffect('IDLE MODE ON', CONFIG.canvas.width / 2, 150, {
+            color: '#80c0ff',
+            duration: 80,
+            size: 16
+        });
+    } else {
+        addSoundEffect('IDLE MODE OFF', CONFIG.canvas.width / 2, 150, {
+            color: '#ffa080',
+            duration: 80,
+            size: 16
+        });
+    }
+}
+
+function updateIdleFishing(deltaTime) {
+    if (!game.idleFishing.active) return;
+    if (game.state !== 'sailing') return;
+
+    game.idleFishing.timer += deltaTime;
+
+    // Extra sanity drain while idle
+    game.sanity = Math.max(0, game.sanity - 0.01 * game.idleFishing.sanityDrainMultiplier);
+
+    // Auto-cast if not fishing
+    if (game.state === 'sailing') {
+        // Start fishing
+        game.state = 'waiting';
+        game.depth = 0;
+        game.targetDepth = 30 + Math.random() * 30;
+        triggerSplashSound();
+    }
+
+    // Auto-catch logic (simplified)
+    if (game.idleFishing.timer > game.idleFishing.catchInterval) {
+        game.idleFishing.timer = 0;
+
+        // Roll for catch
+        const rod = getCurrentRod ? getCurrentRod() : null;
+        const weather = WEATHER.types[game.weather.current];
+        let catchChance = 0.6 * (weather ? weather.biteModifier : 1);
+
+        if (Math.random() < catchChance) {
+            // Auto-catch a fish
+            const creature = getCreature();
+
+            // Add to inventory
+            if (game.inventory.length < game.inventoryMax) {
+                game.inventory.push(creature);
+                game.caughtCreatures.push(creature);
+
+                // Apply sanity loss
+                game.sanity = Math.max(0, game.sanity - creature.sanityLoss);
+
+                // Add trophy
+                addTrophy(creature);
+
+                // Track stats
+                game.achievements.stats.totalFishCaught++;
+
+                // Journal
+                addToJournal(creature);
+
+                addSoundEffect(`Auto: ${creature.name}`, CONFIG.canvas.width / 2, 180, {
+                    color: '#80c0a0',
+                    duration: 60,
+                    size: 12
+                });
+            } else {
+                // Inventory full - return to dock
+                addSoundEffect('Inventory full!', CONFIG.canvas.width / 2, 180, {
+                    color: '#c08080',
+                    duration: 60,
+                    size: 14
+                });
+                game.idleFishing.active = false;
+            }
+        }
+    }
+}
+
+function drawIdleFishingIndicator() {
+    if (!game.idleFishing.active) return;
+
+    const x = CONFIG.canvas.width - 130;
+    const y = 95;
+
+    // Animated background
+    const pulse = (Math.sin(game.time * 0.005) + 1) / 2;
+    ctx.fillStyle = `rgba(60, 80, 120, ${0.7 + pulse * 0.2})`;
+    ctx.fillRect(x, y, 120, 30);
+    ctx.strokeStyle = `rgba(100, 150, 200, ${0.5 + pulse * 0.3})`;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, 120, 30);
+
+    // Text
+    ctx.fillStyle = '#a0d0ff';
+    ctx.font = '12px VT323';
+    ctx.textAlign = 'center';
+    ctx.fillText('IDLE FISHING', x + 60, y + 13);
+
+    // Progress bar to next catch
+    const progress = game.idleFishing.timer / game.idleFishing.catchInterval;
+    ctx.fillStyle = 'rgba(100, 180, 255, 0.3)';
+    ctx.fillRect(x + 5, y + 20, 110, 5);
+    ctx.fillStyle = 'rgba(100, 180, 255, 0.8)';
+    ctx.fillRect(x + 5, y + 20, 110 * progress, 5);
+
+    ctx.textAlign = 'left';
+}
+
+// ============================================================
+// ENHANCED WATER REFLECTIONS (Cast n Chill inspired)
+// ============================================================
+
+function drawEnhancedWaterReflection() {
+    if (typeof GameSettings !== 'undefined' && !GameSettings.graphics.weatherEffects) return;
+
+    const boatX = game.boatX - game.cameraX;
+    const reflectionY = CONFIG.waterLine + 20;
+    const panOffset = getCameraPanOffset();
+
+    // Sky/cloud reflection on water
+    const palette = getTimePalette();
+
+    // Create shimmering sky reflection
+    for (let i = 0; i < 8; i++) {
+        const shimmerX = (i * 150 + game.time * 0.02) % (CONFIG.canvas.width + 200) - 100;
+        const shimmerY = reflectionY + 5 + Math.sin(game.time * 0.002 + i) * 3;
+        const shimmerWidth = 80 + Math.sin(game.time * 0.003 + i * 2) * 20;
+        const shimmerAlpha = 0.03 + Math.sin(game.time * 0.004 + i * 0.7) * 0.02;
+
+        const gradient = ctx.createLinearGradient(shimmerX, shimmerY, shimmerX + shimmerWidth, shimmerY + 30);
+        gradient.addColorStop(0, 'transparent');
+        gradient.addColorStop(0.5, `rgba(${palette.sky[0]}, ${palette.sky[1]}, ${palette.sky[2]}, ${shimmerAlpha})`);
+        gradient.addColorStop(1, 'transparent');
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(shimmerX, shimmerY - panOffset, shimmerWidth, 30);
+    }
+
+    // Boat reflection with wave distortion
+    ctx.save();
+    ctx.globalAlpha = 0.2;
+
+    // Apply wave distortion to reflection
+    const waveOffset = Math.sin(game.time * 0.003) * 3;
+
+    ctx.translate(0, (reflectionY * 2) - panOffset);
+    ctx.scale(1, -0.8);  // Slightly compressed reflection
+
+    // Draw simplified boat shape
+    ctx.fillStyle = '#2a2520';
+    ctx.beginPath();
+    ctx.moveTo(boatX - 35 + waveOffset, CONFIG.waterLine - 5);
+    ctx.lineTo(boatX - 30 + waveOffset, CONFIG.waterLine - 25);
+    ctx.lineTo(boatX + 30 + waveOffset, CONFIG.waterLine - 25);
+    ctx.lineTo(boatX + 35 + waveOffset, CONFIG.waterLine - 5);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+
+    // Ripple rings around boat
+    for (let i = 0; i < 3; i++) {
+        const ripplePhase = ((game.time * 0.002 + i * 0.3) % 1);
+        const rippleSize = 20 + ripplePhase * 40;
+        const rippleAlpha = (1 - ripplePhase) * 0.15;
+
+        ctx.strokeStyle = `rgba(180, 200, 220, ${rippleAlpha})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(boatX, reflectionY + 10 - panOffset, rippleSize, rippleSize * 0.3, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // Sun/moon reflection path
+    if (game.timeOfDay === 'day' || game.timeOfDay === 'dusk' || game.timeOfDay === 'dawn') {
+        const sunReflectX = CONFIG.canvas.width * 0.7;
+        const sunReflectAlpha = game.timeOfDay === 'dusk' ? 0.15 : 0.08;
+
+        // Shimmering light path on water
+        for (let i = 0; i < 5; i++) {
+            const pathX = sunReflectX + (Math.random() - 0.5) * 50;
+            const pathY = reflectionY + 20 + i * 15;
+            const pathWidth = 30 + Math.sin(game.time * 0.01 + i) * 15;
+
+            const sunColor = game.timeOfDay === 'dusk'
+                ? `rgba(255, 150, 80, ${sunReflectAlpha})`
+                : `rgba(255, 255, 200, ${sunReflectAlpha})`;
+
+            ctx.fillStyle = sunColor;
+            ctx.beginPath();
+            ctx.ellipse(pathX, pathY - panOffset, pathWidth, 3, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+}
