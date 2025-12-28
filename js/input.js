@@ -625,3 +625,355 @@ function updateTouchActionButton() {
 function isTouchDevice() {
     return touchState.isTouchDevice;
 }
+
+// ============================================================
+// MOUSE CONTROLS FOR PC
+// ============================================================
+
+const mouseState = {
+    x: 0,
+    y: 0,
+    isDown: false
+};
+
+function setupMouseControls() {
+    const canvas = document.getElementById('gameCanvas');
+    if (!canvas) return;
+
+    // Track mouse position
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        mouseState.x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        mouseState.y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    });
+
+    // Handle mouse clicks
+    canvas.addEventListener('click', handleMouseClick);
+
+    // Update cursor style based on hovering over interactive elements
+    canvas.addEventListener('mousemove', updateCursor);
+}
+
+function handleMouseClick(e) {
+    const canvas = document.getElementById('gameCanvas');
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    // Handle shop clicks
+    if (game.shop.open) {
+        handleShopClick(x, y);
+        return;
+    }
+
+    // Handle village menu clicks
+    if (game.villageMenu && game.villageMenu.open) {
+        handleVillageMenuClick(x, y);
+        return;
+    }
+
+    // Handle journal clicks
+    if (game.journal && game.journal.open) {
+        handleJournalClick(x, y);
+        return;
+    }
+
+    // Handle lore viewer clicks
+    if (game.loreViewer && game.loreViewer.open) {
+        handleLoreViewerClick(x, y);
+        return;
+    }
+
+    // Handle achievements viewer clicks
+    if (game.achievements && game.achievements.viewerOpen) {
+        handleAchievementsClick(x, y);
+        return;
+    }
+
+    // Handle catch popup clicks
+    if (game.state === 'caught' && game.currentCatch) {
+        // Click anywhere to continue
+        const event = new KeyboardEvent('keydown', { key: ' ', bubbles: true });
+        document.dispatchEvent(event);
+        return;
+    }
+
+    // Handle lore popup clicks
+    if (game.currentLore) {
+        game.currentLore = null;
+        if (typeof playMenuClose === 'function') playMenuClose();
+        return;
+    }
+
+    // Handle dock interaction
+    if (game.nearDock && !game.shop.open && !game.villageMenu.open && game.state === 'sailing') {
+        const dockX = CONFIG.dockX - game.cameraX;
+        if (x >= dockX - 70 && x <= dockX + 70 && y >= CONFIG.waterLine - 100 && y <= CONFIG.waterLine - 75) {
+            openVillageMenu();
+            return;
+        }
+    }
+}
+
+function handleShopClick(x, y) {
+    const w = CONFIG.canvas.width;
+    const h = CONFIG.canvas.height;
+    const panelW = 420, panelH = h - 80;
+    const panelX = w - panelW - 30;
+    const panelY = 40;
+
+    // Check tab clicks
+    const tabWidth = panelW / 4;
+    const tabY = panelY + 60;
+    const tabHeight = 28;
+
+    if (y >= tabY && y <= tabY + tabHeight) {
+        const tabs = ['sell', 'rods', 'lures', 'boats'];
+        for (let i = 0; i < 4; i++) {
+            const tabX = panelX + i * tabWidth;
+            if (x >= tabX && x <= tabX + tabWidth) {
+                game.shop.tab = tabs[i];
+                game.shop.selectedIndex = 0;
+                if (typeof playMenuClick === 'function') playMenuClick();
+                return;
+            }
+        }
+    }
+
+    // Check item clicks in content area
+    const contentY = panelY + 150;
+    const contentX = panelX + 20;
+    const contentW = panelW - 40;
+
+    if (x >= contentX && x <= contentX + contentW) {
+        let itemHeight, itemStartY;
+
+        if (game.shop.tab === 'sell') {
+            itemHeight = 25;
+            itemStartY = contentY + 30;
+            const maxItems = game.inventory.length;
+
+            for (let i = 0; i < maxItems; i++) {
+                const itemY = itemStartY + i * itemHeight;
+                if (y >= itemY - 15 && y <= itemY + 10) {
+                    game.shop.selectedIndex = i;
+                    shopAction();
+                    return;
+                }
+            }
+        } else if (game.shop.tab === 'lures') {
+            itemHeight = 50;
+            itemStartY = contentY + 30;
+            for (let i = 0; i < SHOP.lures.length; i++) {
+                const itemY = itemStartY + i * itemHeight;
+                if (y >= itemY - 5 && y <= itemY + 45) {
+                    game.shop.selectedIndex = i;
+                    shopAction();
+                    return;
+                }
+            }
+        } else {
+            // Rods and boats
+            itemHeight = 55;
+            itemStartY = contentY;
+            const items = game.shop.tab === 'rods' ? SHOP.rods : SHOP.boats;
+            for (let i = 0; i < items.length; i++) {
+                const itemY = itemStartY + i * itemHeight;
+                if (y >= itemY - 5 && y <= itemY + 50) {
+                    game.shop.selectedIndex = i;
+                    shopAction();
+                    return;
+                }
+            }
+        }
+    }
+
+    // Check close button / click outside panel to close
+    if (x < panelX - 10 || y < panelY - 10 || y > panelY + panelH + 10) {
+        closeShop();
+    }
+}
+
+function handleVillageMenuClick(x, y) {
+    const w = 350, h = 280;
+    const menuX = (CONFIG.canvas.width - w) / 2;
+    const menuY = (CONFIG.canvas.height - h) / 2;
+
+    // Check if clicked outside menu
+    if (x < menuX || x > menuX + w || y < menuY || y > menuY + h) {
+        closeVillageMenu();
+        return;
+    }
+
+    // Check menu items
+    const options = ['Bait Shop', 'Rest', 'Talk', 'Leave'];
+    const optionStartY = menuY + 85;
+    const optionHeight = 45;
+
+    for (let i = 0; i < options.length; i++) {
+        const optY = optionStartY + i * optionHeight;
+        if (y >= optY && y <= optY + 40 && x >= menuX + 25 && x <= menuX + w - 25) {
+            game.villageMenu.selectedIndex = i;
+            villageMenuAction();
+            return;
+        }
+    }
+}
+
+function handleJournalClick(x, y) {
+    const w = 700, h = 500;
+    const menuX = (CONFIG.canvas.width - w) / 2;
+    const menuY = (CONFIG.canvas.height - h) / 2;
+
+    // Navigation arrows
+    const arrowY = menuY + h - 40;
+
+    // Left arrow
+    if (x >= menuX + 20 && x <= menuX + 60 && y >= arrowY - 20 && y <= arrowY + 10) {
+        if (game.journal.page > 0) {
+            game.journal.page--;
+            if (typeof playMenuClick === 'function') playMenuClick();
+        }
+        return;
+    }
+
+    // Right arrow
+    if (x >= menuX + w - 60 && x <= menuX + w - 20 && y >= arrowY - 20 && y <= arrowY + 10) {
+        if (game.journal.page < 3) {
+            game.journal.page++;
+            if (typeof playMenuClick === 'function') playMenuClick();
+        }
+        return;
+    }
+
+    // Click outside or on close area
+    if (x < menuX || x > menuX + w || y < menuY || y > menuY + h) {
+        closeJournal();
+    }
+}
+
+function handleLoreViewerClick(x, y) {
+    const w = 600, h = 450;
+    const menuX = (CONFIG.canvas.width - w) / 2;
+    const menuY = (CONFIG.canvas.height - h) / 2;
+    const totalPages = Math.ceil(LORE_FRAGMENTS.length / game.loreViewer.itemsPerPage);
+
+    // Navigation - left side
+    if (x >= menuX + 20 && x <= menuX + 100 && y >= menuY + h - 50 && y <= menuY + h - 20) {
+        if (game.loreViewer.page > 0) {
+            game.loreViewer.page--;
+            if (typeof playMenuClick === 'function') playMenuClick();
+        }
+        return;
+    }
+
+    // Navigation - right side
+    if (x >= menuX + w - 100 && x <= menuX + w - 20 && y >= menuY + h - 50 && y <= menuY + h - 20) {
+        if (game.loreViewer.page < totalPages - 1) {
+            game.loreViewer.page++;
+            if (typeof playMenuClick === 'function') playMenuClick();
+        }
+        return;
+    }
+
+    // Click outside to close
+    if (x < menuX || x > menuX + w || y < menuY || y > menuY + h) {
+        game.loreViewer.open = false;
+        if (typeof playMenuClose === 'function') playMenuClose();
+    }
+}
+
+function handleAchievementsClick(x, y) {
+    const w = 650, h = 480;
+    const menuX = (CONFIG.canvas.width - w) / 2;
+    const menuY = (CONFIG.canvas.height - h) / 2;
+    const allAchievements = Object.values(ACHIEVEMENTS);
+    const totalPages = Math.ceil(allAchievements.length / 6);
+
+    // Navigation - left side
+    if (x >= menuX + 20 && x <= menuX + 100 && y >= menuY + h - 50 && y <= menuY + h - 20) {
+        if (game.achievements.viewerPage > 0) {
+            game.achievements.viewerPage--;
+            if (typeof playMenuClick === 'function') playMenuClick();
+        }
+        return;
+    }
+
+    // Navigation - right side
+    if (x >= menuX + w - 100 && x <= menuX + w - 20 && y >= menuY + h - 50 && y <= menuY + h - 20) {
+        if (game.achievements.viewerPage < totalPages - 1) {
+            game.achievements.viewerPage++;
+            if (typeof playMenuClick === 'function') playMenuClick();
+        }
+        return;
+    }
+
+    // Click outside to close
+    if (x < menuX || x > menuX + w || y < menuY || y > menuY + h) {
+        closeAchievementsViewer();
+    }
+}
+
+function updateCursor(e) {
+    const canvas = document.getElementById('gameCanvas');
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    let isClickable = false;
+
+    // Check if hovering over clickable elements
+    if (game.shop.open) {
+        isClickable = isOverShopElement(x, y);
+    } else if (game.villageMenu && game.villageMenu.open) {
+        isClickable = isOverVillageMenuItem(x, y);
+    } else if (game.nearDock && !game.shop.open && !game.villageMenu.open && game.state === 'sailing') {
+        const dockX = CONFIG.dockX - game.cameraX;
+        isClickable = x >= dockX - 70 && x <= dockX + 70 && y >= CONFIG.waterLine - 100 && y <= CONFIG.waterLine - 75;
+    } else if (game.currentLore || (game.state === 'caught' && game.currentCatch)) {
+        isClickable = true;
+    }
+
+    canvas.style.cursor = isClickable ? 'pointer' : 'default';
+}
+
+function isOverShopElement(x, y) {
+    const w = CONFIG.canvas.width;
+    const h = CONFIG.canvas.height;
+    const panelW = 420;
+    const panelX = w - panelW - 30;
+    const panelY = 40;
+
+    // Tabs
+    const tabY = panelY + 60;
+    if (y >= tabY && y <= tabY + 28 && x >= panelX && x <= panelX + panelW) {
+        return true;
+    }
+
+    // Content area items
+    const contentY = panelY + 150;
+    const contentX = panelX + 20;
+    const contentW = panelW - 40;
+
+    if (x >= contentX && x <= contentX + contentW && y >= contentY && y <= h - 100) {
+        return true;
+    }
+
+    return false;
+}
+
+function isOverVillageMenuItem(x, y) {
+    const w = 350, h = 280;
+    const menuX = (CONFIG.canvas.width - w) / 2;
+    const menuY = (CONFIG.canvas.height - h) / 2;
+    const optionStartY = menuY + 85;
+    const optionHeight = 45;
+
+    for (let i = 0; i < 4; i++) {
+        const optY = optionStartY + i * optionHeight;
+        if (y >= optY && y <= optY + 40 && x >= menuX + 25 && x <= menuX + w - 25) {
+            return true;
+        }
+    }
+    return false;
+}

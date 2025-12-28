@@ -82,6 +82,8 @@ Bruk conventional commits:
 - [x] Achievements-system (20 achievements)
 - [x] Achievements viewer ([A] keybind)
 - [x] Touch/mobil-kontroller med on-screen buttons
+- [x] Fullskjerm-visning (dynamisk canvas)
+- [x] PC mus-kontroller for menyer
 
 **Neste prioritet:**
 - [ ] Claude API-integrasjon for dynamisk NPC-dialog
