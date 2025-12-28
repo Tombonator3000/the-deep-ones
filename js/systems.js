@@ -3,6 +3,190 @@
 // ============================================================
 
 // ============================================================
+// CELESTIAL ORBIT SYSTEM - Sun/Moon arc across the sky
+// ============================================================
+
+/**
+ * Beregner sol-posisjon basert på dayProgress
+ * Solen er synlig fra dawn (0) til dusk (0.75)
+ * Den følger en bue: stiger i dawn, høyest midt på dagen, går ned i dusk
+ */
+function getSunPosition() {
+    const progress = game.dayProgress;
+
+    // Solen er synlig fra 0 (dawn start) til 0.75 (dusk slutt)
+    // Den er "under horisonten" fra 0.75 til 1.0 (natt)
+
+    // Normaliser progress til solens synlige periode (0 til 0.75)
+    // 0 = soloppgang (øst/høyre), 0.375 = middag (senit), 0.75 = solnedgang (vest/venstre)
+
+    if (progress >= 0.75) {
+        // Natt - solen er under horisonten
+        return null;
+    }
+
+    // Normaliser til 0-1 for solens bane
+    const sunProgress = progress / 0.75;
+
+    // X-posisjon: beveger seg fra høyre (øst) til venstre (vest)
+    // Start ved høyre kant, slutt ved venstre kant
+    const sunX = CONFIG.canvas.width - (sunProgress * CONFIG.canvas.width * 1.2) + 100;
+
+    // Y-posisjon: følger en omvendt parabel (bue)
+    // Lavest ved sunrise/sunset, høyest midt på dagen
+    // Bruker sinus for en naturlig bue
+    const arcHeight = 200; // Hvor høyt solen stiger over horisonten
+    const horizonY = 220;  // Horisontnivå
+    const minY = 50;       // Høyeste punkt (laveste y-verdi)
+
+    // Sin-bue: 0 ved start/slutt, 1 ved midten
+    const arcProgress = Math.sin(sunProgress * Math.PI);
+    const sunY = horizonY - (arcProgress * arcHeight);
+
+    // Beregn hvor langt solen er fra horisonten (for farge/intensitet)
+    const heightRatio = arcProgress; // 0 = horisont, 1 = senit
+
+    return {
+        x: sunX,
+        y: Math.max(minY, sunY),
+        heightRatio: heightRatio,
+        progress: sunProgress,
+        isRising: sunProgress < 0.5,
+        isSetting: sunProgress >= 0.5
+    };
+}
+
+/**
+ * Beregner måne-posisjon basert på dayProgress
+ * Månen er synlig fra dusk (0.5) gjennom natten til dawn (0.25)
+ */
+function getMoonPosition() {
+    const progress = game.dayProgress;
+
+    // Månen er synlig fra ca 0.5 (dusk midten) til 0.25 neste dag
+    // Vi "wrapper" rundt midnatt
+
+    let moonProgress;
+    let visible = false;
+
+    if (progress >= 0.5) {
+        // Fra dusk til midnatt: 0.5 -> 1.0 mapper til 0 -> 0.5 av månebanen
+        moonProgress = (progress - 0.5) / 0.5 * 0.5;
+        visible = true;
+    } else if (progress < 0.25) {
+        // Fra midnatt til dawn: 0 -> 0.25 mapper til 0.5 -> 1.0 av månebanen
+        moonProgress = 0.5 + (progress / 0.25) * 0.5;
+        visible = true;
+    } else {
+        // Dagtid - månen er ikke synlig
+        return null;
+    }
+
+    if (!visible) return null;
+
+    // X-posisjon: beveger seg fra øst (høyre) til vest (venstre)
+    const moonX = CONFIG.canvas.width - (moonProgress * CONFIG.canvas.width * 1.1) + 50;
+
+    // Y-posisjon: bue over himmelen
+    const arcHeight = 180;
+    const horizonY = 200;
+    const minY = 60;
+
+    const arcProgress = Math.sin(moonProgress * Math.PI);
+    const moonY = horizonY - (arcProgress * arcHeight);
+
+    return {
+        x: moonX,
+        y: Math.max(minY, moonY),
+        heightRatio: arcProgress,
+        progress: moonProgress,
+        isRising: moonProgress < 0.5,
+        isSetting: moonProgress >= 0.5
+    };
+}
+
+/**
+ * Beregner solfarge basert på høyde
+ * Lav = oransje/rød (soloppgang/nedgang)
+ * Høy = gul/hvit (midt på dagen)
+ */
+function getSunColor(heightRatio) {
+    // heightRatio: 0 = horisont, 1 = senit
+
+    if (heightRatio < 0.3) {
+        // Nær horisonten - varm oransje/rød
+        const t = heightRatio / 0.3;
+        return {
+            core: lerpColor('#ff6030', '#ffc060', t),
+            glow: lerpColor('rgba(255, 80, 40, 0.6)', 'rgba(255, 200, 100, 0.4)', t),
+            size: 35 - (t * 5) // Større ved horisonten (atmosfærisk effekt)
+        };
+    } else if (heightRatio < 0.7) {
+        // Midthøyde - gul
+        const t = (heightRatio - 0.3) / 0.4;
+        return {
+            core: lerpColor('#ffc060', '#ffffa0', t),
+            glow: lerpColor('rgba(255, 200, 100, 0.4)', 'rgba(255, 255, 200, 0.3)', t),
+            size: 30
+        };
+    } else {
+        // Senit - lys gul/hvit
+        const t = (heightRatio - 0.7) / 0.3;
+        return {
+            core: lerpColor('#ffffa0', '#fffff0', t),
+            glow: lerpColor('rgba(255, 255, 200, 0.3)', 'rgba(255, 255, 240, 0.25)', t),
+            size: 28
+        };
+    }
+}
+
+/**
+ * Hjelpefunksjon for å interpolere mellom to farger
+ */
+function lerpColor(color1, color2, t) {
+    // Enkel implementasjon - returner color1 eller color2 basert på t
+    // For en jevnere overgang kunne vi parse RGB-verdier
+    if (t < 0.5) return color1;
+    return color2;
+}
+
+/**
+ * Mer presis farge-interpolering for hex-farger
+ */
+function lerpHexColor(hex1, hex2, t) {
+    // Parse hex to RGB
+    const r1 = parseInt(hex1.slice(1, 3), 16);
+    const g1 = parseInt(hex1.slice(3, 5), 16);
+    const b1 = parseInt(hex1.slice(5, 7), 16);
+
+    const r2 = parseInt(hex2.slice(1, 3), 16);
+    const g2 = parseInt(hex2.slice(3, 5), 16);
+    const b2 = parseInt(hex2.slice(5, 7), 16);
+
+    // Interpolate
+    const r = Math.round(r1 + (r2 - r1) * t);
+    const g = Math.round(g1 + (g2 - g1) * t);
+    const b = Math.round(b1 + (b2 - b1) * t);
+
+    // Convert back to hex
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+/**
+ * Beregner månefarge/lysstyrke
+ */
+function getMoonColor(heightRatio) {
+    // Månen er mer dempet ved horisonten
+    const baseAlpha = 0.3 + heightRatio * 0.3;
+
+    return {
+        core: '#e0e8f0',
+        glow: `rgba(200, 210, 230, ${0.1 + heightRatio * 0.1})`,
+        size: 25 + (1 - heightRatio) * 5 // Litt større ved horisonten
+    };
+}
+
+// ============================================================
 // SOUND EFFECT TEXT SYSTEM
 // ============================================================
 
