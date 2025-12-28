@@ -7,6 +7,44 @@ const ctx = canvas.getContext('2d');
 
 let lastTime = 0;
 
+// ============================================================
+// FULLSCREEN CANVAS RESIZING
+// ============================================================
+
+function resizeCanvas() {
+    const container = document.getElementById('gameContainer');
+    const width = container.clientWidth || window.innerWidth;
+    const height = container.clientHeight || window.innerHeight;
+
+    // Set canvas internal resolution
+    canvas.width = width;
+    canvas.height = height;
+
+    // Update CONFIG to match new size
+    CONFIG.canvas.width = width;
+    CONFIG.canvas.height = height;
+
+    // Recalculate water line proportionally (originally 280/650 = ~0.43)
+    CONFIG.waterLine = Math.floor(height * 0.43);
+
+    // Reinitialize layers if game is running
+    if (game.state !== 'title' && typeof initLayers === 'function') {
+        initLayers();
+    }
+}
+
+// Initialize canvas size on load
+function initCanvasSize() {
+    resizeCanvas();
+
+    // Add resize listener with debounce
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(resizeCanvas, 100);
+    });
+}
+
 function update(deltaTime) {
     if (game.state === 'title') return;
 
@@ -407,6 +445,9 @@ function initTitleScreen() {
 
 // Initialize
 window.onload = function() {
+    // Initialize canvas size FIRST (before anything else)
+    initCanvasSize();
+
     // Initialize audio
     if (typeof AudioManager !== 'undefined') {
         AudioManager.init();
@@ -424,6 +465,7 @@ window.onload = function() {
 
     setupInputHandlers();
     setupTouchControls();
+    setupMouseControls();
     initTitleScreen();
     requestAnimationFrame(gameLoop);
 

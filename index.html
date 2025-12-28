@@ -20,15 +20,20 @@
         }
 
         #gameContainer {
-            position: relative;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
+            overflow: hidden;
         }
 
         #gameCanvas {
             display: block;
-            border: 4px solid #1a1a2e;
-            box-shadow: 0 0 60px rgba(70, 130, 100, 0.2);
+            width: 100%;
+            height: 100%;
         }
 
         #ui {
@@ -213,7 +218,13 @@
             font-size: 18px;
         }
 
-        /* Hide keyboard controls hint on mobile */
+        /* PC with mouse - show keyboard controls, hide touch controls */
+        @media (pointer: fine) {
+            #controls { display: block; }
+            #touch-controls { display: none !important; }
+        }
+
+        /* Mobile/touch devices - show touch controls, hide keyboard hint */
         @media (pointer: coarse) {
             #controls { display: none; }
             #touch-controls { display: flex !important; }
@@ -231,7 +242,7 @@
 </head>
 <body>
     <div id="gameContainer">
-        <canvas id="gameCanvas" width="1000" height="650"></canvas>
+        <canvas id="gameCanvas"></canvas>
 
         <div id="title-screen">
             <h1>THE DEEP ONES</h1>
@@ -267,7 +278,7 @@
         </div>
 
         <!-- Touch Controls for Mobile -->
-        <div id="touch-controls" class="visible">
+        <div id="touch-controls">
             <div class="touch-dpad">
                 <button class="touch-btn up" data-key="ArrowUp">▲</button>
                 <button class="touch-btn left" data-key="ArrowLeft">◀</button>

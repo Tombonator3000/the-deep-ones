@@ -2,6 +2,62 @@
 
 ---
 
+## 2025-12-28 — Fullscreen Display & PC Mouse Controls
+
+### Features Added
+
+#### 1. Fullscreen Game Display
+- Game now fills the entire browser window/screen
+- Canvas dynamically resizes with window
+- All UI elements scale proportionally with screen size
+- Water line and layout adjust to screen dimensions
+
+#### 2. PC Mouse Controls
+- Added full mouse support for all in-game menus:
+  - Shop UI (tabs, items, close by clicking outside)
+  - Village menu (all options clickable)
+  - Journal (navigation arrows, close)
+  - Lore collection (navigation, close)
+  - Achievements viewer (navigation, close)
+  - Catch popups (click to continue)
+  - Lore popups (click to dismiss)
+  - Dock interaction (click to open harbor menu)
+- Cursor changes to pointer when hovering over interactive elements
+- Keyboard + mouse combination now fully supported on PC
+
+#### 3. Touch/PC Device Detection
+- Touch controls automatically hidden on PC (pointer: fine)
+- Keyboard hints shown on PC
+- Touch D-pad shown only on mobile/touch devices (pointer: coarse)
+
+### Files Modified
+- `index.html`:
+  - Game container now fixed fullscreen (100vw x 100vh)
+  - Canvas fills container without hard-coded dimensions
+  - Added media queries for PC vs touch device detection
+  - Removed default `visible` class from touch controls
+- `js/main.js`:
+  - Added `resizeCanvas()` function for dynamic canvas sizing
+  - Added `initCanvasSize()` with resize event listener
+  - CONFIG.canvas.width/height now updated dynamically
+  - Water line recalculated proportionally on resize
+- `js/input.js`:
+  - Added `setupMouseControls()` function
+  - Added click handlers for all menus
+  - Added cursor style updates for interactive elements
+  - Added helper functions for hit detection
+
+### Testing
+1. Open game in browser - should fill entire window
+2. Resize window - game should adapt
+3. Click on dock interaction prompt to open harbor
+4. Click through shop tabs and items
+5. Click outside menus to close them
+6. Verify cursor changes to pointer on clickable elements
+7. Verify touch controls hidden on desktop
+
+---
+
 ## 2025-12-28 — Refactor: drawShopInterior() Modularization
 
 ### Problem
