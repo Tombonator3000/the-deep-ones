@@ -161,7 +161,7 @@ const FALLBACKS = {
         // Månekratere (subtile)
         ctx.fillStyle = 'rgba(180, 190, 200, 0.4)';
         ctx.beginPath();
-        ctx.arc(x - moonSize * 0.35, y - moonSize * 0.2, moonSize * 0.22, 0, Math.PI * 2);
+        ctx.arc(x - moonSize * 0.35, moonY - moonSize * 0.2, moonSize * 0.22, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
         ctx.arc(x + moonSize * 0.4, moonY + moonSize * 0.3, moonSize * 0.15, 0, Math.PI * 2);
