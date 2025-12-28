@@ -263,7 +263,24 @@ function drawBoatLantern(x, y) {
 // --- Main Boat Procedural Drawing ---
 
 function drawBoatProcedural(x, y) {
-    const transVis = getTransformationVisuals();
+    // Get transformation visuals with fallback defaults
+    let transVis;
+    try {
+        transVis = getTransformationVisuals();
+    } catch (e) {
+        console.warn('getTransformationVisuals failed, using defaults:', e);
+    }
+
+    // Fallback if transVis is undefined or missing properties
+    if (!transVis || !transVis.skinColor) {
+        transVis = {
+            skinColor: '#d4a574',
+            eyeSize: 1,
+            hasGills: false,
+            hasWebbing: false,
+            glowIntensity: 0
+        };
+    }
 
     drawBoatHull(x, y);
     drawFisher(x, y, transVis);

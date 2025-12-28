@@ -322,6 +322,8 @@ function gameLoop(timestamp) {
 }
 
 function startGame(time) {
+    console.log('[THE DEEP ONES] Starting game with time:', time);
+
     game.state = 'sailing';
     game.timeOfDay = time;
 
@@ -334,12 +336,18 @@ function startGame(time) {
     // Reset camera and depth to surface
     game.depth = 0;
     game.targetDepth = 0;
-    game.camera.y = 0;
-    game.camera.targetY = 0;
-    game.camera.mode = 'surface';
+    if (game.camera) {
+        game.camera.y = 0;
+        game.camera.targetY = 0;
+        game.camera.mode = 'surface';
+    }
 
     // Reset boat to dock position
     game.boatX = CONFIG.dockX;
+
+    // IMPORTANT: Initialize cameraX immediately so first render shows boat correctly
+    game.cameraX = game.boatX - CONFIG.canvas.width / 2;
+    game.cameraX = Math.max(0, Math.min(game.cameraX, CONFIG.worldWidth - CONFIG.canvas.width));
 
     // Force procedural mode (no sprites loaded)
     CONFIG.useSprites = false;
@@ -351,6 +359,8 @@ function startGame(time) {
     initLoreBottles();
 
     loadAllAssets();
+
+    console.log('[THE DEEP ONES] Game started - boatX:', game.boatX, 'cameraX:', game.cameraX, 'state:', game.state);
 }
 
 function continueGame() {
@@ -361,9 +371,15 @@ function continueGame() {
         // Reset camera and depth to surface (even when loading save)
         game.depth = 0;
         game.targetDepth = 0;
-        game.camera.y = 0;
-        game.camera.targetY = 0;
-        game.camera.mode = 'surface';
+        if (game.camera) {
+            game.camera.y = 0;
+            game.camera.targetY = 0;
+            game.camera.mode = 'surface';
+        }
+
+        // IMPORTANT: Initialize cameraX immediately so first render shows boat correctly
+        game.cameraX = game.boatX - CONFIG.canvas.width / 2;
+        game.cameraX = Math.max(0, Math.min(game.cameraX, CONFIG.worldWidth - CONFIG.canvas.width));
 
         // Force procedural mode (no sprites loaded)
         CONFIG.useSprites = false;
@@ -373,6 +389,8 @@ function continueGame() {
         initLoreBottles();
 
         loadAllAssets();
+
+        console.log('[THE DEEP ONES] Game continued - boatX:', game.boatX, 'cameraX:', game.cameraX);
     }
 }
 
