@@ -116,11 +116,10 @@ function drawBoat() {
     ctx.restore();
 }
 
-function drawBoatProcedural(x, y) {
-    // Get transformation visuals for fisher
-    const transVis = getTransformationVisuals();
+// --- Boat Component Drawing Helpers ---
 
-    // Boat hull
+function drawBoatHull(x, y) {
+    // Main hull shape
     ctx.fillStyle = '#4a3525';
     ctx.beginPath();
     ctx.moveTo(x - 45, y);
@@ -130,19 +129,23 @@ function drawBoatProcedural(x, y) {
     ctx.closePath();
     ctx.fill();
 
+    // Hull plank detail
     ctx.fillStyle = '#5a4535';
     ctx.fillRect(x - 35, y + 5, 70, 4);
 
+    // Hull interior shadow
     ctx.fillStyle = '#3a2a20';
     ctx.beginPath();
     ctx.ellipse(x, y + 8, 32, 8, 0, 0, Math.PI);
     ctx.fill();
+}
 
-    // Fisher body - changes with transformation
+function drawFisher(x, y, transVis) {
+    // Body
     ctx.fillStyle = '#1a1815';
     ctx.fillRect(x - 8, y - 25, 16, 25);
 
-    // Fisher head - skin color changes with transformation
+    // Head - skin color changes with transformation
     ctx.fillStyle = transVis.skinColor;
     ctx.beginPath();
     ctx.arc(x, y - 32, 8, 0, Math.PI * 2);
@@ -199,24 +202,27 @@ function drawBoatProcedural(x, y) {
         ctx.closePath();
         ctx.fill();
     }
+}
 
-    // Dog - body
+function drawBoatDog(x, y) {
+    // Body
     ctx.fillStyle = '#c0a080';
     ctx.beginPath();
     ctx.ellipse(x + 25, y - 5, 10, 7, 0, 0, Math.PI * 2);
     ctx.fill();
-    // Dog - head
+
+    // Head
     ctx.beginPath();
     ctx.arc(x + 32, y - 10, 6, 0, Math.PI * 2);
     ctx.fill();
 
-    // Dog - eye
+    // Eye
     ctx.fillStyle = '#201510';
     ctx.beginPath();
     ctx.arc(x + 34, y - 11, 1.5, 0, Math.PI * 2);
     ctx.fill();
 
-    // Dog - tail animation
+    // Tail with animation
     const tailWag = game.dog.animation === 'wag' ? Math.sin(game.time * 0.3) * 8 : 0;
     ctx.strokeStyle = '#c0a080';
     ctx.lineWidth = 4;
@@ -224,19 +230,21 @@ function drawBoatProcedural(x, y) {
     ctx.moveTo(x + 16, y - 5);
     ctx.quadraticCurveTo(x + 10, y - 15 + Math.sin(game.time * 0.2) * 5 + tailWag, x + 8, y - 20);
     ctx.stroke();
+}
 
-    // Fishing rod when not sailing
-    if (game.state !== 'sailing') {
-        ctx.strokeStyle = '#5a4a30';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(x + 5, y - 20);
-        ctx.lineTo(x + 55, y - 55);
-        ctx.stroke();
-    }
+function drawBoatFishingRod(x, y) {
+    ctx.strokeStyle = '#5a4a30';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x + 5, y - 20);
+    ctx.lineTo(x + 55, y - 55);
+    ctx.stroke();
+}
 
-    // Lantern glow
+function drawBoatLantern(x, y) {
     const glow = (Math.sin(game.time * 0.08) + 1) / 2;
+
+    // Lantern glow effect
     const lanternGrad = ctx.createRadialGradient(x - 30, y - 10, 0, x - 30, y - 10, 20);
     lanternGrad.addColorStop(0, `rgba(255, 200, 100, ${0.4 + glow * 0.2})`);
     lanternGrad.addColorStop(1, 'transparent');
@@ -250,6 +258,22 @@ function drawBoatProcedural(x, y) {
     ctx.fillRect(x - 34, y - 5, 8, 12);
     ctx.fillStyle = `rgba(255, 220, 150, ${0.7 + glow * 0.3})`;
     ctx.fillRect(x - 33, y - 3, 6, 8);
+}
+
+// --- Main Boat Procedural Drawing ---
+
+function drawBoatProcedural(x, y) {
+    const transVis = getTransformationVisuals();
+
+    drawBoatHull(x, y);
+    drawFisher(x, y, transVis);
+    drawBoatDog(x, y);
+
+    if (game.state !== 'sailing') {
+        drawBoatFishingRod(x, y);
+    }
+
+    drawBoatLantern(x, y);
 }
 
 function drawFishingLine() {
