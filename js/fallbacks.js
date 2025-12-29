@@ -315,52 +315,133 @@ const FALLBACKS = {
         }
     },
 
-    // Lighthouse scaled for 480x270 resolution
+    // Lighthouse scaled for 480x270 resolution - MUCH LARGER AND BRIGHTER
     'lighthouse': (ctx, offset, y, w, h, layer) => {
-        const x = 75 - offset;  // Scaled position
-        if (x < -25 || x > w + 25) return;
+        // Use layer.worldX for flexibility, fallback to 75
+        const worldX = layer.worldX || 75;
+        const x = worldX - offset;
+
+        // More generous visibility bounds
+        if (x < -60 || x > w + 60) return;
 
         const palette = getTimePalette();
-
-        // Base rock
-        ctx.fillStyle = palette.mountains[1];
-        ctx.beginPath();
-        ctx.ellipse(x, y + 35, 20, 6, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Tower body
-        ctx.fillStyle = '#e0d8d0';
-        ctx.beginPath();
-        ctx.moveTo(x - 6, y + 32);
-        ctx.lineTo(x - 4, y);
-        ctx.lineTo(x + 4, y);
-        ctx.lineTo(x + 6, y + 32);
-        ctx.closePath();
-        ctx.fill();
-
-        // Red stripe
-        ctx.fillStyle = '#a04040';
-        ctx.fillRect(x - 5, y + 15, 10, 8);
-
-        // Top platform
-        ctx.fillStyle = '#302520';
-        ctx.fillRect(x - 5, y - 3, 10, 4);
-
-        // Roof
-        ctx.fillStyle = '#a04040';
-        ctx.beginPath();
-        ctx.moveTo(x, y - 8);
-        ctx.lineTo(x - 6, y - 3);
-        ctx.lineTo(x + 6, y - 3);
-        ctx.closePath();
-        ctx.fill();
-
-        // Light glow
         const intensity = (Math.sin(game.time * 0.05) + 1) / 2;
-        ctx.fillStyle = `rgba(255, 250, 200, ${0.4 + intensity * 0.4})`;
+
+        // OUTER GLOW for visibility (drawn first, behind everything)
+        const glowRadius = 40 + intensity * 20;
+        const outerGlow = ctx.createRadialGradient(x, y - 10, 0, x, y - 10, glowRadius);
+        outerGlow.addColorStop(0, `rgba(255, 250, 200, ${0.3 + intensity * 0.2})`);
+        outerGlow.addColorStop(0.5, `rgba(255, 200, 100, ${0.15 + intensity * 0.1})`);
+        outerGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = outerGlow;
         ctx.beginPath();
-        ctx.arc(x, y - 1, 3 + intensity * 2, 0, Math.PI * 2);
+        ctx.arc(x, y - 10, glowRadius, 0, Math.PI * 2);
         ctx.fill();
+
+        // Base rock - larger and darker for contrast
+        ctx.fillStyle = '#1a1510';
+        ctx.beginPath();
+        ctx.ellipse(x, y + 50, 35, 12, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Rock highlight
+        ctx.fillStyle = '#3a3530';
+        ctx.beginPath();
+        ctx.ellipse(x, y + 48, 30, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Tower body - MUCH LARGER (was 12px wide, now 24px)
+        ctx.fillStyle = '#f0e8e0';  // Bright cream white
+        ctx.beginPath();
+        ctx.moveTo(x - 12, y + 45);
+        ctx.lineTo(x - 8, y - 15);
+        ctx.lineTo(x + 8, y - 15);
+        ctx.lineTo(x + 12, y + 45);
+        ctx.closePath();
+        ctx.fill();
+
+        // Tower outline for visibility
+        ctx.strokeStyle = '#2a2520';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Red stripes (multiple for classic lighthouse look)
+        ctx.fillStyle = '#c04040';
+        ctx.fillRect(x - 10, y + 30, 20, 10);
+        ctx.fillRect(x - 9, y + 10, 18, 8);
+        ctx.fillRect(x - 8, y - 8, 16, 6);
+
+        // Top platform/gallery
+        ctx.fillStyle = '#2a2520';
+        ctx.fillRect(x - 10, y - 18, 20, 5);
+
+        // Gallery railings
+        ctx.strokeStyle = '#1a1510';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x - 10, y - 18);
+        ctx.lineTo(x - 12, y - 25);
+        ctx.moveTo(x + 10, y - 18);
+        ctx.lineTo(x + 12, y - 25);
+        ctx.stroke();
+
+        // Dome/roof
+        ctx.fillStyle = '#c04040';
+        ctx.beginPath();
+        ctx.arc(x, y - 22, 8, Math.PI, 0);
+        ctx.fill();
+
+        // Spire
+        ctx.fillStyle = '#2a2520';
+        ctx.beginPath();
+        ctx.moveTo(x, y - 35);
+        ctx.lineTo(x - 3, y - 22);
+        ctx.lineTo(x + 3, y - 22);
+        ctx.closePath();
+        ctx.fill();
+
+        // Light chamber (glass)
+        ctx.fillStyle = `rgba(255, 250, 200, ${0.6 + intensity * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(x, y - 22, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // BRIGHT LIGHT BEAM (rotating)
+        const beamAngle = game.time * 0.002;
+        ctx.save();
+        ctx.translate(x, y - 22);
+        ctx.rotate(beamAngle);
+
+        // Light beam gradient
+        const beamGrad = ctx.createLinearGradient(0, 0, 100, 0);
+        beamGrad.addColorStop(0, `rgba(255, 255, 220, ${0.6 + intensity * 0.3})`);
+        beamGrad.addColorStop(0.3, `rgba(255, 255, 200, ${0.3 + intensity * 0.2})`);
+        beamGrad.addColorStop(1, 'transparent');
+
+        ctx.fillStyle = beamGrad;
+        ctx.beginPath();
+        ctx.moveTo(0, -4);
+        ctx.lineTo(100, -20);
+        ctx.lineTo(100, 20);
+        ctx.lineTo(0, 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // Inner light glow
+        const innerGlow = ctx.createRadialGradient(x, y - 22, 0, x, y - 22, 15);
+        innerGlow.addColorStop(0, `rgba(255, 255, 255, ${0.8 + intensity * 0.2})`);
+        innerGlow.addColorStop(0.5, `rgba(255, 250, 200, ${0.4 + intensity * 0.3})`);
+        innerGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = innerGlow;
+        ctx.beginPath();
+        ctx.arc(x, y - 22, 15, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Debug: draw a bright marker to show lighthouse position
+        if (CONFIG.showDebug) {
+            ctx.fillStyle = '#ff00ff';
+            ctx.fillRect(x - 2, y - 40, 4, 4);
+        }
     },
 
     // Reeds scaled for 480x270 resolution

@@ -96,6 +96,20 @@ function drawFishProcedural(fish) {
 
 // Boat Drawing
 function drawBoat() {
+    // Safety checks
+    if (typeof game.boatX !== 'number' || isNaN(game.boatX)) {
+        console.error('[BOAT] Invalid boatX:', game.boatX);
+        game.boatX = CONFIG.dockX || 1500;
+    }
+    if (typeof game.cameraX !== 'number' || isNaN(game.cameraX)) {
+        console.error('[BOAT] Invalid cameraX:', game.cameraX);
+        game.cameraX = 0;
+    }
+    if (typeof game.time !== 'number' || isNaN(game.time)) {
+        console.error('[BOAT] Invalid game.time:', game.time);
+        game.time = 0;
+    }
+
     const bob = Math.sin(game.time * 0.04) * 4;
     const x = game.boatX - game.cameraX;
     const y = CONFIG.waterLine - 15 + bob;
@@ -107,7 +121,13 @@ function drawBoat() {
         console.log('[BOAT] Drawing at screen pos:', Math.round(x), Math.round(y),
             '| boatX:', Math.round(game.boatX),
             '| cameraX:', Math.round(game.cameraX),
-            '| waterLine:', CONFIG.waterLine);
+            '| waterLine:', CONFIG.waterLine,
+            '| useSprites:', CONFIG.useSprites);
+    }
+
+    // Check if boat is on screen
+    if (x < -100 || x > CONFIG.canvas.width + 100) {
+        console.warn('[BOAT] Boat is off-screen! x:', x);
     }
 
     const boatImg = loadedAssets.images['sprite-boat'];
@@ -131,8 +151,26 @@ function drawBoatHull(x, y) {
     // Ensure globalAlpha is 1 for boat rendering
     ctx.globalAlpha = 1;
 
-    // Main hull shape - using brighter brown for visibility
-    ctx.fillStyle = '#6a5030';
+    // DEBUG: Draw bright marker at boat position
+    if (CONFIG.showDebug) {
+        ctx.fillStyle = '#00ff00';
+        ctx.fillRect(x - 3, y - 60, 6, 6);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '8px VT323';
+        ctx.fillText('BOAT', x - 15, y - 65);
+    }
+
+    // OUTER GLOW for visibility (especially at night/dusk)
+    const glowGrad = ctx.createRadialGradient(x, y + 10, 0, x, y + 10, 60);
+    glowGrad.addColorStop(0, 'rgba(255, 220, 150, 0.15)');
+    glowGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = glowGrad;
+    ctx.beginPath();
+    ctx.arc(x, y + 10, 60, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Main hull shape - MUCH BRIGHTER cream/tan color
+    ctx.fillStyle = '#d4b896';  // Bright tan
     ctx.beginPath();
     ctx.moveTo(x - 45, y);
     ctx.quadraticCurveTo(x - 50, y + 15, x - 35, y + 20);
@@ -141,32 +179,69 @@ function drawBoatHull(x, y) {
     ctx.closePath();
     ctx.fill();
 
-    // Hull outline for better visibility
-    ctx.strokeStyle = '#2a1a10';
-    ctx.lineWidth = 2;
+    // THICK dark outline for strong visibility
+    ctx.strokeStyle = '#1a0a00';
+    ctx.lineWidth = 3;
     ctx.stroke();
 
-    // Hull plank detail
-    ctx.fillStyle = '#7a5540';
-    ctx.fillRect(x - 35, y + 5, 70, 4);
+    // Hull plank details - multiple planks for texture
+    ctx.fillStyle = '#c4a886';
+    ctx.fillRect(x - 38, y + 3, 76, 3);
+    ctx.fillRect(x - 36, y + 8, 72, 3);
+    ctx.fillRect(x - 34, y + 13, 68, 3);
+
+    // Plank lines
+    ctx.strokeStyle = '#8a6850';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x - 38, y + 6);
+    ctx.lineTo(x + 38, y + 6);
+    ctx.moveTo(x - 36, y + 11);
+    ctx.lineTo(x + 36, y + 11);
+    ctx.moveTo(x - 34, y + 16);
+    ctx.lineTo(x + 34, y + 16);
+    ctx.stroke();
 
     // Hull interior shadow
-    ctx.fillStyle = '#4a3525';
+    ctx.fillStyle = '#9a7a60';
     ctx.beginPath();
-    ctx.ellipse(x, y + 8, 32, 8, 0, 0, Math.PI);
+    ctx.ellipse(x, y + 6, 35, 6, 0, 0, Math.PI);
     ctx.fill();
+
+    // Gunwale (top edge) - bright highlight
+    ctx.strokeStyle = '#e8d8c8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x - 44, y + 1);
+    ctx.quadraticCurveTo(x, y - 3, x + 44, y + 1);
+    ctx.stroke();
 }
 
 function drawFisher(x, y, transVis) {
-    // Body
-    ctx.fillStyle = '#1a1815';
+    // Body - BRIGHTER clothing (yellow raincoat)
+    ctx.fillStyle = '#c4a040';  // Yellow raincoat
     ctx.fillRect(x - 8, y - 25, 16, 25);
+
+    // Body outline
+    ctx.strokeStyle = '#604820';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x - 8, y - 25, 16, 25);
+
+    // Suspenders/straps
+    ctx.fillStyle = '#604820';
+    ctx.fillRect(x - 6, y - 25, 3, 25);
+    ctx.fillRect(x + 3, y - 25, 3, 25);
 
     // Head - skin color changes with transformation
     ctx.fillStyle = transVis.skinColor;
     ctx.beginPath();
     ctx.arc(x, y - 32, 8, 0, Math.PI * 2);
     ctx.fill();
+
+    // Head outline
+    ctx.strokeStyle = '#5a4a3a';
+    ctx.lineWidth = 1;
+    ctx.stroke();
 
     // Transformation glow effect
     if (transVis.glowIntensity > 0) {
@@ -179,10 +254,14 @@ function drawFisher(x, y, transVis) {
         ctx.fill();
     }
 
-    // Hat
-    ctx.fillStyle = '#3a3530';
+    // Hat - BRIGHTER (fisherman's cap)
+    ctx.fillStyle = '#5a5550';  // Lighter gray
     ctx.fillRect(x - 10, y - 42, 20, 5);
     ctx.fillRect(x - 6, y - 48, 12, 8);
+
+    // Hat highlight
+    ctx.fillStyle = '#7a7570';
+    ctx.fillRect(x - 5, y - 47, 10, 3);
 
     // Eyes - get bigger with transformation
     const eyeSize = 1.5 * transVis.eyeSize;
@@ -192,6 +271,15 @@ function drawFisher(x, y, transVis) {
     ctx.arc(x - 4, y - 33, eyeSize * blink, 0, Math.PI * 2);
     ctx.arc(x + 4, y - 33, eyeSize * blink, 0, Math.PI * 2);
     ctx.fill();
+
+    // Eye whites/highlights
+    if (blink > 0) {
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(x - 4 + 0.5, y - 33 - 0.5, 0.5, 0, Math.PI * 2);
+        ctx.arc(x + 4 + 0.5, y - 33 - 0.5, 0.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
 
     // Gills (visible at stage 3+)
     if (transVis.hasGills) {
@@ -219,34 +307,84 @@ function drawFisher(x, y, transVis) {
         ctx.closePath();
         ctx.fill();
     }
+
+    // Arms (visible)
+    ctx.fillStyle = transVis.skinColor;
+    ctx.fillRect(x - 12, y - 18, 4, 12);  // Left arm
+    ctx.fillRect(x + 8, y - 18, 4, 12);   // Right arm
 }
 
 function drawBoatDog(x, y) {
-    // Body
-    ctx.fillStyle = '#c0a080';
+    // Body - BRIGHTER golden color
+    ctx.fillStyle = '#e8c89a';
     ctx.beginPath();
     ctx.ellipse(x + 25, y - 5, 10, 7, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    // Body outline
+    ctx.strokeStyle = '#806040';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
     // Head
+    ctx.fillStyle = '#e8c89a';
     ctx.beginPath();
     ctx.arc(x + 32, y - 10, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#806040';
+    ctx.stroke();
+
+    // Ears
+    ctx.fillStyle = '#c8a87a';
+    ctx.beginPath();
+    ctx.ellipse(x + 28, y - 14, 3, 4, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x + 36, y - 14, 3, 4, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Snout
+    ctx.fillStyle = '#d8b88a';
+    ctx.beginPath();
+    ctx.ellipse(x + 36, y - 9, 4, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Nose
+    ctx.fillStyle = '#302520';
+    ctx.beginPath();
+    ctx.arc(x + 38, y - 9, 1.5, 0, Math.PI * 2);
     ctx.fill();
 
     // Eye
     ctx.fillStyle = '#201510';
     ctx.beginPath();
-    ctx.arc(x + 34, y - 11, 1.5, 0, Math.PI * 2);
+    ctx.arc(x + 33, y - 11, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eye highlight
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(x + 33.5, y - 11.5, 0.5, 0, Math.PI * 2);
     ctx.fill();
 
     // Tail with animation
     const tailWag = game.dog.animation === 'wag' ? Math.sin(game.time * 0.3) * 8 : 0;
-    ctx.strokeStyle = '#c0a080';
+    ctx.strokeStyle = '#e8c89a';
     ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.moveTo(x + 16, y - 5);
     ctx.quadraticCurveTo(x + 10, y - 15 + Math.sin(game.time * 0.2) * 5 + tailWag, x + 8, y - 20);
     ctx.stroke();
+
+    // Tail outline
+    ctx.strokeStyle = '#806040';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Legs (front)
+    ctx.fillStyle = '#e8c89a';
+    ctx.fillRect(x + 28, y - 2, 3, 8);
+    ctx.fillRect(x + 22, y - 2, 3, 8);
 }
 
 function drawBoatFishingRod(x, y) {
@@ -261,20 +399,60 @@ function drawBoatFishingRod(x, y) {
 function drawBoatLantern(x, y) {
     const glow = (Math.sin(game.time * 0.08) + 1) / 2;
 
-    // Lantern glow effect
-    const lanternGrad = ctx.createRadialGradient(x - 30, y - 10, 0, x - 30, y - 10, 20);
-    lanternGrad.addColorStop(0, `rgba(255, 200, 100, ${0.4 + glow * 0.2})`);
+    // LARGE outer glow for visibility
+    const outerGlow = ctx.createRadialGradient(x - 30, y - 10, 0, x - 30, y - 10, 50);
+    outerGlow.addColorStop(0, `rgba(255, 220, 120, ${0.3 + glow * 0.2})`);
+    outerGlow.addColorStop(0.5, `rgba(255, 180, 80, ${0.15 + glow * 0.1})`);
+    outerGlow.addColorStop(1, 'transparent');
+    ctx.fillStyle = outerGlow;
+    ctx.beginPath();
+    ctx.arc(x - 30, y - 10, 50, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Inner glow
+    const lanternGrad = ctx.createRadialGradient(x - 30, y - 10, 0, x - 30, y - 10, 25);
+    lanternGrad.addColorStop(0, `rgba(255, 240, 180, ${0.6 + glow * 0.3})`);
+    lanternGrad.addColorStop(0.5, `rgba(255, 200, 100, ${0.3 + glow * 0.2})`);
     lanternGrad.addColorStop(1, 'transparent');
     ctx.fillStyle = lanternGrad;
     ctx.beginPath();
-    ctx.arc(x - 30, y - 10, 20, 0, Math.PI * 2);
+    ctx.arc(x - 30, y - 10, 25, 0, Math.PI * 2);
     ctx.fill();
 
-    // Lantern body
-    ctx.fillStyle = '#3a3025';
-    ctx.fillRect(x - 34, y - 5, 8, 12);
-    ctx.fillStyle = `rgba(255, 220, 150, ${0.7 + glow * 0.3})`;
-    ctx.fillRect(x - 33, y - 3, 6, 8);
+    // Lantern pole
+    ctx.fillStyle = '#4a3a25';
+    ctx.fillRect(x - 32, y - 5, 4, 15);
+
+    // Lantern top hook
+    ctx.strokeStyle = '#4a3a25';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x - 30, y - 5);
+    ctx.lineTo(x - 30, y - 15);
+    ctx.stroke();
+
+    // Lantern body (brass frame)
+    ctx.fillStyle = '#806830';
+    ctx.fillRect(x - 36, y - 8, 12, 16);
+
+    // Lantern glass (glowing)
+    ctx.fillStyle = `rgba(255, 240, 180, ${0.8 + glow * 0.2})`;
+    ctx.fillRect(x - 35, y - 6, 10, 12);
+
+    // Bright center flame
+    ctx.fillStyle = `rgba(255, 255, 220, ${0.9 + glow * 0.1})`;
+    ctx.beginPath();
+    ctx.ellipse(x - 30, y - 2 + glow * 2, 3, 4 + glow * 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Lantern top
+    ctx.fillStyle = '#806830';
+    ctx.beginPath();
+    ctx.moveTo(x - 37, y - 8);
+    ctx.lineTo(x - 30, y - 14);
+    ctx.lineTo(x - 23, y - 8);
+    ctx.closePath();
+    ctx.fill();
 }
 
 // --- Main Boat Procedural Drawing ---

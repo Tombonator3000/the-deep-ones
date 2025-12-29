@@ -2877,3 +2877,82 @@ Undersøkte rendering-koden i js/rendering.js:
 - Lighthouse-sprite må skaleres ned for å passe 480x270 oppløsning
 - Vurder å flytte fyrtårnet til en mer sentral posisjon for bedre synlighet
 
+---
+
+## 2025-12-29 — MAJOR FIX: Lighthouse & Boat Visibility
+
+### Bruker-rapport (oppfølging)
+1. Lighthouse FORTSATT ikke synlig på Sandbank-posisjon
+2. Båt/spiller-grafikk fortsatt mangler eller usynlig
+
+### Root Cause Analysis
+
+#### 1. Lighthouse - FOR LITE!
+**Problem**: Det originale fyrtårnet var bare ~12 piksler bredt og ~40 piksler høyt. Dette blandet seg HELT inn med trær og fjell i bakgrunnen.
+
+**Kode-analyse** (`fallbacks.js:319`):
+```javascript
+// Originalt:
+ctx.moveTo(x - 6, y + 32);  // 12px bred
+ctx.lineTo(x + 6, y + 32);
+```
+
+Ved `y=50` ble fyrtårnet tegnet i samme vertikale område som trærne (`trees-near` ved `y=70`), noe som gjorde det nesten usynlig.
+
+#### 2. Båt - FOR MØRK!
+**Problem**: Båthull-fargen `#6a5030` (mørk brun) blandet seg med vannets gradient og bakgrunnen, spesielt ved skumring/natt.
+
+**Tilleggsproblem**: Orange varselbøyen fra `drawSandbank()` ble tegnet på nesten samme posisjon som båten, noe som forvirret visuelt.
+
+### Løsninger Implementert
+
+#### Lighthouse (`fallbacks.js`)
+1. **STØRRELSE**: Økt fra 12px til 24px bred, tårn fra 32px til 60px høyt
+2. **OUTER GLOW**: Lagt til stor lysende glød (40-60px radius) rundt fyrtårnet
+3. **ROTERENDE LYSSTRÅLE**: Lagt til animert lysstråle som roterer
+4. **KONTRAST**: Hvit/cream tårn (#f0e8e0) med røde striper for klassisk utseende
+5. **DEBUG MARKER**: Magenta firkant når `CONFIG.showDebug=true`
+
+#### Båt (`rendering.js`)
+1. **HULL FARGE**: Endret fra `#6a5030` (mørk brun) til `#d4b896` (lys tan/cream)
+2. **TYKK OMRISS**: 3px mørk outline for synlighet
+3. **OUTER GLOW**: Varm lysende glød rundt hele båten
+4. **DEBUG MARKER**: Grønn "BOAT" tekst når debug er på
+
+#### Fisher (spiller)
+1. **KLÆR**: Endret fra `#1a1815` (nesten svart) til `#c4a040` (gul regnfrakk)
+2. **ARMER**: Lagt til synlige armer
+3. **OUTLINES**: Lagt til konturer for bedre synlighet
+
+#### Hund
+1. **FARGE**: Lysere gyllen pels `#e8c89a`
+2. **DETALJER**: Ører, snute, nese, og bein lagt til
+3. **OUTLINES**: Tydelige konturer
+
+#### Lanterne
+1. **STØRRE GLØD**: 50px outer glow + 25px inner glow
+2. **DETALJER**: Proper lanterne-design med stang, glass, flamme og tak
+
+### Endrede Filer
+- `js/fallbacks.js` — Komplett redesign av lighthouse-fallback
+- `js/rendering.js` —
+  - `drawBoatHull()` — Lysere farger, tykkere outline, debug marker
+  - `drawFisher()` — Gul regnfrakk, synlige armer
+  - `drawBoatDog()` — Mer detaljert hund med lys pels
+  - `drawBoatLantern()` — Større glød og bedre design
+  - `drawBoat()` — Safety checks og forbedret debug logging
+
+### Testing
+1. Start spillet med `python3 -m http.server 8080`
+2. Sjekk browser console for `[BOAT]` meldinger
+3. Med `CONFIG.showDebug=true`:
+   - Grønn "BOAT" label skal vises over båten
+   - Magenta firkant skal vises over fyrtårnet
+4. Seil til venstre (mot Sandbank) - fyrtårn skal være TYDELIG synlig med roterende lys
+5. Båten skal være LYST SYNLIG med gul fisker og glødende lanterne
+
+### Forventet Resultat
+- Fyrtårn: STORT hvitt tårn med røde striper og roterende lysstråle, synlig på horisonten
+- Båt: Lys tan/cream båt med gul-kledd fisker, gyllen hund, og glødende lanterne
+- Alt skal være synlig selv i skumring/natt-modus
+
