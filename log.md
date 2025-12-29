@@ -2,6 +2,70 @@
 
 ---
 
+## 2025-12-28 — 16-bit Pixel Art Sprites
+
+### Features Added
+
+#### 1. Custom 16-bit Style Sprite Generation
+- Created Python script (`tools/generate_sprites.py`) to generate authentic 16-bit pixel art
+- Uses PIL/Pillow for image generation
+- Retro color palette inspired by SNES/Genesis era games
+
+#### 2. New Sprites Created
+
+**Boat Assets (6 sprites):**
+- `boat.png` (90x50) - Fishing boat with cabin, mast, and orange flag
+- `fisher.png` (32x48) - Fisherman with yellow rain jacket and sou'wester hat
+- `dog.png` (96x20) - 4-frame animated dog with wagging tail
+- `lantern.png` (64x24) - 4-frame animated lantern with flickering glow
+- `rod.png` (64x64) - Fishing rod with reel and guides
+- `bobber.png` (12x16) - Classic red/white bobber
+
+**Fish Sprites (16 fish):**
+
+| Zone | Fish | Size | Notes |
+|------|------|------|-------|
+| Surface | Harbor Cod | 32x16 | Gray/silver, 4 frames |
+| Surface | Pale Flounder | 36x20 | Pale with tan accents |
+| Surface | Whisper Eel | 48x12 | Dark/elongated, 6 frames |
+| Surface | Midnight Perch | 28x18 | Dark blue/purple |
+| Mid | Glass Squid | 40x32 | Translucent with tentacles |
+| Mid | Bone Angler | 44x28 | Pale with angler light |
+| Mid | The Mimic | 48x24 | Wood-colored, 3 eyes |
+| Mid | Prophet Fish | 36x24 | Purple, 2 eyes, 6 frames |
+| Deep | Congregation | 56x32 | Dark with 5 glowing eyes |
+| Deep | The Listener | 52x28 | Eldritch purple |
+| Deep | Drowned Sailor's Friend | 48x36 | Flesh-toned, creepy |
+| Deep | Memory Leech | 40x20 | Red with 4 eyes |
+| Abyss | Dagon's Fingerling | 64x40 | Eldritch with tentacles |
+| Abyss | The Dreaming One | 72x48 | Deep purple, ethereal |
+| Abyss | Mother Hydra's Tear | 80x56 | Dark with 6 eyes |
+| Abyss | The Unnamed | 96x64 | Black, 7 eyes, angler light |
+
+#### 3. Lovecraftian Visual Design
+- Surface fish: Normal, realistic appearance
+- Mid-depth fish: Slightly unsettling (extra eyes, weird shapes)
+- Deep fish: Clearly eldritch (multiple eyes, tentacles, bioluminescence)
+- Abyss fish: Full cosmic horror (amorphous shapes, many eyes, angler lights)
+
+### Files Added/Modified
+- `tools/generate_sprites.py` - New sprite generation script
+- `sprites/boat/*.png` - 6 boat-related sprites replaced
+- `sprites/fish/**/*.png` - 16 fish sprites replaced
+
+### Technical Notes
+- All sprites use RGBA format with transparency
+- Animated sprites are horizontal sprite sheets
+- Colors use a consistent 16-bit inspired palette
+- Eldritch fish use procedural wobble for organic feel
+
+### Testing
+1. Run `python3 tools/generate_sprites.py` to regenerate sprites
+2. Press [D] in-game to toggle between sprites and procedural
+3. Verify all 16 fish display correctly when caught
+
+---
+
 ## 2025-12-28 — Fullscreen Display & PC Mouse Controls
 
 ### Features Added
