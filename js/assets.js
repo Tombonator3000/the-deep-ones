@@ -46,8 +46,9 @@ const PARALLAX_LAYERS = {
             { id: 'trees-far', y: 60, scrollSpeed: 0.35, repeatX: true, src: 'backgrounds/land/trees-far.png' },
             // trees-near: y+40 is tree base, heights 55-80, so y=70 → base at 110, tops at 30-55
             { id: 'trees-near', y: 70, scrollSpeed: 0.45, repeatX: true, src: 'backgrounds/land/trees-near.png' },
-            // lighthouse at horizon
-            { id: 'lighthouse', y: 50, scrollSpeed: 0.4, src: 'backgrounds/land/lighthouse.png' },
+            // lighthouse at horizon - worldX matches fallback position (75)
+            // y=50 for fallback, spriteBottomY=85 for sprite (bottom anchor)
+            { id: 'lighthouse', y: 50, scrollSpeed: 0.4, worldX: 75, spriteBottomY: 85, src: 'backgrounds/land/lighthouse.png' },
             // reeds just above waterline
             { id: 'reeds-left', y: 100, scrollSpeed: 0.5, src: 'backgrounds/land/reeds.png' },
         ]
@@ -186,6 +187,8 @@ class ParallaxLayer {
         this.y = config.y || 0;
         this.scrollSpeed = config.scrollSpeed || 0;
         this.repeatX = config.repeatX || false;
+        this.worldX = config.worldX || 0;  // World position for non-repeating elements
+        this.spriteBottomY = config.spriteBottomY || null;  // If set, sprite bottom is anchored here
         this.src = config.src;
         this.animated = config.animated || false;
         this.frames = config.frames || 1;
@@ -210,22 +213,33 @@ class ParallaxLayer {
         const img = loadedAssets.images[this.id];
 
         if (img && CONFIG.useSprites) {
+            // Calculate y position - use spriteBottomY if set (bottom-anchored)
+            let drawY = this.y;
+            if (this.spriteBottomY !== null) {
+                drawY = this.spriteBottomY - img.height;
+            }
+
             if (this.animated) {
                 const frameWidth = img.width / this.frames;
                 const sx = this.currentFrame * frameWidth;
                 if (this.repeatX) {
                     this.drawRepeating(ctx, img, canvasWidth, sx, frameWidth);
                 } else {
-                    ctx.drawImage(img, sx, 0, frameWidth, img.height, -this.offset, this.y, frameWidth, img.height);
+                    // Use worldX for positioned elements (like lighthouse)
+                    const drawX = this.worldX - this.offset;
+                    ctx.drawImage(img, sx, 0, frameWidth, img.height, drawX, drawY, frameWidth, img.height);
                 }
             } else {
                 if (this.repeatX) {
                     this.drawRepeating(ctx, img, canvasWidth);
                 } else {
-                    ctx.drawImage(img, -this.offset, this.y);
+                    // Use worldX for positioned elements (like lighthouse)
+                    const drawX = this.worldX - this.offset;
+                    ctx.drawImage(img, drawX, drawY);
                 }
             }
         } else if (fallbackFn) {
+            // Fallback always uses the original y value
             fallbackFn(ctx, this.offset, this.y, canvasWidth, canvasHeight, this);
         }
     }
