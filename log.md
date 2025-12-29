@@ -2,6 +2,38 @@
 
 ---
 
+## 2025-12-29 — Fix Lighthouse Sprite Rendering
+
+### Bakgrunn
+Lighthouse.png eksisterte i `backgrounds/land/lighthouse.png` men ble ikke vist korrekt når man byttet til sprite-modus med [D]-tasten. Problemet var at sprite-rendering manglet støtte for:
+1. World position (worldX) - fyrtårnet ble tegnet på feil x-posisjon
+2. Anchor point (spriteBottomY) - fyrtårnet ble tegnet på feil y-posisjon
+
+### Problemanalyse
+- Fallback tegnet fyrtårnet på posisjon `x = 75 - offset`
+- Sprite-tegning brukte bare `x = -offset`, som manglet posisjon 75
+- Fallback tegnet fyrtårnet fra y=50 til y=85 (35px høyt)
+- Sprite-bildet er mye større og trenger bottom-anchoring
+
+### Løsning
+La til to nye properties i ParallaxLayer:
+- `worldX` - verdensposisjon for ikke-repeterendende elementer
+- `spriteBottomY` - y-posisjon for sprite-bunnen (for bottom-anchored sprites)
+
+### Filer endret
+- `js/assets.js`:
+  - Lighthouse config: lagt til `worldX: 75` og `spriteBottomY: 85`
+  - ParallaxLayer constructor: lagt til `worldX` og `spriteBottomY` properties
+  - ParallaxLayer.draw(): bruker nå `worldX - offset` for x-posisjon og `spriteBottomY - imgHeight` for y-posisjon
+
+### Testing
+1. Start spillet med `python3 -m http.server 8080`
+2. Trykk [D] for å bytte til sprite-modus
+3. Seil til venstre for å se fyrtårnet
+4. Verifiser at fyrtårnet vises på riktig posisjon både i prosedyral og sprite-modus
+
+---
+
 ## 2025-12-29 — Fishable Lore Fragments & Crisp UI Text
 
 ### Bakgrunn
