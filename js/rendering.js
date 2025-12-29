@@ -596,47 +596,65 @@ function drawLorePopup() {
 
     // Scaled for low resolution
     const w = Math.min(280, CONFIG.canvas.width - 20);
-    const h = Math.min(120, CONFIG.canvas.height - 30);
+    const h = Math.min(140, CONFIG.canvas.height - 30);
     const x = (CONFIG.canvas.width - w) / 2;
     const y = (CONFIG.canvas.height - h) / 2;
 
-    ctx.fillStyle = 'rgba(20, 25, 30, 0.95)';
-    ctx.fillRect(x, y, w, h);
-    ctx.strokeStyle = '#5a8a7a';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, w, h);
+    // Use crisp UI canvas for readable text
+    drawCrispRect(x, y, w, h, 'rgba(20, 25, 30, 0.95)');
+    drawCrispStrokeRect(x, y, w, h, '#5a8a7a', 1);
 
-    ctx.font = '8px "Press Start 2P"';
-    ctx.fillStyle = '#8aba9a';
-    ctx.textAlign = 'center';
-    ctx.fillText('LORE FOUND', x + w/2, y + 15);
+    drawCrispText('LORE FOUND', x + w/2, y + 18, {
+        font: '10px "Press Start 2P"',
+        color: '#8aba9a',
+        align: 'center'
+    });
 
-    ctx.font = '10px VT323';
-    ctx.fillStyle = '#c0d0c0';
-    ctx.fillText(game.currentLore.title, x + w/2, y + 32);
+    drawCrispText(game.currentLore.title, x + w/2, y + 38, {
+        font: '14px VT323',
+        color: '#c0d0c0',
+        align: 'center'
+    });
 
-    ctx.font = '8px VT323';
-    ctx.fillStyle = '#a0b0a0';
+    // Word wrap the lore text using crisp rendering
+    const scale = CONFIG.uiScale || 1;
+    const targetCtx = uiCtx || ctx;
+    targetCtx.save();
+    targetCtx.font = `${Math.round(12 * scale)}px VT323`;
+
     const words = game.currentLore.text.split(' ');
     let line = '';
-    let lineY = y + 50;
+    let lineY = y + 58;
+    const maxWidth = (w - 20) * scale;
+
     words.forEach(word => {
         const testLine = line + word + ' ';
-        if (ctx.measureText(testLine).width > w - 20) {
-            ctx.fillText(line, x + w/2, lineY);
+        if (targetCtx.measureText(testLine).width > maxWidth) {
+            drawCrispText(line.trim(), x + w/2, lineY, {
+                font: '12px VT323',
+                color: '#a0b0a0',
+                align: 'center'
+            });
             line = word + ' ';
-            lineY += 12;
-            if (lineY > y + h - 25) return; // Don't overflow
+            lineY += 14;
         } else {
             line = testLine;
         }
     });
-    if (lineY <= y + h - 25) ctx.fillText(line, x + w/2, lineY);
+    if (lineY <= y + h - 25) {
+        drawCrispText(line.trim(), x + w/2, lineY, {
+            font: '12px VT323',
+            color: '#a0b0a0',
+            align: 'center'
+        });
+    }
+    targetCtx.restore();
 
-    ctx.font = '7px VT323';
-    ctx.fillStyle = '#6a8a7a';
-    ctx.fillText('[SPACE]', x + w/2, y + h - 8);
-    ctx.textAlign = 'left';
+    drawCrispText('[SPACE] to continue', x + w/2, y + h - 10, {
+        font: '10px VT323',
+        color: '#6a8a7a',
+        align: 'center'
+    });
 }
 
 // Minigame Rendering - Simplified progress bar
@@ -741,41 +759,78 @@ function drawCatchPopup() {
     const px = (CONFIG.canvas.width - w) / 2;
     const py = 50;
 
-    ctx.fillStyle = 'rgba(5, 10, 8, 0.95)';
-    ctx.fillRect(px - 3, py - 3, w + 6, h + 6);
-    ctx.strokeStyle = '#5a8a6a';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(px, py, w, h);
+    // Special styling for lore items - uses crisp UI canvas
+    if (c.isLore) {
+        drawCrispRect(px - 3, py - 3, w + 6, h + 6, 'rgba(15, 10, 20, 0.95)');
+        drawCrispStrokeRect(px, py, w, h, '#8a6a9a', 1);
 
-    ctx.fillStyle = '#aaddaa';
-    ctx.font = '8px "Press Start 2P"';
-    ctx.textAlign = 'center';
-    ctx.fillText('CAUGHT!', px + w/2, py + 15);
+        drawCrispText('FOUND!', px + w/2, py + 15, {
+            font: '10px "Press Start 2P"',
+            color: '#c0a0d0',
+            align: 'center'
+        });
 
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#8aba9a';
-    ctx.font = '12px VT323';
-    ctx.fillText(c.name, px + 10, py + 32);
+        drawCrispText(c.name, px + 10, py + 35, {
+            font: '16px VT323',
+            color: '#a090c0'
+        });
 
-    ctx.fillStyle = '#d0d080';
-    ctx.font = '10px VT323';
-    ctx.fillText(`${c.value}g`, px + 10, py + 48);
+        drawCrispText(c.desc, px + 10, py + 55, {
+            font: '12px VT323',
+            color: '#8a7a9a'
+        });
 
-    if (c.sanityLoss > 15) {
-        ctx.fillStyle = '#a06060';
-        ctx.fillText(`-${c.sanityLoss} san`, px + 60, py + 48);
+        drawCrispText('Press SPACE to read...', px + 10, py + 75, {
+            font: '11px VT323',
+            color: '#6a5a7a'
+        });
+
+        drawCrispText('[SPACE]', px + w/2, py + h - 8, {
+            font: '10px VT323',
+            color: '#5a4a6a',
+            align: 'center'
+        });
+        return;
     }
 
-    ctx.fillStyle = '#6a8a7a';
-    ctx.font = '8px VT323';
-    // Truncate description for low res
-    const maxChars = Math.floor((w - 20) / 4);
-    const desc = c.desc.length > maxChars ? c.desc.substring(0, maxChars - 3) + '...' : c.desc;
-    ctx.fillText(desc, px + 10, py + 65);
+    // Normal catch popup - uses crisp UI canvas
+    drawCrispRect(px - 3, py - 3, w + 6, h + 6, 'rgba(5, 10, 8, 0.95)');
+    drawCrispStrokeRect(px, py, w, h, '#5a8a6a', 1);
 
-    ctx.fillStyle = '#5a6a5a';
-    ctx.font = '7px VT323';
-    ctx.textAlign = 'center';
-    ctx.fillText('[SPACE]', px + w/2, py + h - 8);
-    ctx.textAlign = 'left';
+    drawCrispText('CAUGHT!', px + w/2, py + 15, {
+        font: '10px "Press Start 2P"',
+        color: '#aaddaa',
+        align: 'center'
+    });
+
+    drawCrispText(c.name, px + 10, py + 35, {
+        font: '16px VT323',
+        color: '#8aba9a'
+    });
+
+    drawCrispText(`${c.value}g`, px + 10, py + 52, {
+        font: '14px VT323',
+        color: '#d0d080'
+    });
+
+    if (c.sanityLoss > 15) {
+        drawCrispText(`-${c.sanityLoss} san`, px + 70, py + 52, {
+            font: '14px VT323',
+            color: '#a06060'
+        });
+    }
+
+    // Truncate description for display
+    const maxChars = 45;
+    const desc = c.desc.length > maxChars ? c.desc.substring(0, maxChars - 3) + '...' : c.desc;
+    drawCrispText(desc, px + 10, py + 72, {
+        font: '11px VT323',
+        color: '#6a8a7a'
+    });
+
+    drawCrispText('[SPACE]', px + w/2, py + h - 8, {
+        font: '10px VT323',
+        color: '#5a6a5a',
+        align: 'center'
+    });
 }
