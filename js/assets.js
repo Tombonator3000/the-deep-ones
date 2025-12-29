@@ -46,8 +46,10 @@ const PARALLAX_LAYERS = {
             { id: 'trees-far', y: 60, scrollSpeed: 0.35, repeatX: true, src: 'backgrounds/land/trees-far.png' },
             // trees-near: y+40 is tree base, heights 55-80, so y=70 → base at 110, tops at 30-55
             { id: 'trees-near', y: 70, scrollSpeed: 0.45, repeatX: true, src: 'backgrounds/land/trees-near.png' },
-            // lighthouse at horizon - worldX matches fallback position (75)
+            // lighthouse at horizon - positioned near the Sandbank (left side of world)
             // y=50 for fallback, spriteBottomY=85 for sprite (bottom anchor)
+            // Note: Lighthouse sprite (1080x602) is too large for 480x270 canvas - uses procedural fallback
+            // worldX=75 means it's visible when player is near worldX 0-400 (Sandbank area)
             { id: 'lighthouse', y: 50, scrollSpeed: 0.4, worldX: 75, spriteBottomY: 85, src: 'backgrounds/land/lighthouse.png' },
             // reeds just above waterline
             { id: 'reeds-left', y: 100, scrollSpeed: 0.5, src: 'backgrounds/land/reeds.png' },
