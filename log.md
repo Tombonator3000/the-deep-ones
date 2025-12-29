@@ -2500,6 +2500,105 @@ for (const [key, condition] of Object.entries(ACHIEVEMENT_CONDITIONS)) {
 
 ---
 
+## 2025-12-29 — Fix Pixel Art Display (Cast n Chill-stil)
+
+### Bakgrunn
+Undersøkte hvorfor pixel-grafikken ikke ser riktig ut sammenlignet med Cast n Chill. Analyserte referansebilder og nåværende implementasjon.
+
+### Analyse av Cast n Chill-stil
+Fra referansebildene:
+- **Lav intern oppløsning**: Pikslene er store og tydelig synlige (~384x216 eller lignende)
+- **Skarp skalering**: Ingen blur/smoothing - hvert piksel er en skarp firkant
+- **Konsistent pikselstørrelse**: Alle elementer har samme pikselstørrelse
+- **16:9 aspect ratio**: Standard widescreen format
+
+### Identifiserte problemer
+
+#### 1. Feil canvas-oppløsning
+**Problem:** Canvas settes til full skjermoppløsning (f.eks. 1920x1080)
+```javascript
+// Nåværende (feil):
+canvas.width = container.clientWidth;  // f.eks. 1920px
+canvas.height = container.clientHeight; // f.eks. 1080px
+```
+**Konsekvens:** Grafikk tegnes i høy oppløsning, ikke pixel art-stil
+
+#### 2. Manglende imageSmoothingEnabled = false
+**Problem:** Canvas context bruker default smoothing (true)
+**Konsekvens:** Sprites blir blurry ved skalering
+
+#### 3. CSS-only pixel-rendering
+**Problem:** CSS `image-rendering: pixelated` er kun på container, ikke canvas element
+
+### Implementert løsning
+
+#### 1. PIXEL_CONFIG i config.js
+```javascript
+const PIXEL_CONFIG = {
+    internalWidth: 480,   // 1/4 av 1080p bredde
+    internalHeight: 270,  // 1/4 av 1080p høyde
+    waterLineRatio: 0.43
+};
+```
+Valgte 480x270 som gir synlige piksler men fortsatt lesbar UI.
+
+#### 2. Fast canvas-oppløsning i main.js
+```javascript
+function initCanvasSize() {
+    canvas.width = PIXEL_CONFIG.internalWidth;
+    canvas.height = PIXEL_CONFIG.internalHeight;
+    disableImageSmoothing();
+}
+
+function disableImageSmoothing() {
+    ctx.imageSmoothingEnabled = false;
+    ctx.webkitImageSmoothingEnabled = false;
+    ctx.mozImageSmoothingEnabled = false;
+}
+```
+Canvas holder fast oppløsning, CSS skalerer til full skjerm.
+
+#### 3. CSS pixel-rendering på canvas
+```css
+#gameCanvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    -ms-interpolation-mode: nearest-neighbor;
+}
+```
+
+#### 4. UI-justeringer for lav oppløsning
+Alle popup-vinduer og UI-elementer skalert ned:
+- Lore Collection: 600x450 → 440x240
+- Hotkey Help: 400x450 → 300x250
+- Catch Popup: 360x190 → 220x100
+- Lore Popup: 400x180 → 280x120
+- Minigame: 320x35 bar → 200x20 bar
+- Fontestørrelser redusert (20px→10px, 16px→8px, etc.)
+
+### Endringer
+- `js/config.js` — Ny PIXEL_CONFIG med 480x270 intern oppløsning
+- `js/main.js` — Fast canvas-størrelse, disableImageSmoothing(), render-loop disabler smoothing hver frame
+- `index.html` — CSS `image-rendering: pixelated` på canvas element
+- `js/ui.js` — Skalert lore collection, hotkey help for lav oppløsning
+- `js/rendering.js` — Skalert catch popup, lore popup, minigame bar
+
+### Testing
+1. Start spillet med `python3 -m http.server 8080`
+2. Åpne http://localhost:8080
+3. Verifiser:
+   - Piksler er skarpe og tydelige (ikke blurry)
+   - Grafikk skaleres opp til full skjerm uten smoothing
+   - UI-elementer er lesbare og passer på skjermen
+   - Mouse input fungerer korrekt (koordinater konverteres)
+
+### Notater
+- 480x270 er 1/4 av 1080p og gir 4x oppskalering på de fleste skjermer
+- disableImageSmoothing() kalles hver frame for å sikre at det aldri resettes
+- Mouse-koordinater konverteres automatisk i input.js via `canvas.width / rect.width`
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown

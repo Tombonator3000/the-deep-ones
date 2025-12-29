@@ -2,9 +2,20 @@
 // THE DEEP ONES - CONFIGURATION
 // ============================================================
 
+// Pixel art configuration for Cast n Chill style rendering
+const PIXEL_CONFIG = {
+    // Internal resolution - this is what we actually draw at
+    // 480x270 = 16:9 aspect ratio, 1/4 of 1080p
+    // This gives visible pixels while keeping UI readable
+    internalWidth: 480,
+    internalHeight: 270,
+    // Water line at ~43% of height (same ratio as before: 280/650)
+    waterLineRatio: 0.43
+};
+
 const CONFIG = {
-    canvas: { width: 1000, height: 650 },
-    waterLine: 280,
+    canvas: { width: PIXEL_CONFIG.internalWidth, height: PIXEL_CONFIG.internalHeight },
+    waterLine: Math.floor(PIXEL_CONFIG.internalHeight * PIXEL_CONFIG.waterLineRatio),
     useSprites: false,
     showDebug: true,
     assetPath: '',

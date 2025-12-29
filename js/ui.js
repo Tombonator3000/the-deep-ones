@@ -91,75 +91,80 @@ function drawDogIndicator() {
 function drawLoreCollection() {
     if (!game.loreViewer.open) return;
 
-    const w = 600, h = 450;
+    // Scaled for low resolution (480x270)
+    const w = Math.min(440, CONFIG.canvas.width - 20);
+    const h = Math.min(240, CONFIG.canvas.height - 20);
     const x = (CONFIG.canvas.width - w) / 2;
     const y = (CONFIG.canvas.height - h) / 2;
 
     ctx.fillStyle = 'rgba(15, 20, 25, 0.98)';
     ctx.fillRect(x, y, w, h);
     ctx.strokeStyle = '#5a4a6a';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2;
     ctx.strokeRect(x, y, w, h);
 
-    ctx.font = '16px "Press Start 2P"';
+    ctx.font = '10px "Press Start 2P"';
     ctx.fillStyle = '#8a6a9a';
     ctx.textAlign = 'center';
-    ctx.fillText('FORBIDDEN KNOWLEDGE', x + w/2, y + 35);
+    ctx.fillText('FORBIDDEN KNOWLEDGE', x + w/2, y + 18);
 
-    ctx.font = '14px VT323';
+    ctx.font = '8px VT323';
     ctx.fillStyle = '#6a5a7a';
-    ctx.fillText(`${game.loreFound.length} / ${LORE_FRAGMENTS.length} fragments discovered`, x + w/2, y + 55);
+    ctx.fillText(`${game.loreFound.length} / ${LORE_FRAGMENTS.length} fragments`, x + w/2, y + 30);
 
-    const startIdx = game.loreViewer.page * game.loreViewer.itemsPerPage;
-    const endIdx = Math.min(startIdx + game.loreViewer.itemsPerPage, LORE_FRAGMENTS.length);
+    // Only show 2 items per page in low res
+    const itemsPerPage = 2;
+    const startIdx = game.loreViewer.page * itemsPerPage;
+    const endIdx = Math.min(startIdx + itemsPerPage, LORE_FRAGMENTS.length);
 
     ctx.textAlign = 'left';
     for (let i = startIdx; i < endIdx; i++) {
         const lore = LORE_FRAGMENTS[i];
-        const itemY = y + 80 + (i - startIdx) * 85;
+        const itemY = y + 40 + (i - startIdx) * 85;
 
         ctx.fillStyle = 'rgba(40, 35, 50, 0.5)';
-        ctx.fillRect(x + 20, itemY, w - 40, 75);
+        ctx.fillRect(x + 10, itemY, w - 20, 75);
 
         if (lore.found || game.loreFound.includes(lore.id)) {
             ctx.fillStyle = '#a08ab0';
-            ctx.font = '16px VT323';
-            ctx.fillText(lore.title, x + 30, itemY + 20);
+            ctx.font = '10px VT323';
+            ctx.fillText(lore.title, x + 15, itemY + 14);
 
             ctx.fillStyle = '#8a7a9a';
-            ctx.font = '13px VT323';
-            const text = lore.text.length > 80 ? lore.text.substring(0, 77) + '...' : lore.text;
-            ctx.fillText(text, x + 30, itemY + 40);
+            ctx.font = '8px VT323';
+            const maxChars = Math.floor((w - 30) / 4);
+            const text = lore.text.length > maxChars ? lore.text.substring(0, maxChars - 3) + '...' : lore.text;
+            ctx.fillText(text, x + 15, itemY + 30);
 
             ctx.fillStyle = '#6a5a7a';
-            ctx.font = '11px VT323';
+            ctx.font = '7px VT323';
             const locName = CONFIG.locations[lore.location]?.name || lore.location;
-            ctx.fillText(`Found at: ${locName}`, x + 30, itemY + 60);
+            ctx.fillText(`Found: ${locName}`, x + 15, itemY + 45);
         } else {
             ctx.fillStyle = '#5a4a6a';
-            ctx.font = '16px VT323';
-            ctx.fillText('???', x + 30, itemY + 20);
+            ctx.font = '10px VT323';
+            ctx.fillText('???', x + 15, itemY + 14);
 
             ctx.fillStyle = '#4a3a5a';
-            ctx.font = '13px VT323';
-            ctx.fillText('This fragment remains undiscovered...', x + 30, itemY + 40);
+            ctx.font = '8px VT323';
+            ctx.fillText('Undiscovered...', x + 15, itemY + 30);
 
             ctx.fillStyle = '#3a2a4a';
-            ctx.font = '11px VT323';
+            ctx.font = '7px VT323';
             const locName = CONFIG.locations[lore.location]?.name || lore.location;
-            ctx.fillText(`Hint: Search near ${locName}`, x + 30, itemY + 60);
+            ctx.fillText(`Hint: ${locName}`, x + 15, itemY + 45);
         }
     }
 
-    const totalPages = Math.ceil(LORE_FRAGMENTS.length / game.loreViewer.itemsPerPage);
+    const totalPages = Math.ceil(LORE_FRAGMENTS.length / itemsPerPage);
     ctx.textAlign = 'center';
     ctx.fillStyle = '#6a5a7a';
-    ctx.font = '14px VT323';
-    ctx.fillText(`Page ${game.loreViewer.page + 1} / ${totalPages}`, x + w/2, y + h - 40);
+    ctx.font = '8px VT323';
+    ctx.fillText(`Page ${game.loreViewer.page + 1}/${totalPages}`, x + w/2, y + h - 20);
 
     ctx.fillStyle = '#5a4a6a';
-    ctx.font = '12px VT323';
-    ctx.fillText('[<-/->] Navigate pages | [ESC/L] Close', x + w/2, y + h - 20);
+    ctx.font = '7px VT323';
+    ctx.fillText('[<-/->] Pages | [ESC] Close', x + w/2, y + h - 10);
 
     ctx.textAlign = 'left';
 }
@@ -186,7 +191,9 @@ function updateUI() {
 
 // Hotkey help overlay
 function drawHotkeyHelp() {
-    const w = 400, h = 450;
+    // Scaled for low resolution
+    const w = Math.min(300, CONFIG.canvas.width - 20);
+    const h = Math.min(250, CONFIG.canvas.height - 10);
     const x = (CONFIG.canvas.width - w) / 2;
     const y = (CONFIG.canvas.height - h) / 2;
 
@@ -194,52 +201,54 @@ function drawHotkeyHelp() {
     ctx.fillStyle = 'rgba(10, 15, 20, 0.95)';
     ctx.fillRect(x, y, w, h);
     ctx.strokeStyle = '#5a7a8a';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1;
     ctx.strokeRect(x, y, w, h);
 
     // Title
-    ctx.font = '16px "Press Start 2P"';
+    ctx.font = '8px "Press Start 2P"';
     ctx.fillStyle = '#8ab0c0';
     ctx.textAlign = 'center';
-    ctx.fillText('CONTROLS', x + w/2, y + 35);
+    ctx.fillText('CONTROLS', x + w/2, y + 15);
 
-    // Hotkeys list
+    // Hotkeys list - condensed
     const hotkeys = [
-        { key: 'ARROW KEYS', desc: 'Move boat / Navigate menus' },
-        { key: 'SPACE', desc: 'Cast line / Confirm / Continue' },
-        { key: 'E', desc: 'Open Innsmouth Harbor menu' },
-        { key: 'P', desc: 'Pet your dog (+3 sanity)' },
-        { key: 'I', desc: 'Toggle idle fishing mode' },
-        { key: 'J', desc: 'Open Fishing Journal' },
-        { key: 'L', desc: 'Open Lore Collection' },
-        { key: 'A', desc: 'Open Achievements' },
-        { key: 'H', desc: 'Toggle this help screen' },
-        { key: 'T', desc: 'Cycle time of day' },
-        { key: 'SHIFT+T', desc: 'Pause/resume time' },
-        { key: 'SHIFT+S', desc: 'Save game' },
-        { key: 'D', desc: 'Toggle debug info' },
-        { key: 'S', desc: 'Toggle sprites' },
-        { key: 'ESC', desc: 'Close menus / Return' }
+        { key: 'ARROWS', desc: 'Move/Navigate' },
+        { key: 'SPACE', desc: 'Cast/Confirm' },
+        { key: 'E', desc: 'Harbor menu' },
+        { key: 'P', desc: 'Pet dog' },
+        { key: 'I', desc: 'Idle mode' },
+        { key: 'J', desc: 'Journal' },
+        { key: 'L', desc: 'Lore' },
+        { key: 'A', desc: 'Achievements' },
+        { key: 'H', desc: 'This help' },
+        { key: 'T', desc: 'Time' },
+        { key: 'ESC', desc: 'Close' }
     ];
 
     ctx.textAlign = 'left';
+    const cols = 2;
+    const itemsPerCol = Math.ceil(hotkeys.length / cols);
+
     hotkeys.forEach((hk, i) => {
-        const itemY = y + 70 + i * 26;
+        const col = Math.floor(i / itemsPerCol);
+        const row = i % itemsPerCol;
+        const itemX = x + 10 + col * (w / 2);
+        const itemY = y + 30 + row * 18;
 
         ctx.fillStyle = '#6a9aaa';
-        ctx.font = '14px VT323';
-        ctx.fillText(`[${hk.key}]`, x + 25, itemY);
+        ctx.font = '8px VT323';
+        ctx.fillText(`[${hk.key}]`, itemX, itemY);
 
         ctx.fillStyle = '#a0b0c0';
-        ctx.font = '13px VT323';
-        ctx.fillText(hk.desc, x + 140, itemY);
+        ctx.font = '7px VT323';
+        ctx.fillText(hk.desc, itemX + 50, itemY);
     });
 
     // Footer
     ctx.textAlign = 'center';
     ctx.fillStyle = '#5a7a8a';
-    ctx.font = '12px VT323';
-    ctx.fillText('Press [H] or [ESC] to close', x + w/2, y + h - 15);
+    ctx.font = '7px VT323';
+    ctx.fillText('[H/ESC] Close', x + w/2, y + h - 8);
     ctx.textAlign = 'left';
 }
 
