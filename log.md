@@ -2314,6 +2314,53 @@ ArrowDown = increase depth (go toward bottom)
 
 ---
 
+## 2025-12-29 — Refactor: Data-driven checkAchievements()
+
+### Gjort
+- Refaktorert `checkAchievements()` funksjonen fra 60 linjer med repetitiv kode til 8 linjer med en data-drevet loop
+- Ekstrahert 3 gjenbrukbare hjelpefunksjoner for achievement-sjekking
+- Laget `ACHIEVEMENT_CONDITIONS` mapping som kobler achievement-keys til condition-funksjoner
+
+### Endringer
+- `js/systems.js` — Komplett refaktorering av achievements system:
+  - `hasDiscoveredAllInZone(zone)` — Sjekker om alle creatures i en sone er oppdaget
+  - `hasEarnedGold(amount)` — Sjekker om spilleren har tjent nok gull
+  - `hasFoundLore(count)` — Sjekker om spilleren har funnet nok lore-fragmenter
+  - `ACHIEVEMENT_CONDITIONS` — Mapping fra achievement-keys til condition-funksjoner
+  - `checkAchievements()` — Forenklet til en ren loop over conditions
+
+### Forbedringer
+- **Lesbarhet**: Hver achievement condition er nå en tydelig one-liner
+- **Vedlikehold**: Nye achievements kan legges til ved å bare legge til en ny linje i ACHIEVEMENT_CONDITIONS
+- **DRY**: Eliminert gjentatt kode for zone-mastery og gold-milestones
+- **Testbarhet**: Hjelpefunksjonene kan testes isolert
+
+### Før/Etter
+**Før (60 linjer):**
+```javascript
+const surfaceNames = CREATURES.surface.map(c => c.name);
+if (surfaceNames.every(n => discovered.includes(n))) {
+    unlockAchievement('surfaceMaster');
+}
+// Gjentatt for mid, deep, abyss...
+```
+
+**Etter (8 linjer):**
+```javascript
+for (const [key, condition] of Object.entries(ACHIEVEMENT_CONDITIONS)) {
+    if (condition()) {
+        unlockAchievement(key);
+    }
+}
+```
+
+### Notater
+- Samme oppførsel som før, ingen gameplay-endringer
+- Følger agents.md prinsippet: "Hold funksjoner små og fokuserte"
+- Inspirert av lignende refaktorering av getCreature() i går
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown

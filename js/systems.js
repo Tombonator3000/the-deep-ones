@@ -1374,65 +1374,77 @@ function unlockAchievement(achievementKey) {
     autoSave();
 }
 
+// ---- Achievement Condition Helpers ----
+
+/**
+ * Checks if all creatures in a zone have been discovered
+ */
+function hasDiscoveredAllInZone(zone) {
+    const discovered = game.journal.discovered;
+    return CREATURES[zone].every(c => discovered.includes(c.name));
+}
+
+/**
+ * Checks if player has earned at least the specified amount of gold
+ */
+function hasEarnedGold(amount) {
+    return game.achievements.stats.totalGoldEarned >= amount;
+}
+
+/**
+ * Checks if player has found at least the specified number of lore fragments
+ */
+function hasFoundLore(count) {
+    return game.loreFound.length >= count;
+}
+
+// ---- Achievement Conditions Map ----
+// Each key matches ACHIEVEMENTS, value is a condition function
+
+const ACHIEVEMENT_CONDITIONS = {
+    // Fishing - zone mastery
+    firstCatch:     () => game.caughtCreatures.length >= 1,
+    surfaceMaster:  () => hasDiscoveredAllInZone('surface'),
+    midExplorer:    () => hasDiscoveredAllInZone('mid'),
+    deepDiver:      () => hasDiscoveredAllInZone('deep'),
+    abyssWalker:    () => hasDiscoveredAllInZone('abyss'),
+
+    // Wealth milestones
+    firstHundred:       () => hasEarnedGold(100),
+    thousandaire:       () => hasEarnedGold(1000),
+    richBeyondReason:   () => hasEarnedGold(5000),
+
+    // Exploration
+    reachVoid:      () => game.storyFlags.reachedVoid,
+    allLocations:   () => game.storyFlags.visitedLocations.length >= Object.keys(CONFIG.locations).length,
+
+    // Lore collection
+    firstLore:  () => hasFoundLore(1),
+    halfLore:   () => hasFoundLore(Math.floor(LORE_FRAGMENTS.length / 2)),
+    allLore:    () => hasFoundLore(LORE_FRAGMENTS.length),
+
+    // Sanity & transformation
+    brinkOfMadness: () => game.sanity < 10,
+    transformation: () => game.storyFlags.transformationStarted,
+
+    // Special activities
+    goodBoy:        () => game.achievements.stats.petCount >= 50,
+    stormChaser:    () => game.achievements.stats.stormCatches >= 1,
+    nightFisher:    () => game.achievements.stats.nightCatches >= 10
+};
+
+/**
+ * Checks all achievement conditions and unlocks any that are met.
+ * Uses a data-driven approach for maintainability.
+ */
 function checkAchievements() {
     if (game.state === 'title' || game.state === 'ending') return;
 
-    const stats = game.achievements.stats;
-    const discovered = game.journal.discovered;
-
-    // First catch
-    if (game.caughtCreatures.length >= 1) {
-        unlockAchievement('firstCatch');
+    for (const [key, condition] of Object.entries(ACHIEVEMENT_CONDITIONS)) {
+        if (condition()) {
+            unlockAchievement(key);
+        }
     }
-
-    // Surface creatures
-    const surfaceNames = CREATURES.surface.map(c => c.name);
-    if (surfaceNames.every(n => discovered.includes(n))) {
-        unlockAchievement('surfaceMaster');
-    }
-
-    // Mid creatures
-    const midNames = CREATURES.mid.map(c => c.name);
-    if (midNames.every(n => discovered.includes(n))) {
-        unlockAchievement('midExplorer');
-    }
-
-    // Deep creatures
-    const deepNames = CREATURES.deep.map(c => c.name);
-    if (deepNames.every(n => discovered.includes(n))) {
-        unlockAchievement('deepDiver');
-    }
-
-    // Abyss creatures
-    const abyssNames = CREATURES.abyss.map(c => c.name);
-    if (abyssNames.every(n => discovered.includes(n))) {
-        unlockAchievement('abyssWalker');
-    }
-
-    // Wealth
-    if (stats.totalGoldEarned >= 100) unlockAchievement('firstHundred');
-    if (stats.totalGoldEarned >= 1000) unlockAchievement('thousandaire');
-    if (stats.totalGoldEarned >= 5000) unlockAchievement('richBeyondReason');
-
-    // Exploration
-    if (game.storyFlags.reachedVoid) unlockAchievement('reachVoid');
-    if (game.storyFlags.visitedLocations.length >= Object.keys(CONFIG.locations).length) {
-        unlockAchievement('allLocations');
-    }
-
-    // Lore
-    if (game.loreFound.length >= 1) unlockAchievement('firstLore');
-    if (game.loreFound.length >= Math.floor(LORE_FRAGMENTS.length / 2)) unlockAchievement('halfLore');
-    if (game.loreFound.length >= LORE_FRAGMENTS.length) unlockAchievement('allLore');
-
-    // Sanity
-    if (game.sanity < 10) unlockAchievement('brinkOfMadness');
-    if (game.storyFlags.transformationStarted) unlockAchievement('transformation');
-
-    // Special
-    if (stats.petCount >= 50) unlockAchievement('goodBoy');
-    if (stats.stormCatches >= 1) unlockAchievement('stormChaser');
-    if (stats.nightCatches >= 10) unlockAchievement('nightFisher');
 }
 
 function updateAchievementNotification() {
