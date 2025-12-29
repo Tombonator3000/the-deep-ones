@@ -101,6 +101,15 @@ function drawBoat() {
     const y = CONFIG.waterLine - 15 + bob;
     const tilt = Math.sin(game.time * 0.03) * 0.03;
 
+    // Debug: Log boat position every 2 seconds
+    if (Math.floor(game.time / 2000) !== game._lastBoatDebug) {
+        game._lastBoatDebug = Math.floor(game.time / 2000);
+        console.log('[BOAT] Drawing at screen pos:', Math.round(x), Math.round(y),
+            '| boatX:', Math.round(game.boatX),
+            '| cameraX:', Math.round(game.cameraX),
+            '| waterLine:', CONFIG.waterLine);
+    }
+
     const boatImg = loadedAssets.images['sprite-boat'];
 
     ctx.save();
@@ -119,8 +128,11 @@ function drawBoat() {
 // --- Boat Component Drawing Helpers ---
 
 function drawBoatHull(x, y) {
-    // Main hull shape
-    ctx.fillStyle = '#4a3525';
+    // Ensure globalAlpha is 1 for boat rendering
+    ctx.globalAlpha = 1;
+
+    // Main hull shape - using brighter brown for visibility
+    ctx.fillStyle = '#6a5030';
     ctx.beginPath();
     ctx.moveTo(x - 45, y);
     ctx.quadraticCurveTo(x - 50, y + 15, x - 35, y + 20);
@@ -129,12 +141,17 @@ function drawBoatHull(x, y) {
     ctx.closePath();
     ctx.fill();
 
+    // Hull outline for better visibility
+    ctx.strokeStyle = '#2a1a10';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
     // Hull plank detail
-    ctx.fillStyle = '#5a4535';
+    ctx.fillStyle = '#7a5540';
     ctx.fillRect(x - 35, y + 5, 70, 4);
 
     // Hull interior shadow
-    ctx.fillStyle = '#3a2a20';
+    ctx.fillStyle = '#4a3525';
     ctx.beginPath();
     ctx.ellipse(x, y + 8, 32, 8, 0, 0, Math.PI);
     ctx.fill();

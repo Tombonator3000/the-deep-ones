@@ -2812,3 +2812,68 @@ Skalert den forbedrede vannrefleksjons-renderingen:
 ---
 
 *Logg oppdateres ved hver utviklingssesjon*
+
+---
+
+## 2025-12-29 — Debug: Lighthouse Position & Boat Visibility
+
+### Bruker-rapport
+1. Lighthouse ikke synlig i spillet
+2. Spiller og båt grafikk mangler
+
+### Funn
+
+#### 1. Lighthouse-posisjon (IKKE en bug)
+Fyrtårnet er plassert på `worldX: 75` i assets.js, som er nær venstre kant av spillverdenen (nær Sandbank på x=200). 
+
+**Årsak til at det ikke vises:**
+- Fyrtårnet har `scrollSpeed: 0.4`, som betyr det scroller saktere enn kameraet
+- Når spilleren er ved "The Void" (x=5600) eller dokken (x=1500), er fyrtårnet ~5000 piksler til venstre (utenfor skjermen)
+- Fyrtårnet er BARE synlig når spilleren er nær verdensstart (x ≈ 0-400)
+
+**Sprite-størrelse:**
+- lighthouse.png er 1080x602 piksler - ALT for stort for 480x270 spillcanvas
+- Med `spriteBottomY: 85` ville spriten tegnes ved y = 85 - 602 = -517 (over skjermen!)
+- Siden `CONFIG.useSprites = false`, brukes prosedyrell fallback uansett
+
+#### 2. Båt-synlighet
+Undersøkte rendering-koden i js/rendering.js:
+- `drawBoat()` kalles korrekt i render-loopen (linje 370 i main.js)
+- `drawBoatProcedural()` tegner hull, fisher, dog og lantern
+- Ingen synlige feil i koden
+
+**Endringer for bedre synlighet:**
+- Lysere båthull-farge: `#6a5030` (fra `#4a3525`)
+- La til mørk omriss rundt hullet for kontrast
+- Lysere plank-detaljer: `#7a5540` (fra `#5a4535`)
+- Eksplisitt `ctx.globalAlpha = 1` før båt-tegning
+- Debug-logging hver 2. sekund for å vise båt-posisjon
+
+### Endringer
+- `js/assets.js` — Kommentarer om lighthouse-posisjon og sprite-størrelse
+- `js/rendering.js` — 
+  - Debug-logging i `drawBoat()` for posisjonssporing
+  - Brighter farger og omriss i `drawBoatHull()` for bedre synlighet
+  - `ctx.globalAlpha = 1` for å sikre full opasitet
+
+### Løsninger for brukeren
+
+**For å se fyrtårnet:**
+1. Seil til VENSTRE kant av verdenen (mot Sandbank, x < 400)
+2. Fyrtårnet vil da være synlig på horisonten
+
+**For å bruke lighthouse sprite:**
+1. Skaler ned lighthouse.png til ~60-80 piksler bred (bevare aspect ratio)
+2. Eller: Endre `worldX` i assets.js til en posisjon nærmere dokken
+
+### Testing
+1. Start spillet: `python3 -m http.server 8080`
+2. Åpne http://localhost:8080
+3. Sjekk browser console (F12) for `[BOAT]` debug-meldinger
+4. Båten skal vises med lysere brun farge og tydelig omriss
+5. Seil til venstre for å se fyrtårnet (nær Sandbank)
+
+### Notater
+- Lighthouse-sprite må skaleres ned for å passe 480x270 oppløsning
+- Vurder å flytte fyrtårnet til en mer sentral posisjon for bedre synlighet
+
