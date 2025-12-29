@@ -2,6 +2,115 @@
 
 ---
 
+## 2025-12-29 — Cast n Chill-Inspired Water Reflection System
+
+### Bakgrunn
+Undersøkte hvordan "Cast n Chill" og andre 2D pixel art-spill lager vannrefleksjoner. Nøkkelteknikken er:
+- Ikke lage ny grafikk, men speile eksisterende grafikk
+- Flippe vertikalt og tegne under vannlinjen
+- Legge til bølge-distorsjon med sin() for bevegelse
+- Redusert opacity og blålig toning for realisme
+
+### Kilder brukt
+- [2D Sprite Reflections (GLSL)](http://www.afqa123.com/2018/10/08/2d-sprite-reflections/)
+- [Water Shader for Pixel Art](https://injuly.in/blog/water-shader/index.html)
+- [Godot 2D Reflective Water](https://godotshaders.com/shader/2d-reflective-water/)
+- [Cyanilux 2D Water Shader](https://www.cyanilux.com/tutorials/2d-water-shader-breakdown/)
+
+### Implementert
+
+#### 1. Offscreen Canvas Reflection System
+Opprettet en dedikert offscreen canvas for å rendre alt over vannlinjen, som deretter speiles med bølge-distorsjon.
+
+**Nye komponenter:**
+- `reflectionCanvas` - Offscreen canvas for å lagre alt over vann
+- `reflectionCtx` - Context for offscreen canvas
+- `REFLECTION_CONFIG` - Konfigurasjonsobjekt med alle parametre
+
+**Konfigurerbare parametre:**
+```javascript
+REFLECTION_CONFIG = {
+    enabled: true,
+    opacity: 0.35,              // Base opacity
+    fadeHeight: 120,            // Fade distance
+    waveSpeed: 0.003,           // Animation speed
+    waveFrequency: 0.04,        // Sin wave frequency
+    waveAmplitude: 4,           // Max pixel displacement
+    verticalCompression: 0.85,  // Slight vertical squish
+    tintColor: { r: 40, g: 80, b: 100 },  // Blue-green tint
+    tintStrength: 0.15          // Tint intensity
+}
+```
+
+#### 2. Nye funksjoner i `js/systems.js`
+
+**`initReflectionCanvas()`**
+- Oppretter offscreen canvas ved behov
+- Matcher canvas-størrelse for fullskjerm-støtte
+
+**`renderAboveWaterToReflection()`**
+- Tegner alle elementer over vannlinjen til offscreen canvas:
+  - Himmelgradient
+  - Sol/måne med glow
+  - Skyer
+  - Fjell (tre lag med parallax)
+  - Trær
+  - Fyrtårn med blinkende lys
+  - Båt med fisker, hund, fiskestang og lanterne
+
+**`drawCloudToContext(targetCtx, x, y, w, h)`**
+- Hjelpefunksjon for å tegne skyer til vilkårlig canvas context
+
+**`drawEnhancedWaterReflection()`**
+- Tegner refleksjonen med horisontale strips for bølge-distorsjon
+- Bruker to overlappende sin-bølger for organisk bevegelse
+- Gradvis fade mot dypet
+- Legger til blå-grønn toning
+- Tegner krusninger rundt båten
+
+**`drawWaterShimmer(panOffset)`**
+- Tegner sol/måne-refleksjonslys på vannet
+- Legger til tilfeldige glitrende sparkles
+
+#### 3. Teknikk: Strip-basert bølge-distorsjon
+I stedet for å bruke shaders (som krever WebGL), bruker vi en CPU-basert teknikk:
+1. Del refleksjonen inn i horisontale strips (2px høye)
+2. For hver strip, kalkuler horisontal offset med `sin(y * freq + time)`
+3. Tegn stripen med offset for å skape bølgeeffekt
+4. Reduser opacity gradvis nedover for fade-effekt
+
+```javascript
+const waveOffset = Math.sin(
+    (stripY * waveFrequency) +
+    (game.time * waveSpeed)
+) * waveAmplitude;
+```
+
+### Endringer
+- `js/systems.js` — Fullstendig omskrevet vannrefleksjonssystem (~300 nye linjer)
+
+### Testing
+1. Start spillet med `python3 -m http.server 8080`
+2. Åpne http://localhost:8080
+3. Velg en tid og observer vannrefleksjonen:
+   - Fjell, trær og himmel skal speiles i vannet
+   - Refleksjonen skal bølge sakte
+   - Båten og alt på den skal reflekteres
+   - Sol/måne-lys skal lage en lyssti på vannet
+   - Små glitringer skal dukke opp tilfeldig
+
+### Neste steg
+- Vurder å legge til vær-påvirkning på bølgestyrke
+- Ekstra refleksjon av location features (skipsvrak, korallrev, etc.)
+- Performance-optimalisering ved behov
+
+### Notater
+- Cast n Chill bruker sannsynligvis en GPU shader for dette, men vår CPU-baserte tilnærming gir lignende visuell effekt
+- Offscreen canvas-teknikken unngår å tegne alt to ganger til hovedcanvas
+- Strip-høyde på 2px gir god balanse mellom ytelse og visuell kvalitet
+
+---
+
 ## 2025-12-28 — 16-bit Pixel Art Sprites
 
 ### Features Added

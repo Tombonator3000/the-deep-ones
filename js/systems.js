@@ -2024,65 +2024,386 @@ function drawIdleFishingIndicator() {
 
 // ============================================================
 // ENHANCED WATER REFLECTIONS (Cast n Chill inspired)
+// Uses offscreen canvas to capture and mirror everything above water
 // ============================================================
 
+// Offscreen canvas for reflection rendering
+let reflectionCanvas = null;
+let reflectionCtx = null;
+
+// Reflection configuration
+const REFLECTION_CONFIG = {
+    enabled: true,
+    opacity: 0.35,              // Base opacity of reflection
+    fadeHeight: 120,            // How far down the reflection fades
+    waveSpeed: 0.003,           // Speed of wave animation
+    waveFrequency: 0.04,        // Frequency of sine wave distortion
+    waveAmplitude: 4,           // Maximum pixel displacement
+    verticalCompression: 0.85,  // Slight vertical squish for realism
+    tintColor: { r: 40, g: 80, b: 100 },  // Blue-green water tint
+    tintStrength: 0.15          // How much tint to apply
+};
+
+// Initialize reflection canvas
+function initReflectionCanvas() {
+    if (!reflectionCanvas) {
+        reflectionCanvas = document.createElement('canvas');
+        reflectionCtx = reflectionCanvas.getContext('2d');
+    }
+    reflectionCanvas.width = CONFIG.canvas.width;
+    reflectionCanvas.height = CONFIG.waterLine;
+}
+
+// Render all above-water elements to the reflection canvas
+function renderAboveWaterToReflection() {
+    if (!reflectionCanvas || reflectionCanvas.width !== CONFIG.canvas.width) {
+        initReflectionCanvas();
+    }
+
+    // Clear the reflection canvas
+    reflectionCtx.clearRect(0, 0, reflectionCanvas.width, reflectionCanvas.height);
+
+    // Draw sky gradient
+    const palette = getTimePalette();
+    if (palette && palette.sky && Array.isArray(palette.sky)) {
+        const gradient = reflectionCtx.createLinearGradient(0, 0, 0, CONFIG.waterLine);
+        palette.sky.forEach((color, i) => {
+            gradient.addColorStop(palette.skyStops[i], color);
+        });
+        reflectionCtx.fillStyle = gradient;
+        reflectionCtx.fillRect(0, 0, reflectionCanvas.width, CONFIG.waterLine);
+    }
+
+    // Draw celestial bodies (sun/moon)
+    if (game.timeOfDay === 'day' || game.timeOfDay === 'dawn' || game.timeOfDay === 'dusk') {
+        const sunPos = getSunPosition();
+        if (sunPos) {
+            const sunColors = getSunColor(sunPos.heightRatio);
+            const x = sunPos.x - game.cameraX * 0.1;
+
+            // Sun glow
+            const glowGrad = reflectionCtx.createRadialGradient(x, sunPos.y, 0, x, sunPos.y, sunColors.size * 2);
+            glowGrad.addColorStop(0, sunColors.core);
+            glowGrad.addColorStop(0.5, 'rgba(255, 220, 150, 0.3)');
+            glowGrad.addColorStop(1, 'transparent');
+            reflectionCtx.fillStyle = glowGrad;
+            reflectionCtx.beginPath();
+            reflectionCtx.arc(x, sunPos.y, sunColors.size * 2, 0, Math.PI * 2);
+            reflectionCtx.fill();
+
+            // Sun core
+            reflectionCtx.fillStyle = sunColors.core;
+            reflectionCtx.beginPath();
+            reflectionCtx.arc(x, sunPos.y, sunColors.size, 0, Math.PI * 2);
+            reflectionCtx.fill();
+        }
+    }
+
+    if (game.timeOfDay === 'night' || game.timeOfDay === 'dusk') {
+        const moonPos = getMoonPosition();
+        if (moonPos) {
+            const moonColors = getMoonColor(moonPos.heightRatio);
+            const x = moonPos.x - game.cameraX * 0.05;
+
+            // Moon glow
+            const glowGrad = reflectionCtx.createRadialGradient(x, moonPos.y, 0, x, moonPos.y, moonColors.size * 1.5);
+            glowGrad.addColorStop(0, '#f0f4f8');
+            glowGrad.addColorStop(0.7, 'rgba(200, 210, 230, 0.2)');
+            glowGrad.addColorStop(1, 'transparent');
+            reflectionCtx.fillStyle = glowGrad;
+            reflectionCtx.beginPath();
+            reflectionCtx.arc(x, moonPos.y, moonColors.size * 1.5, 0, Math.PI * 2);
+            reflectionCtx.fill();
+
+            // Moon
+            reflectionCtx.fillStyle = '#e0e8f0';
+            reflectionCtx.beginPath();
+            reflectionCtx.arc(x, moonPos.y, moonColors.size, 0, Math.PI * 2);
+            reflectionCtx.fill();
+        }
+    }
+
+    // Draw clouds
+    if (palette && palette.clouds) {
+        reflectionCtx.fillStyle = palette.clouds;
+        for (let i = 0; i < 5; i++) {
+            const cloudX = ((i * 280 - game.cameraX * 0.15) % (reflectionCanvas.width + 200)) - 100;
+            const cloudY = 50 + Math.sin(i) * 20;
+            drawCloudToContext(reflectionCtx, cloudX, cloudY, 90, 28);
+        }
+    }
+
+    // Draw mountains (far)
+    if (palette && palette.mountains && palette.mountains[0]) {
+        const offset = game.cameraX * 0.1;
+        reflectionCtx.fillStyle = palette.mountains[0];
+        reflectionCtx.beginPath();
+        reflectionCtx.moveTo(-offset % 400 - 400, CONFIG.waterLine);
+        for (let x = -400; x < reflectionCanvas.width + 400; x += 200) {
+            const px = x - (offset % 400);
+            const py = 140 + Math.sin(x * 0.005) * 30;
+            reflectionCtx.lineTo(px, py);
+        }
+        reflectionCtx.lineTo(reflectionCanvas.width + 100, CONFIG.waterLine);
+        reflectionCtx.closePath();
+        reflectionCtx.fill();
+    }
+
+    // Draw mountains (mid)
+    if (palette && palette.mountains && palette.mountains[1]) {
+        const offset = game.cameraX * 0.2;
+        reflectionCtx.fillStyle = palette.mountains[1];
+        reflectionCtx.beginPath();
+        reflectionCtx.moveTo(-offset % 300 - 300, CONFIG.waterLine);
+        for (let x = -300; x < reflectionCanvas.width + 300; x += 150) {
+            const px = x - (offset % 300);
+            const py = 170 + Math.sin(x * 0.008 + 1) * 25;
+            reflectionCtx.lineTo(px, py);
+        }
+        reflectionCtx.lineTo(reflectionCanvas.width + 100, CONFIG.waterLine);
+        reflectionCtx.closePath();
+        reflectionCtx.fill();
+    }
+
+    // Draw mountains (near)
+    if (palette && palette.mountains && (palette.mountains[2] || palette.mountains[1])) {
+        const offset = game.cameraX * 0.3;
+        reflectionCtx.fillStyle = palette.mountains[2] || palette.mountains[1];
+        reflectionCtx.beginPath();
+        reflectionCtx.moveTo(-offset % 250 - 250, CONFIG.waterLine);
+        for (let x = -250; x < reflectionCanvas.width + 250; x += 100) {
+            const px = x - (offset % 250);
+            const py = 195 + Math.sin(x * 0.01 + 2) * 20;
+            reflectionCtx.lineTo(px, py);
+        }
+        reflectionCtx.lineTo(reflectionCanvas.width + 100, CONFIG.waterLine);
+        reflectionCtx.closePath();
+        reflectionCtx.fill();
+    }
+
+    // Draw trees (simplified for reflection)
+    if (palette && palette.trees) {
+        // Far trees
+        reflectionCtx.fillStyle = palette.trees[0] || '#2a4a30';
+        for (let i = 0; i < 15; i++) {
+            const x = ((i * 80 - game.cameraX * 0.35) % (reflectionCanvas.width + 200)) - 100;
+            const height = 40 + (i % 3) * 10;
+            reflectionCtx.beginPath();
+            reflectionCtx.moveTo(x, CONFIG.waterLine - height * 0.5);
+            reflectionCtx.lineTo(x - 15, CONFIG.waterLine);
+            reflectionCtx.lineTo(x + 15, CONFIG.waterLine);
+            reflectionCtx.closePath();
+            reflectionCtx.fill();
+        }
+
+        // Near trees
+        reflectionCtx.fillStyle = palette.trees[1] || '#3a5a40';
+        for (let i = 0; i < 10; i++) {
+            const x = ((i * 120 - game.cameraX * 0.45) % (reflectionCanvas.width + 200)) - 100;
+            const height = 55 + (i % 4) * 8;
+            reflectionCtx.beginPath();
+            reflectionCtx.moveTo(x, CONFIG.waterLine - height * 0.5);
+            reflectionCtx.lineTo(x - 20, CONFIG.waterLine);
+            reflectionCtx.lineTo(x + 20, CONFIG.waterLine);
+            reflectionCtx.closePath();
+            reflectionCtx.fill();
+        }
+    }
+
+    // Draw lighthouse reflection
+    const lighthouseX = 150 - game.cameraX * 0.4;
+    if (lighthouseX > -50 && lighthouseX < reflectionCanvas.width + 50) {
+        const lhY = 220;
+
+        // Lighthouse base/cliff
+        if (palette && palette.mountains && palette.mountains[1]) {
+            reflectionCtx.fillStyle = palette.mountains[1];
+            reflectionCtx.beginPath();
+            reflectionCtx.ellipse(lighthouseX, lhY + 20, 40, 12, 0, 0, Math.PI * 2);
+            reflectionCtx.fill();
+        }
+
+        // Lighthouse tower
+        reflectionCtx.fillStyle = '#e0d8d0';
+        reflectionCtx.beginPath();
+        reflectionCtx.moveTo(lighthouseX - 10, lhY + 15);
+        reflectionCtx.lineTo(lighthouseX - 7, lhY - 45);
+        reflectionCtx.lineTo(lighthouseX + 7, lhY - 45);
+        reflectionCtx.lineTo(lighthouseX + 10, lhY + 15);
+        reflectionCtx.closePath();
+        reflectionCtx.fill();
+
+        // Red stripe
+        reflectionCtx.fillStyle = '#a04040';
+        reflectionCtx.fillRect(lighthouseX - 8, lhY - 20, 16, 15);
+
+        // Light glow
+        const intensity = (Math.sin(game.time * 0.05) + 1) / 2;
+        reflectionCtx.fillStyle = `rgba(255, 250, 200, ${0.4 + intensity * 0.4})`;
+        reflectionCtx.beginPath();
+        reflectionCtx.arc(lighthouseX, lhY - 48, 5 + intensity * 3, 0, Math.PI * 2);
+        reflectionCtx.fill();
+    }
+
+    // Draw boat to reflection
+    const boatX = game.boatX - game.cameraX;
+    if (boatX > -60 && boatX < reflectionCanvas.width + 60) {
+        const bob = Math.sin(game.time * 0.04) * 4;
+        const boatY = CONFIG.waterLine - 15 + bob;
+        const tilt = Math.sin(game.time * 0.03) * 0.03;
+
+        reflectionCtx.save();
+        reflectionCtx.translate(boatX, boatY);
+        reflectionCtx.rotate(tilt);
+
+        // Hull
+        reflectionCtx.fillStyle = '#4a3525';
+        reflectionCtx.beginPath();
+        reflectionCtx.moveTo(-45, 0);
+        reflectionCtx.quadraticCurveTo(-50, 15, -35, 20);
+        reflectionCtx.lineTo(35, 20);
+        reflectionCtx.quadraticCurveTo(50, 15, 45, 0);
+        reflectionCtx.closePath();
+        reflectionCtx.fill();
+
+        // Fisher silhouette
+        reflectionCtx.fillStyle = '#1a1815';
+        reflectionCtx.fillRect(-8, -25, 16, 25);
+
+        // Fisher head
+        reflectionCtx.fillStyle = '#d4a574';
+        reflectionCtx.beginPath();
+        reflectionCtx.arc(0, -32, 8, 0, Math.PI * 2);
+        reflectionCtx.fill();
+
+        // Hat
+        reflectionCtx.fillStyle = '#3a3530';
+        reflectionCtx.fillRect(-10, -42, 20, 5);
+        reflectionCtx.fillRect(-6, -48, 12, 8);
+
+        // Dog
+        reflectionCtx.fillStyle = '#c0a080';
+        reflectionCtx.beginPath();
+        reflectionCtx.ellipse(25, -5, 10, 7, 0, 0, Math.PI * 2);
+        reflectionCtx.fill();
+        reflectionCtx.beginPath();
+        reflectionCtx.arc(32, -10, 6, 0, Math.PI * 2);
+        reflectionCtx.fill();
+
+        // Fishing rod (if not sailing)
+        if (game.state !== 'sailing') {
+            reflectionCtx.strokeStyle = '#5a4a30';
+            reflectionCtx.lineWidth = 3;
+            reflectionCtx.beginPath();
+            reflectionCtx.moveTo(5, -20);
+            reflectionCtx.lineTo(55, -55);
+            reflectionCtx.stroke();
+        }
+
+        // Lantern glow
+        const lanternGlow = (Math.sin(game.time * 0.08) + 1) / 2;
+        reflectionCtx.fillStyle = `rgba(255, 200, 100, ${0.4 + lanternGlow * 0.3})`;
+        reflectionCtx.beginPath();
+        reflectionCtx.arc(-30, -5, 10, 0, Math.PI * 2);
+        reflectionCtx.fill();
+
+        reflectionCtx.restore();
+    }
+}
+
+// Helper function to draw clouds
+function drawCloudToContext(targetCtx, x, y, w, h) {
+    targetCtx.beginPath();
+    targetCtx.ellipse(x, y, w * 0.5, h * 0.5, 0, 0, Math.PI * 2);
+    targetCtx.fill();
+    targetCtx.beginPath();
+    targetCtx.ellipse(x - w * 0.3, y + h * 0.1, w * 0.3, h * 0.4, 0, 0, Math.PI * 2);
+    targetCtx.fill();
+    targetCtx.beginPath();
+    targetCtx.ellipse(x + w * 0.3, y + h * 0.15, w * 0.35, h * 0.35, 0, 0, Math.PI * 2);
+    targetCtx.fill();
+}
+
+// Draw the water reflection with wave distortion
 function drawEnhancedWaterReflection() {
     if (typeof GameSettings !== 'undefined' && !GameSettings.graphics.weatherEffects) return;
+    if (!REFLECTION_CONFIG.enabled) return;
 
-    const boatX = game.boatX - game.cameraX;
-    const reflectionY = CONFIG.waterLine + 20;
     const panOffset = getCameraPanOffset();
 
-    // Sky/cloud reflection on water
-    const palette = getTimePalette();
-
-    // Safety check for palette and palette.sky
-    if (!palette || !palette.sky || !Array.isArray(palette.sky) || palette.sky.length === 0) {
-        return; // Skip drawing if palette is not available
+    // Ensure reflection canvas is initialized
+    if (!reflectionCanvas || reflectionCanvas.width !== CONFIG.canvas.width) {
+        initReflectionCanvas();
     }
 
-    // Create shimmering sky reflection
-    // Use middle sky color from palette (it's an array of hex colors, not RGB components)
-    const skyColor = palette.sky[Math.floor(palette.sky.length / 2)] || '#6090c0';
+    // Render all above-water content to the reflection canvas
+    renderAboveWaterToReflection();
 
-    for (let i = 0; i < 8; i++) {
-        const shimmerX = (i * 150 + game.time * 0.02) % (CONFIG.canvas.width + 200) - 100;
-        const shimmerY = reflectionY + 5 + Math.sin(game.time * 0.002 + i) * 3;
-        const shimmerWidth = 80 + Math.sin(game.time * 0.003 + i * 2) * 20;
-        const shimmerAlpha = 0.03 + Math.sin(game.time * 0.004 + i * 0.7) * 0.02;
+    // Now draw the reflection with wave distortion
+    const reflectionStartY = CONFIG.waterLine + 5;
+    const reflectionHeight = Math.min(REFLECTION_CONFIG.fadeHeight, CONFIG.canvas.height - CONFIG.waterLine - 20);
 
-        const gradient = ctx.createLinearGradient(shimmerX, shimmerY, shimmerX + shimmerWidth, shimmerY + 30);
-        gradient.addColorStop(0, 'transparent');
-        gradient.addColorStop(0.5, hexToRgba(skyColor, shimmerAlpha));
-        gradient.addColorStop(1, 'transparent');
-
-        ctx.fillStyle = gradient;
-        ctx.fillRect(shimmerX, shimmerY - panOffset, shimmerWidth, 30);
-    }
-
-    // Boat reflection with wave distortion
     ctx.save();
-    ctx.globalAlpha = 0.2;
 
-    // Apply wave distortion to reflection
-    const waveOffset = Math.sin(game.time * 0.003) * 3;
+    // Draw the reflection in horizontal strips for wave distortion effect
+    const stripHeight = 2;  // Height of each strip
+    const numStrips = Math.ceil(reflectionHeight / stripHeight);
 
-    ctx.translate(0, (reflectionY * 2) - panOffset);
-    ctx.scale(1, -0.8);  // Slightly compressed reflection
+    for (let i = 0; i < numStrips; i++) {
+        const stripY = reflectionStartY + i * stripHeight - panOffset;
+        const sourceY = CONFIG.waterLine - (i * stripHeight * REFLECTION_CONFIG.verticalCompression);
 
-    // Draw simplified boat shape
-    ctx.fillStyle = '#2a2520';
-    ctx.beginPath();
-    ctx.moveTo(boatX - 35 + waveOffset, CONFIG.waterLine - 5);
-    ctx.lineTo(boatX - 30 + waveOffset, CONFIG.waterLine - 25);
-    ctx.lineTo(boatX + 30 + waveOffset, CONFIG.waterLine - 25);
-    ctx.lineTo(boatX + 35 + waveOffset, CONFIG.waterLine - 5);
-    ctx.closePath();
-    ctx.fill();
+        // Skip if source is above the reflection canvas
+        if (sourceY < 0) continue;
+
+        // Wave distortion - horizontal offset based on y position and time
+        const waveOffset = Math.sin(
+            (stripY * REFLECTION_CONFIG.waveFrequency) +
+            (game.time * REFLECTION_CONFIG.waveSpeed)
+        ) * REFLECTION_CONFIG.waveAmplitude;
+
+        // Second wave for more organic movement
+        const waveOffset2 = Math.sin(
+            (stripY * REFLECTION_CONFIG.waveFrequency * 1.7) +
+            (game.time * REFLECTION_CONFIG.waveSpeed * 0.7) + 2
+        ) * (REFLECTION_CONFIG.waveAmplitude * 0.5);
+
+        const totalWaveOffset = waveOffset + waveOffset2;
+
+        // Calculate opacity (fades with depth)
+        const fadeProgress = i / numStrips;
+        const opacity = REFLECTION_CONFIG.opacity * (1 - fadeProgress * 0.8);
+
+        ctx.globalAlpha = opacity;
+
+        // Draw the strip (flipped from source)
+        try {
+            ctx.drawImage(
+                reflectionCanvas,
+                0, sourceY,                               // Source x, y
+                reflectionCanvas.width, stripHeight,      // Source width, height
+                totalWaveOffset, stripY,                  // Dest x, y
+                reflectionCanvas.width, stripHeight       // Dest width, height
+            );
+        } catch (e) {
+            // Skip invalid draws
+        }
+    }
+
+    // Apply water tint overlay
+    const tint = REFLECTION_CONFIG.tintColor;
+    const tintGradient = ctx.createLinearGradient(0, reflectionStartY - panOffset, 0, reflectionStartY + reflectionHeight - panOffset);
+    tintGradient.addColorStop(0, `rgba(${tint.r}, ${tint.g}, ${tint.b}, ${REFLECTION_CONFIG.tintStrength})`);
+    tintGradient.addColorStop(1, `rgba(${tint.r}, ${tint.g}, ${tint.b}, ${REFLECTION_CONFIG.tintStrength * 0.3})`);
+
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = tintGradient;
+    ctx.fillRect(0, reflectionStartY - panOffset, CONFIG.canvas.width, reflectionHeight);
 
     ctx.restore();
 
-    // Ripple rings around boat
+    // Draw ripple rings around boat
+    const boatX = game.boatX - game.cameraX;
     for (let i = 0; i < 3; i++) {
         const ripplePhase = ((game.time * 0.002 + i * 0.3) % 1);
         const rippleSize = 20 + ripplePhase * 40;
@@ -2091,28 +2412,66 @@ function drawEnhancedWaterReflection() {
         ctx.strokeStyle = `rgba(180, 200, 220, ${rippleAlpha})`;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.ellipse(boatX, reflectionY + 10 - panOffset, rippleSize, rippleSize * 0.3, 0, 0, Math.PI * 2);
+        ctx.ellipse(boatX, CONFIG.waterLine + 15 - panOffset, rippleSize, rippleSize * 0.3, 0, 0, Math.PI * 2);
         ctx.stroke();
     }
 
-    // Sun/moon reflection path
-    if (game.timeOfDay === 'day' || game.timeOfDay === 'dusk' || game.timeOfDay === 'dawn') {
-        const sunReflectX = CONFIG.canvas.width * 0.7;
-        const sunReflectAlpha = game.timeOfDay === 'dusk' ? 0.15 : 0.08;
+    // Add shimmering highlights on water
+    drawWaterShimmer(panOffset);
+}
 
-        // Shimmering light path on water
-        for (let i = 0; i < 5; i++) {
-            const pathX = sunReflectX + (Math.random() - 0.5) * 50;
-            const pathY = reflectionY + 20 + i * 15;
-            const pathWidth = 30 + Math.sin(game.time * 0.01 + i) * 15;
+// Draw shimmering highlights on water surface
+function drawWaterShimmer(panOffset) {
+    const palette = getTimePalette();
+    if (!palette) return;
 
-            const sunColor = game.timeOfDay === 'dusk'
-                ? `rgba(255, 150, 80, ${sunReflectAlpha})`
-                : `rgba(255, 255, 200, ${sunReflectAlpha})`;
+    // Sun/moon reflection shimmer
+    let shimmerColor, shimmerX;
 
-            ctx.fillStyle = sunColor;
+    if (game.timeOfDay === 'day' || game.timeOfDay === 'dawn' || game.timeOfDay === 'dusk') {
+        const sunPos = getSunPosition();
+        if (sunPos) {
+            shimmerX = sunPos.x - game.cameraX * 0.1;
+            shimmerColor = game.timeOfDay === 'dusk'
+                ? 'rgba(255, 150, 80, '
+                : 'rgba(255, 255, 200, ';
+        }
+    } else if (game.timeOfDay === 'night') {
+        const moonPos = getMoonPosition();
+        if (moonPos) {
+            shimmerX = moonPos.x - game.cameraX * 0.05;
+            shimmerColor = 'rgba(200, 210, 230, ';
+        }
+    }
+
+    if (shimmerColor && shimmerX !== undefined) {
+        // Vertical light path on water (like moonlight/sunlight trail)
+        for (let i = 0; i < 8; i++) {
+            const pathY = CONFIG.waterLine + 20 + i * 12 - panOffset;
+            const pathWidth = 25 + Math.sin(game.time * 0.003 + i * 0.7) * 15;
+            const pathX = shimmerX + Math.sin(game.time * 0.002 + i * 0.5) * 10;
+            const alpha = 0.12 - i * 0.012;
+
+            if (alpha > 0) {
+                ctx.fillStyle = shimmerColor + alpha + ')';
+                ctx.beginPath();
+                ctx.ellipse(pathX, pathY, pathWidth, 3 + Math.sin(game.time * 0.01 + i) * 1.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    }
+
+    // Random sparkles on water
+    for (let i = 0; i < 15; i++) {
+        const sparklePhase = (game.time * 0.001 + i * 0.4) % 2;
+        if (sparklePhase < 0.3) {  // Only visible briefly
+            const sparkleX = ((i * 137 + game.time * 0.01) % CONFIG.canvas.width);
+            const sparkleY = CONFIG.waterLine + 10 + Math.sin(i * 2.3) * 30 - panOffset;
+            const sparkleAlpha = (0.3 - sparklePhase) * 0.5;
+
+            ctx.fillStyle = `rgba(255, 255, 255, ${sparkleAlpha})`;
             ctx.beginPath();
-            ctx.ellipse(pathX, pathY - panOffset, pathWidth, 3, 0, 0, Math.PI * 2);
+            ctx.arc(sparkleX, sparkleY, 1.5, 0, Math.PI * 2);
             ctx.fill();
         }
     }
