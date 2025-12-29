@@ -2361,6 +2361,36 @@ for (const [key, condition] of Object.entries(ACHIEVEMENT_CONDITIONS)) {
 
 ---
 
+## 2025-12-29 — Fix: Asset File Paths Alignment with Guide
+
+### Gjort
+- Analysert filstrukturen mot Image Generation Guide
+- Fikset filbane-referanser i assets.js for day-bakgrunner
+- Fjernet duplikat-filer med case-sensitive navneforskjeller
+
+### Endringer
+- `js/assets.js` — Oppdatert day sky layers:
+  - `clouds-far.png` → `clouds-far-day.png`
+  - `clouds-near.png` → `clouds-near-day.png`
+  - `sun.png` → `sun-day.png`
+
+### Slettet filer (duplikater/gamle placeholders)
+- `backgrounds/day/Sun.png` (duplikat med stor S)
+- `backgrounds/day/sun.png` (liten placeholder, erstattet av sun-day.png)
+- `backgrounds/day/clouds-far.png` (liten placeholder)
+- `backgrounds/day/clouds-near.png` (liten placeholder)
+- `backgrounds/underwater/Gradient.png` (case-sensitive duplikat)
+
+### Verifisert
+- Alle 57 asset-referanser i assets.js matcher nå eksisterende filer
+- Filnavn følger nå Image Generation Guide konvensjoner
+
+### Notater
+- Guiden spesifiserer eksakte filnavn med prefiks/suffiks (f.eks. `clouds-far-day.png` ikke `clouds-far.png`)
+- 6 creatures i CREATURES-objektet bruker prosedyral fallback (ingen sprites): Dawn Skipjack, Storm Petrel Fish, Fog Phantom, Thunder Caller, Twilight Dweller, Void Watcher
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown

@@ -11,9 +11,9 @@ const PARALLAX_LAYERS = {
         ],
         day: [
             { id: 'sky-gradient', y: 0, scrollSpeed: 0, src: 'backgrounds/day/sky.png' },
-            { id: 'clouds-far', y: 30, scrollSpeed: 0.1, repeatX: true, src: 'backgrounds/day/clouds-far.png' },
-            { id: 'clouds-near', y: 60, scrollSpeed: 0.2, repeatX: true, src: 'backgrounds/day/clouds-near.png' },
-            { id: 'sun', y: 60, scrollSpeed: 0.05, src: 'backgrounds/day/sun.png' },
+            { id: 'clouds-far', y: 30, scrollSpeed: 0.1, repeatX: true, src: 'backgrounds/day/clouds-far-day.png' },
+            { id: 'clouds-near', y: 60, scrollSpeed: 0.2, repeatX: true, src: 'backgrounds/day/clouds-near-day.png' },
+            { id: 'sun', y: 60, scrollSpeed: 0.05, src: 'backgrounds/day/sun-day.png' },
         ],
         dusk: [
             { id: 'sky-gradient', y: 0, scrollSpeed: 0, src: 'backgrounds/dusk/sky.png' },
