@@ -2599,6 +2599,90 @@ Alle popup-vinduer og UI-elementer skalert ned:
 
 ---
 
+## 2025-12-29 — Fix: Mountains and Trees Rendering Above Water
+
+### Bakgrunn
+Etter den forrige pixel art-oppdateringen som endret canvas-oppløsningen fra ~1000x650 til 480x270, ble fjell og trær tegnet UNDER vannlinjen i stedet for OVER. Problemet skyldtes at y-posisjonene i PARALLAX_LAYERS ikke ble skalert ned for den nye oppløsningen.
+
+### Analyse
+- Gammel oppløsning: ~1000x650, waterLine ~280px
+- Ny oppløsning: 480x270, waterLine = 116px (270 * 0.43)
+- Fjell og trær hadde y-verdier (100-220) som var høyere enn den nye waterLine (116)
+- Fallback-funksjonene tegner fra waterLine og opp til y + offset
+- Når y + offset > waterLine, ble elementene tegnet under vann
+
+### Implementert løsning
+
+#### 1. Oppdatert PARALLAX_LAYERS i assets.js
+Skalert alle y-posisjoner for 480x270 oppløsning:
+
+**Sky layers:**
+- sun: y = 80 → 30 (dawn), 60 → 25 (day), 180 → 70 (dusk), 60 → 25 (night)
+- clouds: skalert tilsvarende
+
+**Land layers:**
+- mountains-far: y = 100 → 30 (peaks at ~50-65)
+- mountains-mid: y = 140 → 45 (peaks at ~60-72)
+- mountains-near: y = 170 → 55 (peaks at ~67-77)
+- trees-far: y = 200 → 60 (base at ~85, tops at ~65)
+- trees-near: y = 220 → 70 (base at ~90, tops at ~60)
+- lighthouse: y = 180 → 50
+- reeds-left: y = 250 → 100
+
+**Water layers:**
+- water-surface: y = 280 → 116 (CONFIG.waterLine)
+- water-reflection: y = 285 → 118
+
+**Underwater layers:**
+- Alle skalert tilsvarende (116-270px)
+
+#### 2. Oppdatert fallbacks.js
+Skalert alle prosedyrale rendering-funksjoner:
+
+- **Mountains:** Redusert loop-intervaller, peak-offsets og bølge-amplituder
+- **Trees:** Halverte antall trær, redusert spacing og høyder
+- **Clouds:** Redusert størrelse fra 80-100px til 35-45px
+- **Lighthouse:** Skalert alle dimensjoner ~40%
+- **Reeds:** Redusert antall og høyde
+- **Water effects:** Skalert ripple-størrelser og sparkle-avstander
+- **Underwater elements:** Skalert rocks, seaweed og partikler
+- **drawTree helper:** Skalert trunk og trekrone-dimensjoner
+
+#### 3. Oppdatert systems.js reflection system
+Skalert den forbedrede vannrefleksjons-renderingen:
+
+- **REFLECTION_CONFIG:** fadeHeight: 120 → 50, waveAmplitude: 4 → 2
+- **Clouds reflection:** Størrelse 90x28 → 40x12
+- **Mountains reflection:** y-verdier og loop-intervaller skalert
+- **Trees reflection:** Antall, spacing og høyder redusert
+- **Lighthouse reflection:** Dimensjoner ~40%
+- **Boat reflection:** Hull, fisher, dog og lantern skalert
+- **Ripples:** 20+40px → 10+20px
+- **Shimmer:** Light path og sparkles skalert
+
+### Endringer
+- `js/assets.js` — Skalert alle PARALLAX_LAYERS y-posisjoner for 480x270
+- `js/fallbacks.js` — Skalert alle prosedyrale rendering-funksjoner og helpers
+- `js/systems.js` — Skalert REFLECTION_CONFIG og renderAboveWaterToReflection
+
+### Testing
+1. Start spillet med `python3 -m http.server 8080`
+2. Åpne http://localhost:8080
+3. Verifiser:
+   - Fjell vises OVER vannlinjen (ikke under)
+   - Trær vises OVER vannlinjen ved horisonten
+   - Vannrefleksjon speiler fjell og trær korrekt
+   - Proportjonene ser riktige ut for pixel art-stilen
+   - Alle fire tider på døgnet fungerer
+
+### Notater
+- Scaling factor ~0.42 (270/650) ble brukt som utgangspunkt
+- Y-verdier måtte justeres slik at element + fallback_offset < waterLine
+- Reflection canvas matcher nå CONFIG.waterLine (116px høy)
+- Cast n Chill-inspirasjonen bevart med korrekte proporsjoner
+
+---
+
 ## Template for fremtidige entries
 
 ```markdown

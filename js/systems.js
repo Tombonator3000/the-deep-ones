@@ -2031,14 +2031,14 @@ function drawIdleFishingIndicator() {
 let reflectionCanvas = null;
 let reflectionCtx = null;
 
-// Reflection configuration
+// Reflection configuration - scaled for 480x270 resolution
 const REFLECTION_CONFIG = {
     enabled: true,
     opacity: 0.35,              // Base opacity of reflection
-    fadeHeight: 120,            // How far down the reflection fades
+    fadeHeight: 50,             // How far down the reflection fades (scaled from 120)
     waveSpeed: 0.003,           // Speed of wave animation
-    waveFrequency: 0.04,        // Frequency of sine wave distortion
-    waveAmplitude: 4,           // Maximum pixel displacement
+    waveFrequency: 0.06,        // Frequency of sine wave distortion (increased for smaller canvas)
+    waveAmplitude: 2,           // Maximum pixel displacement (scaled from 4)
     verticalCompression: 0.85,  // Slight vertical squish for realism
     tintColor: { r: 40, g: 80, b: 100 },  // Blue-green water tint
     tintStrength: 0.15          // How much tint to apply
@@ -2123,188 +2123,188 @@ function renderAboveWaterToReflection() {
         }
     }
 
-    // Draw clouds
+    // Draw clouds - scaled for 480x270 resolution
     if (palette && palette.clouds) {
         reflectionCtx.fillStyle = palette.clouds;
-        for (let i = 0; i < 5; i++) {
-            const cloudX = ((i * 280 - game.cameraX * 0.15) % (reflectionCanvas.width + 200)) - 100;
-            const cloudY = 50 + Math.sin(i) * 20;
-            drawCloudToContext(reflectionCtx, cloudX, cloudY, 90, 28);
+        for (let i = 0; i < 3; i++) {
+            const cloudX = ((i * 140 - game.cameraX * 0.15) % (reflectionCanvas.width + 100)) - 50;
+            const cloudY = 25 + Math.sin(i) * 8;
+            drawCloudToContext(reflectionCtx, cloudX, cloudY, 40, 12);
         }
     }
 
-    // Draw mountains (far)
+    // Draw mountains (far) - scaled for 480x270 resolution
     if (palette && palette.mountains && palette.mountains[0]) {
         const offset = game.cameraX * 0.1;
         reflectionCtx.fillStyle = palette.mountains[0];
         reflectionCtx.beginPath();
-        reflectionCtx.moveTo(-offset % 400 - 400, CONFIG.waterLine);
-        for (let x = -400; x < reflectionCanvas.width + 400; x += 200) {
-            const px = x - (offset % 400);
-            const py = 140 + Math.sin(x * 0.005) * 30;
+        reflectionCtx.moveTo(-offset % 200 - 200, CONFIG.waterLine);
+        for (let x = -200; x < reflectionCanvas.width + 200; x += 80) {
+            const px = x - (offset % 200);
+            const py = 50 + Math.sin(x * 0.01) * 15;
             reflectionCtx.lineTo(px, py);
         }
-        reflectionCtx.lineTo(reflectionCanvas.width + 100, CONFIG.waterLine);
+        reflectionCtx.lineTo(reflectionCanvas.width + 50, CONFIG.waterLine);
         reflectionCtx.closePath();
         reflectionCtx.fill();
     }
 
-    // Draw mountains (mid)
+    // Draw mountains (mid) - scaled for 480x270 resolution
     if (palette && palette.mountains && palette.mountains[1]) {
         const offset = game.cameraX * 0.2;
         reflectionCtx.fillStyle = palette.mountains[1];
         reflectionCtx.beginPath();
-        reflectionCtx.moveTo(-offset % 300 - 300, CONFIG.waterLine);
-        for (let x = -300; x < reflectionCanvas.width + 300; x += 150) {
-            const px = x - (offset % 300);
-            const py = 170 + Math.sin(x * 0.008 + 1) * 25;
+        reflectionCtx.moveTo(-offset % 150 - 150, CONFIG.waterLine);
+        for (let x = -150; x < reflectionCanvas.width + 150; x += 60) {
+            const px = x - (offset % 150);
+            const py = 60 + Math.sin(x * 0.015 + 1) * 12;
             reflectionCtx.lineTo(px, py);
         }
-        reflectionCtx.lineTo(reflectionCanvas.width + 100, CONFIG.waterLine);
+        reflectionCtx.lineTo(reflectionCanvas.width + 50, CONFIG.waterLine);
         reflectionCtx.closePath();
         reflectionCtx.fill();
     }
 
-    // Draw mountains (near)
+    // Draw mountains (near) - scaled for 480x270 resolution
     if (palette && palette.mountains && (palette.mountains[2] || palette.mountains[1])) {
         const offset = game.cameraX * 0.3;
         reflectionCtx.fillStyle = palette.mountains[2] || palette.mountains[1];
         reflectionCtx.beginPath();
-        reflectionCtx.moveTo(-offset % 250 - 250, CONFIG.waterLine);
-        for (let x = -250; x < reflectionCanvas.width + 250; x += 100) {
-            const px = x - (offset % 250);
-            const py = 195 + Math.sin(x * 0.01 + 2) * 20;
+        reflectionCtx.moveTo(-offset % 120 - 120, CONFIG.waterLine);
+        for (let x = -120; x < reflectionCanvas.width + 120; x += 50) {
+            const px = x - (offset % 120);
+            const py = 70 + Math.sin(x * 0.02 + 2) * 10;
             reflectionCtx.lineTo(px, py);
         }
-        reflectionCtx.lineTo(reflectionCanvas.width + 100, CONFIG.waterLine);
+        reflectionCtx.lineTo(reflectionCanvas.width + 50, CONFIG.waterLine);
         reflectionCtx.closePath();
         reflectionCtx.fill();
     }
 
-    // Draw trees (simplified for reflection)
+    // Draw trees (simplified for reflection) - scaled for 480x270 resolution
     if (palette && palette.trees) {
         // Far trees
         reflectionCtx.fillStyle = palette.trees[0] || '#2a4a30';
-        for (let i = 0; i < 15; i++) {
-            const x = ((i * 80 - game.cameraX * 0.35) % (reflectionCanvas.width + 200)) - 100;
-            const height = 40 + (i % 3) * 10;
+        for (let i = 0; i < 12; i++) {
+            const x = ((i * 40 - game.cameraX * 0.35) % (reflectionCanvas.width + 100)) - 50;
+            const height = 18 + (i % 3) * 5;
             reflectionCtx.beginPath();
             reflectionCtx.moveTo(x, CONFIG.waterLine - height * 0.5);
-            reflectionCtx.lineTo(x - 15, CONFIG.waterLine);
-            reflectionCtx.lineTo(x + 15, CONFIG.waterLine);
+            reflectionCtx.lineTo(x - 6, CONFIG.waterLine);
+            reflectionCtx.lineTo(x + 6, CONFIG.waterLine);
             reflectionCtx.closePath();
             reflectionCtx.fill();
         }
 
         // Near trees
         reflectionCtx.fillStyle = palette.trees[1] || '#3a5a40';
-        for (let i = 0; i < 10; i++) {
-            const x = ((i * 120 - game.cameraX * 0.45) % (reflectionCanvas.width + 200)) - 100;
-            const height = 55 + (i % 4) * 8;
+        for (let i = 0; i < 8; i++) {
+            const x = ((i * 55 - game.cameraX * 0.45) % (reflectionCanvas.width + 100)) - 50;
+            const height = 25 + (i % 4) * 4;
             reflectionCtx.beginPath();
             reflectionCtx.moveTo(x, CONFIG.waterLine - height * 0.5);
-            reflectionCtx.lineTo(x - 20, CONFIG.waterLine);
-            reflectionCtx.lineTo(x + 20, CONFIG.waterLine);
+            reflectionCtx.lineTo(x - 8, CONFIG.waterLine);
+            reflectionCtx.lineTo(x + 8, CONFIG.waterLine);
             reflectionCtx.closePath();
             reflectionCtx.fill();
         }
     }
 
-    // Draw lighthouse reflection
-    const lighthouseX = 150 - game.cameraX * 0.4;
-    if (lighthouseX > -50 && lighthouseX < reflectionCanvas.width + 50) {
-        const lhY = 220;
+    // Draw lighthouse reflection - scaled for 480x270 resolution
+    const lighthouseX = 75 - game.cameraX * 0.4;
+    if (lighthouseX > -25 && lighthouseX < reflectionCanvas.width + 25) {
+        const lhY = 85;  // Scaled for 270px height
 
         // Lighthouse base/cliff
         if (palette && palette.mountains && palette.mountains[1]) {
             reflectionCtx.fillStyle = palette.mountains[1];
             reflectionCtx.beginPath();
-            reflectionCtx.ellipse(lighthouseX, lhY + 20, 40, 12, 0, 0, Math.PI * 2);
+            reflectionCtx.ellipse(lighthouseX, lhY + 10, 20, 6, 0, 0, Math.PI * 2);
             reflectionCtx.fill();
         }
 
         // Lighthouse tower
         reflectionCtx.fillStyle = '#e0d8d0';
         reflectionCtx.beginPath();
-        reflectionCtx.moveTo(lighthouseX - 10, lhY + 15);
-        reflectionCtx.lineTo(lighthouseX - 7, lhY - 45);
-        reflectionCtx.lineTo(lighthouseX + 7, lhY - 45);
-        reflectionCtx.lineTo(lighthouseX + 10, lhY + 15);
+        reflectionCtx.moveTo(lighthouseX - 5, lhY + 8);
+        reflectionCtx.lineTo(lighthouseX - 4, lhY - 22);
+        reflectionCtx.lineTo(lighthouseX + 4, lhY - 22);
+        reflectionCtx.lineTo(lighthouseX + 5, lhY + 8);
         reflectionCtx.closePath();
         reflectionCtx.fill();
 
         // Red stripe
         reflectionCtx.fillStyle = '#a04040';
-        reflectionCtx.fillRect(lighthouseX - 8, lhY - 20, 16, 15);
+        reflectionCtx.fillRect(lighthouseX - 4, lhY - 10, 8, 7);
 
         // Light glow
         const intensity = (Math.sin(game.time * 0.05) + 1) / 2;
         reflectionCtx.fillStyle = `rgba(255, 250, 200, ${0.4 + intensity * 0.4})`;
         reflectionCtx.beginPath();
-        reflectionCtx.arc(lighthouseX, lhY - 48, 5 + intensity * 3, 0, Math.PI * 2);
+        reflectionCtx.arc(lighthouseX, lhY - 24, 3 + intensity * 2, 0, Math.PI * 2);
         reflectionCtx.fill();
     }
 
-    // Draw boat to reflection
+    // Draw boat to reflection - scaled for 480x270 resolution
     const boatX = game.boatX - game.cameraX;
-    if (boatX > -60 && boatX < reflectionCanvas.width + 60) {
-        const bob = Math.sin(game.time * 0.04) * 4;
-        const boatY = CONFIG.waterLine - 15 + bob;
+    if (boatX > -30 && boatX < reflectionCanvas.width + 30) {
+        const bob = Math.sin(game.time * 0.04) * 2;
+        const boatY = CONFIG.waterLine - 8 + bob;
         const tilt = Math.sin(game.time * 0.03) * 0.03;
 
         reflectionCtx.save();
         reflectionCtx.translate(boatX, boatY);
         reflectionCtx.rotate(tilt);
 
-        // Hull
+        // Hull - scaled
         reflectionCtx.fillStyle = '#4a3525';
         reflectionCtx.beginPath();
-        reflectionCtx.moveTo(-45, 0);
-        reflectionCtx.quadraticCurveTo(-50, 15, -35, 20);
-        reflectionCtx.lineTo(35, 20);
-        reflectionCtx.quadraticCurveTo(50, 15, 45, 0);
+        reflectionCtx.moveTo(-20, 0);
+        reflectionCtx.quadraticCurveTo(-22, 7, -15, 10);
+        reflectionCtx.lineTo(15, 10);
+        reflectionCtx.quadraticCurveTo(22, 7, 20, 0);
         reflectionCtx.closePath();
         reflectionCtx.fill();
 
-        // Fisher silhouette
+        // Fisher silhouette - scaled
         reflectionCtx.fillStyle = '#1a1815';
-        reflectionCtx.fillRect(-8, -25, 16, 25);
+        reflectionCtx.fillRect(-4, -12, 8, 12);
 
         // Fisher head
         reflectionCtx.fillStyle = '#d4a574';
         reflectionCtx.beginPath();
-        reflectionCtx.arc(0, -32, 8, 0, Math.PI * 2);
+        reflectionCtx.arc(0, -15, 4, 0, Math.PI * 2);
         reflectionCtx.fill();
 
         // Hat
         reflectionCtx.fillStyle = '#3a3530';
-        reflectionCtx.fillRect(-10, -42, 20, 5);
-        reflectionCtx.fillRect(-6, -48, 12, 8);
+        reflectionCtx.fillRect(-5, -20, 10, 3);
+        reflectionCtx.fillRect(-3, -23, 6, 4);
 
-        // Dog
+        // Dog - scaled
         reflectionCtx.fillStyle = '#c0a080';
         reflectionCtx.beginPath();
-        reflectionCtx.ellipse(25, -5, 10, 7, 0, 0, Math.PI * 2);
+        reflectionCtx.ellipse(12, -3, 5, 3, 0, 0, Math.PI * 2);
         reflectionCtx.fill();
         reflectionCtx.beginPath();
-        reflectionCtx.arc(32, -10, 6, 0, Math.PI * 2);
+        reflectionCtx.arc(15, -5, 3, 0, Math.PI * 2);
         reflectionCtx.fill();
 
-        // Fishing rod (if not sailing)
+        // Fishing rod (if not sailing) - scaled
         if (game.state !== 'sailing') {
             reflectionCtx.strokeStyle = '#5a4a30';
-            reflectionCtx.lineWidth = 3;
+            reflectionCtx.lineWidth = 2;
             reflectionCtx.beginPath();
-            reflectionCtx.moveTo(5, -20);
-            reflectionCtx.lineTo(55, -55);
+            reflectionCtx.moveTo(3, -10);
+            reflectionCtx.lineTo(25, -25);
             reflectionCtx.stroke();
         }
 
-        // Lantern glow
+        // Lantern glow - scaled
         const lanternGlow = (Math.sin(game.time * 0.08) + 1) / 2;
         reflectionCtx.fillStyle = `rgba(255, 200, 100, ${0.4 + lanternGlow * 0.3})`;
         reflectionCtx.beginPath();
-        reflectionCtx.arc(-30, -5, 10, 0, Math.PI * 2);
+        reflectionCtx.arc(-15, -3, 5, 0, Math.PI * 2);
         reflectionCtx.fill();
 
         reflectionCtx.restore();
@@ -2402,17 +2402,17 @@ function drawEnhancedWaterReflection() {
 
     ctx.restore();
 
-    // Draw ripple rings around boat
+    // Draw ripple rings around boat - scaled for 480x270 resolution
     const boatX = game.boatX - game.cameraX;
     for (let i = 0; i < 3; i++) {
         const ripplePhase = ((game.time * 0.002 + i * 0.3) % 1);
-        const rippleSize = 20 + ripplePhase * 40;
+        const rippleSize = 10 + ripplePhase * 20;  // Scaled from 20+40
         const rippleAlpha = (1 - ripplePhase) * 0.15;
 
         ctx.strokeStyle = `rgba(180, 200, 220, ${rippleAlpha})`;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.ellipse(boatX, CONFIG.waterLine + 15 - panOffset, rippleSize, rippleSize * 0.3, 0, 0, Math.PI * 2);
+        ctx.ellipse(boatX, CONFIG.waterLine + 8 - panOffset, rippleSize, rippleSize * 0.3, 0, 0, Math.PI * 2);
         ctx.stroke();
     }
 
@@ -2445,33 +2445,33 @@ function drawWaterShimmer(panOffset) {
     }
 
     if (shimmerColor && shimmerX !== undefined) {
-        // Vertical light path on water (like moonlight/sunlight trail)
-        for (let i = 0; i < 8; i++) {
-            const pathY = CONFIG.waterLine + 20 + i * 12 - panOffset;
-            const pathWidth = 25 + Math.sin(game.time * 0.003 + i * 0.7) * 15;
-            const pathX = shimmerX + Math.sin(game.time * 0.002 + i * 0.5) * 10;
-            const alpha = 0.12 - i * 0.012;
+        // Vertical light path on water (like moonlight/sunlight trail) - scaled for 480x270
+        for (let i = 0; i < 6; i++) {
+            const pathY = CONFIG.waterLine + 10 + i * 6 - panOffset;  // Scaled
+            const pathWidth = 12 + Math.sin(game.time * 0.003 + i * 0.7) * 7;  // Scaled
+            const pathX = shimmerX + Math.sin(game.time * 0.002 + i * 0.5) * 5;  // Scaled
+            const alpha = 0.12 - i * 0.015;
 
             if (alpha > 0) {
                 ctx.fillStyle = shimmerColor + alpha + ')';
                 ctx.beginPath();
-                ctx.ellipse(pathX, pathY, pathWidth, 3 + Math.sin(game.time * 0.01 + i) * 1.5, 0, 0, Math.PI * 2);
+                ctx.ellipse(pathX, pathY, pathWidth, 2 + Math.sin(game.time * 0.01 + i) * 0.8, 0, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
     }
 
-    // Random sparkles on water
-    for (let i = 0; i < 15; i++) {
+    // Random sparkles on water - scaled for 480x270
+    for (let i = 0; i < 10; i++) {
         const sparklePhase = (game.time * 0.001 + i * 0.4) % 2;
         if (sparklePhase < 0.3) {  // Only visible briefly
-            const sparkleX = ((i * 137 + game.time * 0.01) % CONFIG.canvas.width);
-            const sparkleY = CONFIG.waterLine + 10 + Math.sin(i * 2.3) * 30 - panOffset;
+            const sparkleX = ((i * 50 + game.time * 0.01) % CONFIG.canvas.width);  // Adjusted spacing
+            const sparkleY = CONFIG.waterLine + 5 + Math.sin(i * 2.3) * 15 - panOffset;  // Scaled
             const sparkleAlpha = (0.3 - sparklePhase) * 0.5;
 
             ctx.fillStyle = `rgba(255, 255, 255, ${sparkleAlpha})`;
             ctx.beginPath();
-            ctx.arc(sparkleX, sparkleY, 1.5, 0, Math.PI * 2);
+            ctx.arc(sparkleX, sparkleY, 1, 0, Math.PI * 2);  // Smaller sparkles
             ctx.fill();
         }
     }

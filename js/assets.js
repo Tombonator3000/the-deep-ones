@@ -2,60 +2,74 @@
 // THE DEEP ONES - ASSET MANAGEMENT
 // ============================================================
 
+// Y-positions adjusted for 480x270 pixel art resolution
+// waterLine is at ~116px (270 * 0.43)
+// Sky: 0-60px, Mountains: peaks at 30-100px, Trees: 60-116px
+// Water: 116px, Underwater: 116-270px
 const PARALLAX_LAYERS = {
     sky: {
         dawn: [
             { id: 'sky-gradient', y: 0, scrollSpeed: 0, src: 'backgrounds/dawn/sky.png' },
             { id: 'stars', y: 0, scrollSpeed: 0.02, src: 'backgrounds/dawn/stars.png' },
-            { id: 'sun', y: 80, scrollSpeed: 0.05, src: 'backgrounds/dawn/sun.png' },
+            { id: 'sun', y: 30, scrollSpeed: 0.05, src: 'backgrounds/dawn/sun.png' },
         ],
         day: [
             { id: 'sky-gradient', y: 0, scrollSpeed: 0, src: 'backgrounds/day/sky.png' },
-            { id: 'clouds-far', y: 30, scrollSpeed: 0.1, repeatX: true, src: 'backgrounds/day/clouds-far-day.png' },
-            { id: 'clouds-near', y: 60, scrollSpeed: 0.2, repeatX: true, src: 'backgrounds/day/clouds-near-day.png' },
-            { id: 'sun', y: 60, scrollSpeed: 0.05, src: 'backgrounds/day/sun-day.png' },
+            { id: 'clouds-far', y: 15, scrollSpeed: 0.1, repeatX: true, src: 'backgrounds/day/clouds-far-day.png' },
+            { id: 'clouds-near', y: 30, scrollSpeed: 0.2, repeatX: true, src: 'backgrounds/day/clouds-near-day.png' },
+            { id: 'sun', y: 25, scrollSpeed: 0.05, src: 'backgrounds/day/sun-day.png' },
         ],
         dusk: [
             { id: 'sky-gradient', y: 0, scrollSpeed: 0, src: 'backgrounds/dusk/sky.png' },
             { id: 'stars', y: 0, scrollSpeed: 0.02, src: 'backgrounds/dusk/stars.png' },
-            { id: 'clouds', y: 50, scrollSpeed: 0.15, repeatX: true, src: 'backgrounds/dusk/clouds.png' },
-            { id: 'sun', y: 180, scrollSpeed: 0.05, src: 'backgrounds/dusk/sun.png' },
-            { id: 'moon', y: 80, scrollSpeed: 0.03, src: 'backgrounds/dusk/moon.png' },
+            { id: 'clouds', y: 25, scrollSpeed: 0.15, repeatX: true, src: 'backgrounds/dusk/clouds.png' },
+            { id: 'sun', y: 70, scrollSpeed: 0.05, src: 'backgrounds/dusk/sun.png' },
+            { id: 'moon', y: 35, scrollSpeed: 0.03, src: 'backgrounds/dusk/moon.png' },
         ],
         night: [
             { id: 'sky-gradient', y: 0, scrollSpeed: 0, src: 'backgrounds/night/sky.png' },
             { id: 'stars', y: 0, scrollSpeed: 0.02, src: 'backgrounds/night/stars.png' },
-            { id: 'moon', y: 60, scrollSpeed: 0.03, src: 'backgrounds/night/moon.png' },
-            { id: 'clouds', y: 70, scrollSpeed: 0.1, repeatX: true, src: 'backgrounds/night/clouds.png' },
+            { id: 'moon', y: 25, scrollSpeed: 0.03, src: 'backgrounds/night/moon.png' },
+            { id: 'clouds', y: 35, scrollSpeed: 0.1, repeatX: true, src: 'backgrounds/night/clouds.png' },
         ]
     },
     land: {
         all: [
-            { id: 'mountains-far', y: 100, scrollSpeed: 0.1, repeatX: true, src: 'backgrounds/land/mountains-far.png' },
-            { id: 'mountains-mid', y: 140, scrollSpeed: 0.2, repeatX: true, src: 'backgrounds/land/mountains-mid.png' },
-            { id: 'mountains-near', y: 170, scrollSpeed: 0.3, repeatX: true, src: 'backgrounds/land/mountains-near.png' },
-            { id: 'trees-far', y: 200, scrollSpeed: 0.35, repeatX: true, src: 'backgrounds/land/trees-far.png' },
-            { id: 'trees-near', y: 220, scrollSpeed: 0.45, repeatX: true, src: 'backgrounds/land/trees-near.png' },
-            { id: 'lighthouse', y: 180, scrollSpeed: 0.4, src: 'backgrounds/land/lighthouse.png' },
-            { id: 'reeds-left', y: 250, scrollSpeed: 0.5, src: 'backgrounds/land/reeds.png' },
+            // Mountains: y + fallback_offset should be < waterLine (116) for peaks above water
+            // mountains-far fallback adds ~40 + sin*30 = 10-70, so y=30 → peaks at 40-100
+            { id: 'mountains-far', y: 30, scrollSpeed: 0.1, repeatX: true, src: 'backgrounds/land/mountains-far.png' },
+            // mountains-mid fallback adds ~30 + sin*25 = 5-55, so y=45 → peaks at 50-100
+            { id: 'mountains-mid', y: 45, scrollSpeed: 0.2, repeatX: true, src: 'backgrounds/land/mountains-mid.png' },
+            // mountains-near fallback adds ~25 + sin*20 = 5-45, so y=55 → peaks at 60-100
+            { id: 'mountains-near', y: 55, scrollSpeed: 0.3, repeatX: true, src: 'backgrounds/land/mountains-near.png' },
+            // trees-far: y+50 is tree base, heights 40-60, so y=60 → base at 110, tops at 50-70
+            { id: 'trees-far', y: 60, scrollSpeed: 0.35, repeatX: true, src: 'backgrounds/land/trees-far.png' },
+            // trees-near: y+40 is tree base, heights 55-80, so y=70 → base at 110, tops at 30-55
+            { id: 'trees-near', y: 70, scrollSpeed: 0.45, repeatX: true, src: 'backgrounds/land/trees-near.png' },
+            // lighthouse at horizon
+            { id: 'lighthouse', y: 50, scrollSpeed: 0.4, src: 'backgrounds/land/lighthouse.png' },
+            // reeds just above waterline
+            { id: 'reeds-left', y: 100, scrollSpeed: 0.5, src: 'backgrounds/land/reeds.png' },
         ]
     },
     water: {
         all: [
-            { id: 'water-surface', y: 280, scrollSpeed: 0.6, repeatX: true, animated: true, frames: 4, fps: 8, src: 'backgrounds/water/surface.png' },
-            { id: 'water-reflection', y: 285, scrollSpeed: 0.5, repeatX: true, src: 'backgrounds/water/reflection.png' },
+            // Water at waterLine (~116)
+            { id: 'water-surface', y: 116, scrollSpeed: 0.6, repeatX: true, animated: true, frames: 4, fps: 8, src: 'backgrounds/water/surface.png' },
+            { id: 'water-reflection', y: 118, scrollSpeed: 0.5, repeatX: true, src: 'backgrounds/water/reflection.png' },
         ]
     },
     underwater: {
         all: [
-            { id: 'underwater-bg', y: 280, scrollSpeed: 0, src: 'backgrounds/underwater/gradient.png' },
-            { id: 'light-rays', y: 280, scrollSpeed: 0.1, src: 'backgrounds/underwater/lightrays.png' },
-            { id: 'rocks-far', y: 500, scrollSpeed: 0.15, repeatX: true, src: 'backgrounds/underwater/rocks-far.png' },
-            { id: 'seaweed-far', y: 400, scrollSpeed: 0.2, repeatX: true, animated: true, frames: 6, fps: 4, src: 'backgrounds/underwater/seaweed-far.png' },
-            { id: 'rocks-mid', y: 550, scrollSpeed: 0.3, repeatX: true, src: 'backgrounds/underwater/rocks-mid.png' },
-            { id: 'seaweed-near', y: 450, scrollSpeed: 0.4, repeatX: true, animated: true, frames: 6, fps: 4, src: 'backgrounds/underwater/seaweed-near.png' },
-            { id: 'particles', y: 300, scrollSpeed: 0.25, repeatX: true, animated: true, frames: 8, fps: 10, src: 'backgrounds/underwater/particles.png' },
-            { id: 'deep-shadows', y: 580, scrollSpeed: 0.1, repeatX: true, src: 'backgrounds/underwater/shadows.png' },
+            // Underwater starts at waterLine and goes to bottom (270)
+            { id: 'underwater-bg', y: 116, scrollSpeed: 0, src: 'backgrounds/underwater/gradient.png' },
+            { id: 'light-rays', y: 116, scrollSpeed: 0.1, src: 'backgrounds/underwater/lightrays.png' },
+            { id: 'rocks-far', y: 200, scrollSpeed: 0.15, repeatX: true, src: 'backgrounds/underwater/rocks-far.png' },
+            { id: 'seaweed-far', y: 160, scrollSpeed: 0.2, repeatX: true, animated: true, frames: 6, fps: 4, src: 'backgrounds/underwater/seaweed-far.png' },
+            { id: 'rocks-mid', y: 220, scrollSpeed: 0.3, repeatX: true, src: 'backgrounds/underwater/rocks-mid.png' },
+            { id: 'seaweed-near', y: 180, scrollSpeed: 0.4, repeatX: true, animated: true, frames: 6, fps: 4, src: 'backgrounds/underwater/seaweed-near.png' },
+            { id: 'particles', y: 125, scrollSpeed: 0.25, repeatX: true, animated: true, frames: 8, fps: 10, src: 'backgrounds/underwater/particles.png' },
+            { id: 'deep-shadows', y: 240, scrollSpeed: 0.1, repeatX: true, src: 'backgrounds/underwater/shadows.png' },
         ]
     }
 };
