@@ -224,44 +224,46 @@ const FALLBACKS = {
         }
     },
 
+    // Clouds scaled for 480x270 resolution
     'clouds-far': (ctx, offset, y, w, h, layer) => {
         const palette = getTimePalette();
         ctx.fillStyle = palette.clouds;
-        for (let i = 0; i < 5; i++) {
-            const x = ((i * 250 - offset) % (w + 200)) - 100;
-            drawCloud(ctx, x, y + Math.sin(i * 2) * 15, 80 + i * 20, 25);
+        for (let i = 0; i < 4; i++) {
+            const x = ((i * 120 - offset) % (w + 100)) - 50;
+            drawCloud(ctx, x, y + Math.sin(i * 2) * 6, 35 + i * 8, 10);
         }
     },
 
     'clouds-near': (ctx, offset, y, w, h, layer) => {
         const palette = getTimePalette();
         ctx.fillStyle = palette.clouds;
-        for (let i = 0; i < 4; i++) {
-            const x = ((i * 300 - offset * 1.5) % (w + 200)) - 100;
-            drawCloud(ctx, x, y + Math.cos(i * 1.5) * 10, 100 + i * 15, 30);
+        for (let i = 0; i < 3; i++) {
+            const x = ((i * 150 - offset * 1.5) % (w + 100)) - 50;
+            drawCloud(ctx, x, y + Math.cos(i * 1.5) * 5, 45 + i * 6, 12);
         }
     },
 
     'clouds': (ctx, offset, y, w, h, layer) => {
         const palette = getTimePalette();
         ctx.fillStyle = palette.clouds;
-        for (let i = 0; i < 4; i++) {
-            const x = ((i * 280 - offset) % (w + 200)) - 100;
-            drawCloud(ctx, x, y + Math.sin(i) * 20, 90, 28);
+        for (let i = 0; i < 3; i++) {
+            const x = ((i * 140 - offset) % (w + 100)) - 50;
+            drawCloud(ctx, x, y + Math.sin(i) * 8, 40, 12);
         }
     },
 
+    // Mountains scaled for 480x270 resolution (scaled from original 1000x650)
     'mountains-far': (ctx, offset, y, w, h, layer) => {
         const palette = getTimePalette();
         ctx.fillStyle = palette.mountains[0];
         ctx.beginPath();
-        ctx.moveTo(-offset % 400 - 400, CONFIG.waterLine);
-        for (let x = -400; x < w + 400; x += 200) {
-            const px = x - (offset % 400);
-            const py = y + Math.sin(x * 0.005) * 30 + 40;
+        ctx.moveTo(-offset % 200 - 200, CONFIG.waterLine);
+        for (let x = -200; x < w + 200; x += 80) {
+            const px = x - (offset % 200);
+            const py = y + Math.sin(x * 0.01) * 15 + 20;
             ctx.lineTo(px, py);
         }
-        ctx.lineTo(w + 100, CONFIG.waterLine);
+        ctx.lineTo(w + 50, CONFIG.waterLine);
         ctx.closePath();
         ctx.fill();
     },
@@ -270,13 +272,13 @@ const FALLBACKS = {
         const palette = getTimePalette();
         ctx.fillStyle = palette.mountains[1];
         ctx.beginPath();
-        ctx.moveTo(-offset % 300 - 300, CONFIG.waterLine);
-        for (let x = -300; x < w + 300; x += 150) {
-            const px = x - (offset % 300);
-            const py = y + Math.sin(x * 0.008 + 1) * 25 + 30;
+        ctx.moveTo(-offset % 150 - 150, CONFIG.waterLine);
+        for (let x = -150; x < w + 150; x += 60) {
+            const px = x - (offset % 150);
+            const py = y + Math.sin(x * 0.015 + 1) * 12 + 15;
             ctx.lineTo(px, py);
         }
-        ctx.lineTo(w + 100, CONFIG.waterLine);
+        ctx.lineTo(w + 50, CONFIG.waterLine);
         ctx.closePath();
         ctx.fill();
     },
@@ -285,83 +287,92 @@ const FALLBACKS = {
         const palette = getTimePalette();
         ctx.fillStyle = palette.mountains[2] || palette.mountains[1];
         ctx.beginPath();
-        ctx.moveTo(-offset % 250 - 250, CONFIG.waterLine);
-        for (let x = -250; x < w + 250; x += 100) {
-            const px = x - (offset % 250);
-            const py = y + Math.sin(x * 0.01 + 2) * 20 + 25;
+        ctx.moveTo(-offset % 120 - 120, CONFIG.waterLine);
+        for (let x = -120; x < w + 120; x += 50) {
+            const px = x - (offset % 120);
+            const py = y + Math.sin(x * 0.02 + 2) * 10 + 12;
             ctx.lineTo(px, py);
         }
-        ctx.lineTo(w + 100, CONFIG.waterLine);
+        ctx.lineTo(w + 50, CONFIG.waterLine);
         ctx.closePath();
         ctx.fill();
     },
 
+    // Trees scaled for 480x270 resolution
     'trees-far': (ctx, offset, y, w, h, layer) => {
         const palette = getTimePalette();
-        for (let i = 0; i < 30; i++) {
-            const x = ((i * 80 - offset) % (w + 200)) - 100;
-            drawTree(ctx, x, y + 50, 40 + (i % 3) * 10, palette.trees[0]);
+        for (let i = 0; i < 20; i++) {
+            const x = ((i * 40 - offset) % (w + 100)) - 50;
+            drawTree(ctx, x, y + 25, 20 + (i % 3) * 5, palette.trees[0]);
         }
     },
 
     'trees-near': (ctx, offset, y, w, h, layer) => {
         const palette = getTimePalette();
-        for (let i = 0; i < 20; i++) {
-            const x = ((i * 120 - offset) % (w + 200)) - 100;
-            drawTree(ctx, x, y + 40, 55 + (i % 4) * 8, palette.trees[1]);
+        for (let i = 0; i < 15; i++) {
+            const x = ((i * 55 - offset) % (w + 100)) - 50;
+            drawTree(ctx, x, y + 20, 28 + (i % 4) * 4, palette.trees[1]);
         }
     },
 
+    // Lighthouse scaled for 480x270 resolution
     'lighthouse': (ctx, offset, y, w, h, layer) => {
-        const x = 150 - offset;
-        if (x < -50 || x > w + 50) return;
+        const x = 75 - offset;  // Scaled position
+        if (x < -25 || x > w + 25) return;
 
         const palette = getTimePalette();
 
+        // Base rock
         ctx.fillStyle = palette.mountains[1];
         ctx.beginPath();
-        ctx.ellipse(x, y + 70, 40, 12, 0, 0, Math.PI * 2);
+        ctx.ellipse(x, y + 35, 20, 6, 0, 0, Math.PI * 2);
         ctx.fill();
 
+        // Tower body
         ctx.fillStyle = '#e0d8d0';
         ctx.beginPath();
-        ctx.moveTo(x - 12, y + 65);
-        ctx.lineTo(x - 8, y);
-        ctx.lineTo(x + 8, y);
-        ctx.lineTo(x + 12, y + 65);
+        ctx.moveTo(x - 6, y + 32);
+        ctx.lineTo(x - 4, y);
+        ctx.lineTo(x + 4, y);
+        ctx.lineTo(x + 6, y + 32);
         ctx.closePath();
         ctx.fill();
 
+        // Red stripe
         ctx.fillStyle = '#a04040';
-        ctx.fillRect(x - 10, y + 30, 20, 15);
+        ctx.fillRect(x - 5, y + 15, 10, 8);
 
+        // Top platform
         ctx.fillStyle = '#302520';
-        ctx.fillRect(x - 10, y - 5, 20, 8);
+        ctx.fillRect(x - 5, y - 3, 10, 4);
 
+        // Roof
         ctx.fillStyle = '#a04040';
         ctx.beginPath();
-        ctx.moveTo(x, y - 15);
-        ctx.lineTo(x - 12, y - 5);
-        ctx.lineTo(x + 12, y - 5);
+        ctx.moveTo(x, y - 8);
+        ctx.lineTo(x - 6, y - 3);
+        ctx.lineTo(x + 6, y - 3);
         ctx.closePath();
         ctx.fill();
 
+        // Light glow
         const intensity = (Math.sin(game.time * 0.05) + 1) / 2;
         ctx.fillStyle = `rgba(255, 250, 200, ${0.4 + intensity * 0.4})`;
         ctx.beginPath();
-        ctx.arc(x, y - 2, 5 + intensity * 3, 0, Math.PI * 2);
+        ctx.arc(x, y - 1, 3 + intensity * 2, 0, Math.PI * 2);
         ctx.fill();
     },
 
+    // Reeds scaled for 480x270 resolution
     'reeds-left': (ctx, offset, y, w, h, layer) => {
         const palette = getTimePalette();
         ctx.strokeStyle = palette.trees[1];
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1;
 
-        for (let i = 0; i < 20; i++) {
-            const x = ((i * 8 - offset * 0.5) % 200);
-            const height = 30 + Math.sin(i) * 15;
-            const sway = Math.sin(game.time * 0.02 + i * 0.5) * 3;
+        for (let i = 0; i < 15; i++) {
+            const x = ((i * 4 - offset * 0.5) % 100);
+            const height = 15 + Math.sin(i) * 7;
+            const sway = Math.sin(game.time * 0.02 + i * 0.5) * 2;
 
             ctx.beginPath();
             ctx.moveTo(x, y);
@@ -370,104 +381,111 @@ const FALLBACKS = {
         }
     },
 
+    // Water surface scaled for 480x270 resolution
     'water-surface': (ctx, offset, y, w, h, layer) => {
         const palette = getTimePalette();
 
         ctx.strokeStyle = palette.waterHighlight;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        for (let x = 0; x < w; x += 4) {
-            const ripple = Math.sin((x + offset) * 0.02 + game.time * 0.03) * 2;
-            if (x === 0) ctx.moveTo(x, y + ripple);
-            else ctx.lineTo(x, y + ripple);
+        for (let x = 0; x < w; x += 3) {
+            const ripple = Math.sin((x + offset) * 0.03 + game.time * 0.03) * 1;
+            if (x === 0) ctx.moveTo(x, CONFIG.waterLine + ripple);
+            else ctx.lineTo(x, CONFIG.waterLine + ripple);
         }
         ctx.stroke();
 
-        for (let i = 0; i < 30; i++) {
-            const x = (i * 67 + game.time * 0.3 + offset) % w;
-            const ripple = Math.sin(x * 0.02 + game.time * 0.03) * 2;
+        // Small highlight reflections
+        for (let i = 0; i < 15; i++) {
+            const x = (i * 35 + game.time * 0.3 + offset) % w;
+            const ripple = Math.sin(x * 0.03 + game.time * 0.03) * 1;
             ctx.fillStyle = palette.waterHighlight;
-            ctx.fillRect(x, y + ripple - 1, 10 + Math.sin(i) * 5, 2);
+            ctx.fillRect(x, CONFIG.waterLine + ripple - 1, 5 + Math.sin(i) * 2, 1);
         }
     },
 
+    // Water reflection scaled for 480x270 resolution
     'water-reflection': (ctx, offset, y, w, h, layer) => {
         const palette = getTimePalette();
-        ctx.globalAlpha = 0.2;
+        ctx.globalAlpha = 0.15;
 
-        for (let ry = y; ry < y + 80; ry += 4) {
-            const distort = Math.sin(ry * 0.1 + game.time * 0.03 + offset * 0.01) * 3;
+        for (let ry = CONFIG.waterLine; ry < CONFIG.waterLine + 40; ry += 2) {
+            const distort = Math.sin(ry * 0.15 + game.time * 0.03 + offset * 0.01) * 2;
             ctx.fillStyle = palette.mountains[0];
-            ctx.fillRect(distort, ry, w, 2);
+            ctx.fillRect(distort, ry, w, 1);
         }
 
         ctx.globalAlpha = 1;
     },
 
+    // Underwater background
     'underwater-bg': (ctx, offset, y, w, h, layer) => {
         const palette = getTimePalette();
-        const gradient = ctx.createLinearGradient(0, y, 0, h);
+        const gradient = ctx.createLinearGradient(0, CONFIG.waterLine, 0, h);
         palette.underwater.forEach((color, i) => {
             gradient.addColorStop(i / (palette.underwater.length - 1), color);
         });
         ctx.fillStyle = gradient;
-        ctx.fillRect(0, y, w, h - y);
+        ctx.fillRect(0, CONFIG.waterLine, w, h - CONFIG.waterLine);
     },
 
+    // Light rays scaled for 480x270 resolution
     'light-rays': (ctx, offset, y, w, h, layer) => {
         if (game.timeOfDay === 'night') return;
-        const intensity = game.timeOfDay === 'day' ? 0.08 : 0.04;
+        const intensity = game.timeOfDay === 'day' ? 0.06 : 0.03;
 
-        for (let i = 0; i < 6; i++) {
-            const x = (150 + i * 150 - offset * 0.3) % (w + 100);
-            const gradient = ctx.createLinearGradient(x, y, x + 50, h);
+        for (let i = 0; i < 4; i++) {
+            const x = (60 + i * 80 - offset * 0.3) % (w + 50);
+            const gradient = ctx.createLinearGradient(x, CONFIG.waterLine, x + 20, h);
             gradient.addColorStop(0, `rgba(200, 220, 180, ${intensity})`);
             gradient.addColorStop(1, 'transparent');
 
             ctx.fillStyle = gradient;
             ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x - 20, h);
-            ctx.lineTo(x + 70, h);
-            ctx.lineTo(x + 30, y);
+            ctx.moveTo(x, CONFIG.waterLine);
+            ctx.lineTo(x - 10, h);
+            ctx.lineTo(x + 30, h);
+            ctx.lineTo(x + 15, CONFIG.waterLine);
             ctx.closePath();
             ctx.fill();
         }
     },
 
+    // Rocks scaled for 480x270 resolution
     'rocks-far': (ctx, offset, y, w, h, layer) => {
         ctx.fillStyle = 'rgba(15, 25, 30, 0.6)';
-        for (let i = 0; i < 10; i++) {
-            const x = ((i * 150 - offset) % (w + 200)) - 100;
-            const rw = 40 + (i % 3) * 20;
-            const rh = 20 + (i % 2) * 10;
+        for (let i = 0; i < 6; i++) {
+            const x = ((i * 80 - offset) % (w + 100)) - 50;
+            const rw = 18 + (i % 3) * 8;
+            const rh = 8 + (i % 2) * 4;
             ctx.beginPath();
-            ctx.ellipse(x, y + 50, rw, rh, 0, Math.PI, 0);
+            ctx.ellipse(x, y + 20, rw, rh, 0, Math.PI, 0);
             ctx.fill();
         }
     },
 
     'rocks-mid': (ctx, offset, y, w, h, layer) => {
         ctx.fillStyle = 'rgba(10, 20, 25, 0.8)';
-        for (let i = 0; i < 8; i++) {
-            const x = ((i * 180 - offset) % (w + 200)) - 100;
-            const rw = 50 + (i % 4) * 15;
-            const rh = 25 + (i % 3) * 8;
+        for (let i = 0; i < 5; i++) {
+            const x = ((i * 100 - offset) % (w + 100)) - 50;
+            const rw = 22 + (i % 4) * 6;
+            const rh = 10 + (i % 3) * 4;
             ctx.beginPath();
-            ctx.ellipse(x, y + 30, rw, rh, 0, Math.PI, 0);
+            ctx.ellipse(x, y + 15, rw, rh, 0, Math.PI, 0);
             ctx.fill();
         }
     },
 
+    // Seaweed scaled for 480x270 resolution
     'seaweed-far': (ctx, offset, y, w, h, layer) => {
         ctx.strokeStyle = 'rgba(40, 80, 60, 0.4)';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 2;
 
-        for (let i = 0; i < 15; i++) {
-            const x = ((i * 100 - offset) % (w + 200)) - 100;
-            const baseY = y + 100 + (i % 3) * 30;
-            const height = 50 + (i % 4) * 15;
-            const sway = Math.sin(game.time * 0.015 + i * 0.8 + layer.currentFrame * 0.5) * 10;
+        for (let i = 0; i < 10; i++) {
+            const x = ((i * 50 - offset) % (w + 100)) - 50;
+            const baseY = y + 40 + (i % 3) * 12;
+            const height = 20 + (i % 4) * 6;
+            const sway = Math.sin(game.time * 0.015 + i * 0.8 + layer.currentFrame * 0.5) * 4;
 
             ctx.beginPath();
             ctx.moveTo(x, baseY);
@@ -478,13 +496,13 @@ const FALLBACKS = {
 
     'seaweed-near': (ctx, offset, y, w, h, layer) => {
         ctx.strokeStyle = 'rgba(50, 100, 70, 0.5)';
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 2;
 
-        for (let i = 0; i < 12; i++) {
-            const x = ((i * 130 - offset) % (w + 200)) - 100;
-            const baseY = y + 130 + (i % 2) * 20;
-            const height = 60 + (i % 3) * 20;
-            const sway = Math.sin(game.time * 0.015 + i * 0.6 + layer.currentFrame * 0.5) * 12;
+        for (let i = 0; i < 8; i++) {
+            const x = ((i * 65 - offset) % (w + 100)) - 50;
+            const baseY = y + 50 + (i % 2) * 10;
+            const height = 25 + (i % 3) * 8;
+            const sway = Math.sin(game.time * 0.015 + i * 0.6 + layer.currentFrame * 0.5) * 5;
 
             ctx.beginPath();
             ctx.moveTo(x, baseY);
@@ -493,24 +511,26 @@ const FALLBACKS = {
         }
     },
 
+    // Particles scaled for 480x270 resolution
     'particles': (ctx, offset, y, w, h, layer) => {
-        for (let i = 0; i < 40; i++) {
-            const x = (i * 37 + game.time * 0.2 + offset * 0.3) % w;
-            const py = y + 20 + (i * 23 + Math.sin(game.time * 0.02 + i) * 20) % (h - y - 50);
+        for (let i = 0; i < 25; i++) {
+            const x = (i * 20 + game.time * 0.2 + offset * 0.3) % w;
+            const py = y + 10 + (i * 12 + Math.sin(game.time * 0.02 + i) * 10) % (h - y - 25);
             const alpha = 0.2 + Math.sin(game.time * 0.03 + i) * 0.1;
             ctx.fillStyle = `rgba(150, 180, 170, ${alpha})`;
-            ctx.fillRect(x, py, 1 + (i % 3), 1 + (i % 3));
+            ctx.fillRect(x, py, 1, 1);
         }
     },
 
+    // Deep shadows scaled for 480x270 resolution
     'deep-shadows': (ctx, offset, y, w, h, layer) => {
         if (game.sanity > 80) return;
-        const count = Math.floor((100 - game.sanity) / 20) + 1;
+        const count = Math.floor((100 - game.sanity) / 25) + 1;
 
         for (let i = 0; i < count; i++) {
-            const x = (game.time * 0.3 + i * 300 - offset * 0.2) % (w + 200) - 100;
-            const sy = y + Math.sin(game.time * 0.01 + i * 2) * 20;
-            const size = 60 + i * 25;
+            const x = (game.time * 0.3 + i * 150 - offset * 0.2) % (w + 100) - 50;
+            const sy = y + Math.sin(game.time * 0.01 + i * 2) * 10;
+            const size = 25 + i * 10;
 
             ctx.fillStyle = `rgba(5, 5, 10, ${0.4 - i * 0.1})`;
             ctx.beginPath();
@@ -518,18 +538,18 @@ const FALLBACKS = {
             ctx.fill();
 
             if (game.sanity < 40) {
-                for (let t = 0; t < 3; t++) {
+                for (let t = 0; t < 2; t++) {
                     ctx.strokeStyle = `rgba(5, 5, 10, ${0.3 - i * 0.08})`;
-                    ctx.lineWidth = 8 - t * 2;
+                    ctx.lineWidth = 3 - t;
                     ctx.beginPath();
                     const tx = x + Math.cos(t * 2 + game.time * 0.02) * size * 0.7;
-                    const ty = sy + Math.sin(t * 2 + game.time * 0.02) * 15;
+                    const ty = sy + Math.sin(t * 2 + game.time * 0.02) * 8;
                     ctx.moveTo(tx, ty);
                     ctx.quadraticCurveTo(
-                        tx + Math.sin(game.time * 0.03 + t) * 25,
-                        ty + 35,
-                        tx + Math.sin(game.time * 0.02 + t) * 40,
-                        ty + 70
+                        tx + Math.sin(game.time * 0.03 + t) * 10,
+                        ty + 15,
+                        tx + Math.sin(game.time * 0.02 + t) * 15,
+                        ty + 30
                     );
                     ctx.stroke();
                 }
@@ -538,7 +558,7 @@ const FALLBACKS = {
     }
 };
 
-// Helper functions
+// Helper functions scaled for 480x270 resolution
 function drawCloud(ctx, x, y, w, h) {
     ctx.beginPath();
     ctx.ellipse(x, y, w * 0.5, h * 0.5, 0, 0, Math.PI * 2);
@@ -551,22 +571,26 @@ function drawCloud(ctx, x, y, w, h) {
     ctx.fill();
 }
 
+// Tree drawing scaled for pixel art resolution
 function drawTree(ctx, x, y, height, color) {
+    // Trunk - thin for pixel art
     ctx.fillStyle = '#1a1510';
-    ctx.fillRect(x - 2, y - height * 0.3, 4, height * 0.3);
+    ctx.fillRect(x - 1, y - height * 0.3, 2, height * 0.3);
 
+    // Top triangle
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.moveTo(x, y - height);
-    ctx.lineTo(x - 15, y - height * 0.3);
-    ctx.lineTo(x + 15, y - height * 0.3);
+    ctx.lineTo(x - 6, y - height * 0.3);
+    ctx.lineTo(x + 6, y - height * 0.3);
     ctx.closePath();
     ctx.fill();
 
+    // Bottom triangle
     ctx.beginPath();
     ctx.moveTo(x, y - height * 0.8);
-    ctx.lineTo(x - 20, y - height * 0.1);
-    ctx.lineTo(x + 20, y - height * 0.1);
+    ctx.lineTo(x - 8, y - height * 0.1);
+    ctx.lineTo(x + 8, y - height * 0.1);
     ctx.closePath();
     ctx.fill();
 }
