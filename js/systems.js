@@ -596,18 +596,11 @@ function initLoreBottles() {
 }
 
 function updateLoreBottles() {
-    game.loreBottles.forEach((bottle, i) => {
-        const dist = Math.abs(game.boatX - bottle.x);
-        if (dist < 50 && game.state === 'sailing') {
-            const lore = LORE_FRAGMENTS.find(l => l.id === bottle.id);
-            if (lore && !lore.found) {
-                lore.found = true;
-                game.loreFound.push(lore.id);
-                game.currentLore = lore;
-                game.loreBottles.splice(i, 1);
-                autoSave();
-            }
-        }
+    // Lore bottles are now visual hints only - they must be fished up
+    // Remove bottles whose lore has been found (via fishing)
+    game.loreBottles = game.loreBottles.filter(bottle => {
+        const lore = LORE_FRAGMENTS.find(l => l.id === bottle.id);
+        return lore && !lore.found;
     });
 }
 

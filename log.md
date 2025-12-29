@@ -2,6 +2,78 @@
 
 ---
 
+## 2025-12-29 — Fishable Lore Fragments & Crisp UI Text
+
+### Bakgrunn
+Tre forbedringer basert på bruker-feedback:
+1. Lighthouse.png eksisterer og rendres korrekt i spillet via prosedyral fallback på posisjon x=75
+2. Lore fragments skal fiskes opp, ikke automatisk samles når man seiler over dem
+3. UI-tekst var for pikselert og vanskelig å lese
+
+### Implementert
+
+#### 1. Fiskbare Lore Fragments
+Endret lore fragment-systemet fra auto-collect til fiske-basert:
+
+**js/creatures.js - Ny funksjon `checkForLoreFragment()`:**
+- Sjekker om det finnes ufunnet lore på nåværende lokasjon
+- 8% base sjanse + opptil 10% bonus ved dypere fiske
+- Returnerer en spesiell "Message in a Bottle" pseudo-creature
+
+**js/input.js - Lore-håndtering ved catch:**
+- Sjekker for `isLore` flag på fanget objekt
+- Markerer lore som funnet og viser lore popup
+- Fjerner eventuelt tilhørende flytende flaske
+
+**js/systems.js - Deaktivert auto-collect:**
+- `updateLoreBottles()` fjerner nå bare flasker for funnet lore
+- Flasker fungerer som visuelle hint, men må fiskes opp
+
+**js/rendering.js - Spesiell popup for lore items:**
+- Lilla tema for "FOUND!" melding
+- "Press SPACE to read..." tekst
+
+#### 2. Separat UI Canvas for Skarp Tekst
+Lagt til et overlay canvas som rendrer UI-tekst ved full skjermoppløsning:
+
+**index.html:**
+- Nytt `#uiCanvas` element med `image-rendering: auto`
+- Plassert over pixel art canvas med `pointer-events: none`
+
+**js/main.js - Nye hjelpefunksjoner:**
+- `getUIContext()` - Returnerer UI context eller fallback til main
+- `toUICoords(x, y)` - Konverterer spillkoordinater til UI-koordinater
+- `drawCrispText(text, x, y, options)` - Tegner skarp tekst
+- `drawCrispRect()` / `drawCrispStrokeRect()` - Tegner skarpe rektangler
+
+**Oppdaterte UI-elementer:**
+- `drawCatchPopup()` - Bruker nå crisp text for catch info
+- `drawLorePopup()` - Bruker crisp text for lore-innhold
+- `drawLocationIndicator()` - Lokasjonsnavnet er nå skarpere
+- `drawWeatherIndicator()` - Værindikatoren er nå skarpere
+
+### Testing
+1. Start spillet med `python3 -m http.server 8080`
+2. Test lore fishing:
+   - Seil til en lokasjon med lore (f.eks. Sandbank)
+   - Fisk ved lokasjonen - 8-18% sjanse for "Message in a Bottle"
+   - Bekreft at lore popup vises etter catch popup
+3. Test UI-lesbarhet:
+   - Sjekk at lokasjonsnavnet øverst er lesbart
+   - Sjekk at catch popup har skarp tekst
+   - Sjekk at lore popup er lett å lese
+
+### Filer endret
+- `js/creatures.js` — Lagt til `checkForLoreFragment()`, modifisert `getCreature()`
+- `js/input.js` — Lore-håndtering i catch processing
+- `js/systems.js` — Deaktivert auto-collect i `updateLoreBottles()`
+- `js/rendering.js` — Crisp popups for catch og lore
+- `js/ui.js` — Crisp location og weather indicators
+- `js/main.js` — UI canvas init og hjelpefunksjoner
+- `index.html` — Lagt til uiCanvas element og CSS
+
+---
+
 ## 2025-12-29 — Cast n Chill-Inspired Water Reflection System
 
 ### Bakgrunn

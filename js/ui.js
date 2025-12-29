@@ -6,11 +6,14 @@ function drawLocationIndicator() {
     const loc = CONFIG.locations[game.currentLocation];
     if (!loc) return;
 
-    ctx.font = '20px VT323';
-    ctx.fillStyle = 'rgba(200, 220, 210, 0.8)';
-    ctx.textAlign = 'center';
-    ctx.fillText(loc.name, CONFIG.canvas.width / 2, 30);
+    // Use crisp text for location name
+    drawCrispText(loc.name, CONFIG.canvas.width / 2, 25, {
+        font: '18px VT323',
+        color: 'rgba(200, 220, 210, 0.9)',
+        align: 'center'
+    });
 
+    // Minimap stays on pixel canvas (it's pixel art anyway)
     const mapWidth = 200, mapHeight = 20;
     const mapX = CONFIG.canvas.width - mapWidth - 15;
     const mapY = CONFIG.canvas.height - mapHeight - 15;
@@ -41,10 +44,6 @@ function drawLocationIndicator() {
 function drawWeatherIndicator() {
     const weather = WEATHER.types[game.weather.current];
 
-    ctx.font = '14px VT323';
-    ctx.fillStyle = 'rgba(200, 220, 210, 0.7)';
-    ctx.textAlign = 'right';
-
     let icon = '';
     if (game.weather.current === 'clear') icon = 'Clear';
     else if (game.weather.current === 'cloudy') icon = 'Cloudy';
@@ -52,8 +51,11 @@ function drawWeatherIndicator() {
     else if (game.weather.current === 'fog') icon = 'Fog';
     else if (game.weather.current === 'storm') icon = 'Storm';
 
-    ctx.fillText(icon, CONFIG.canvas.width - 15, 55);
-    ctx.textAlign = 'left';
+    drawCrispText(icon, CONFIG.canvas.width - 15, 50, {
+        font: '14px VT323',
+        color: 'rgba(200, 220, 210, 0.8)',
+        align: 'right'
+    });
 }
 
 function drawDogIndicator() {

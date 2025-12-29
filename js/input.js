@@ -328,6 +328,35 @@ function setupInputHandlers() {
                     }
                 } else if (game.state === 'caught') {
                     const c = game.currentCatch;
+
+                    // Handle lore fragments specially
+                    if (c.isLore && c.loreId) {
+                        const lore = LORE_FRAGMENTS.find(l => l.id === c.loreId);
+                        if (lore && !lore.found) {
+                            lore.found = true;
+                            game.loreFound.push(lore.id);
+                            game.currentLore = lore;
+                            // Remove from floating bottles if exists
+                            const bottleIndex = game.loreBottles.findIndex(b => b.id === lore.id);
+                            if (bottleIndex !== -1) {
+                                game.loreBottles.splice(bottleIndex, 1);
+                            }
+                        }
+                        // Apply small sanity loss from reading eldritch text
+                        game.sanity = Math.max(0, game.sanity - c.sanityLoss);
+                        game.transformation.totalSanityLost += c.sanityLoss;
+
+                        game.currentCatch = null;
+                        game.state = 'sailing';
+                        game.depth = 0;
+                        game.targetDepth = 0;
+                        if (game.camera) {
+                            game.camera.targetY = 0;
+                        }
+                        autoSave();
+                        break;
+                    }
+
                     game.sanity = Math.max(0, game.sanity - c.sanityLoss);
 
                     // Track sanity lost for transformation

@@ -237,7 +237,47 @@ function selectCreatureByRarity(adjustedPool, roll) {
 // MAIN CREATURE SELECTION
 // ============================================================
 
+// Check for lore fragment at current location
+function checkForLoreFragment() {
+    const currentLoc = game.currentLocation;
+    if (!currentLoc) return null;
+
+    // Find unfound lore fragments at this location
+    const availableLore = LORE_FRAGMENTS.filter(lore =>
+        !lore.found && lore.location === currentLoc
+    );
+
+    if (availableLore.length === 0) return null;
+
+    // 8% base chance to fish up a lore fragment at correct location
+    // Higher chance at deeper depths (lore sinks to the bottom)
+    const depthBonus = Math.min(game.depth / 100, 0.1); // Up to +10% at 100m
+    const loreChance = 0.08 + depthBonus;
+
+    if (Math.random() < loreChance) {
+        // Pick a random available lore at this location
+        const lore = availableLore[Math.floor(Math.random() * availableLore.length)];
+        return {
+            name: "Message in a Bottle",
+            desc: "A sealed bottle with a waterlogged note inside...",
+            value: 0,
+            sanityLoss: 2,
+            rarity: 0.05,
+            isLore: true,
+            loreId: lore.id
+        };
+    }
+
+    return null;
+}
+
 function getCreature() {
+    // First check for lore fragment
+    const loreFragment = checkForLoreFragment();
+    if (loreFragment) {
+        return loreFragment;
+    }
+
     const rod = getCurrentRod();
     const lure = getCurrentLure();
     const maxDepth = rod ? rod.depthMax : 30;

@@ -5,6 +5,10 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// UI canvas for crisp text rendering (overlays pixel art canvas)
+const uiCanvas = document.getElementById('uiCanvas');
+const uiCtx = uiCanvas ? uiCanvas.getContext('2d') : null;
+
 let lastTime = 0;
 
 // ============================================================
@@ -27,6 +31,17 @@ function initCanvasSize() {
 
     // CRITICAL: Disable image smoothing for crisp pixel art
     disableImageSmoothing();
+
+    // Initialize UI canvas at viewport resolution for crisp text
+    if (uiCanvas && uiCtx) {
+        const dpr = window.devicePixelRatio || 1;
+        uiCanvas.width = window.innerWidth * dpr;
+        uiCanvas.height = window.innerHeight * dpr;
+        uiCtx.scale(dpr, dpr);
+        // Store scale factor for coordinate conversion
+        CONFIG.uiScale = window.innerWidth / PIXEL_CONFIG.internalWidth;
+        console.log('[UI] UI canvas initialized:', uiCanvas.width, 'x', uiCanvas.height, 'scale:', CONFIG.uiScale);
+    }
 
     console.log('[PIXEL] Canvas initialized:', canvas.width, 'x', canvas.height);
     console.log('[PIXEL] Water line at:', CONFIG.waterLine);
@@ -51,6 +66,107 @@ function resizeCanvas() {
     // Canvas stays at fixed resolution - CSS handles scaling
     // Just ensure image smoothing is still disabled
     disableImageSmoothing();
+
+    // Resize UI canvas to match viewport
+    if (uiCanvas && uiCtx) {
+        const dpr = window.devicePixelRatio || 1;
+        uiCanvas.width = window.innerWidth * dpr;
+        uiCanvas.height = window.innerHeight * dpr;
+        uiCtx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+        uiCtx.scale(dpr, dpr);
+        CONFIG.uiScale = window.innerWidth / PIXEL_CONFIG.internalWidth;
+    }
+}
+
+// ============================================================
+// UI CANVAS HELPER FUNCTIONS (for crisp text rendering)
+// ============================================================
+
+/**
+ * Get the UI context for drawing crisp text.
+ * Falls back to main ctx if UI canvas not available.
+ */
+function getUIContext() {
+    return uiCtx || ctx;
+}
+
+/**
+ * Convert game coordinates to UI canvas coordinates.
+ */
+function toUICoords(x, y) {
+    const scale = CONFIG.uiScale || 1;
+    return { x: x * scale, y: y * scale };
+}
+
+/**
+ * Draw crisp text on the UI canvas (or fallback to main canvas).
+ * @param {string} text - Text to draw
+ * @param {number} x - X position in game coordinates
+ * @param {number} y - Y position in game coordinates
+ * @param {object} options - Font options { font, color, align, baseline }
+ */
+function drawCrispText(text, x, y, options = {}) {
+    const targetCtx = uiCtx || ctx;
+    const scale = CONFIG.uiScale || 1;
+
+    // Default options
+    const font = options.font || '14px VT323';
+    const color = options.color || '#ffffff';
+    const align = options.align || 'left';
+    const baseline = options.baseline || 'alphabetic';
+
+    // Parse font size and scale it
+    const fontMatch = font.match(/(\d+)px/);
+    let scaledFont = font;
+    if (fontMatch && uiCtx) {
+        const fontSize = parseInt(fontMatch[1]);
+        const scaledSize = Math.round(fontSize * scale);
+        scaledFont = font.replace(/\d+px/, scaledSize + 'px');
+    }
+
+    targetCtx.save();
+    targetCtx.font = scaledFont;
+    targetCtx.fillStyle = color;
+    targetCtx.textAlign = align;
+    targetCtx.textBaseline = baseline;
+
+    if (uiCtx) {
+        targetCtx.fillText(text, x * scale, y * scale);
+    } else {
+        targetCtx.fillText(text, x, y);
+    }
+    targetCtx.restore();
+}
+
+/**
+ * Draw crisp filled rect on UI canvas.
+ */
+function drawCrispRect(x, y, w, h, color) {
+    const targetCtx = uiCtx || ctx;
+    const scale = CONFIG.uiScale || 1;
+
+    targetCtx.fillStyle = color;
+    if (uiCtx) {
+        targetCtx.fillRect(x * scale, y * scale, w * scale, h * scale);
+    } else {
+        targetCtx.fillRect(x, y, w, h);
+    }
+}
+
+/**
+ * Draw crisp stroke rect on UI canvas.
+ */
+function drawCrispStrokeRect(x, y, w, h, color, lineWidth = 1) {
+    const targetCtx = uiCtx || ctx;
+    const scale = CONFIG.uiScale || 1;
+
+    targetCtx.strokeStyle = color;
+    targetCtx.lineWidth = lineWidth * scale;
+    if (uiCtx) {
+        targetCtx.strokeRect(x * scale, y * scale, w * scale, h * scale);
+    } else {
+        targetCtx.strokeRect(x, y, w, h);
+    }
 }
 
 function update(deltaTime) {
@@ -199,6 +315,11 @@ function render() {
     disableImageSmoothing();
 
     ctx.clearRect(0, 0, CONFIG.canvas.width, CONFIG.canvas.height);
+
+    // Clear UI canvas for crisp text overlays
+    if (uiCanvas && uiCtx) {
+        uiCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    }
 
     if (game.state === 'title') return;
 
