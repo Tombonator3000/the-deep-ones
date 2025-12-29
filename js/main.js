@@ -8,41 +8,49 @@ const ctx = canvas.getContext('2d');
 let lastTime = 0;
 
 // ============================================================
-// FULLSCREEN CANVAS RESIZING
+// PIXEL ART CANVAS SETUP (Cast n Chill style)
 // ============================================================
 
-function resizeCanvas() {
-    const container = document.getElementById('gameContainer');
-    const width = container.clientWidth || window.innerWidth;
-    const height = container.clientHeight || window.innerHeight;
+/**
+ * Initialize canvas with fixed pixel art resolution.
+ * CSS handles scaling to full screen with crisp pixels.
+ */
+function initCanvasSize() {
+    // Set canvas to fixed low resolution for pixel art
+    canvas.width = PIXEL_CONFIG.internalWidth;
+    canvas.height = PIXEL_CONFIG.internalHeight;
 
-    // Set canvas internal resolution
-    canvas.width = width;
-    canvas.height = height;
+    // Update CONFIG to match
+    CONFIG.canvas.width = PIXEL_CONFIG.internalWidth;
+    CONFIG.canvas.height = PIXEL_CONFIG.internalHeight;
+    CONFIG.waterLine = Math.floor(PIXEL_CONFIG.internalHeight * PIXEL_CONFIG.waterLineRatio);
 
-    // Update CONFIG to match new size
-    CONFIG.canvas.width = width;
-    CONFIG.canvas.height = height;
+    // CRITICAL: Disable image smoothing for crisp pixel art
+    disableImageSmoothing();
 
-    // Recalculate water line proportionally (originally 280/650 = ~0.43)
-    CONFIG.waterLine = Math.floor(height * 0.43);
-
-    // Reinitialize layers if game is running
-    if (game.state !== 'title' && typeof initLayers === 'function') {
-        initLayers();
-    }
+    console.log('[PIXEL] Canvas initialized:', canvas.width, 'x', canvas.height);
+    console.log('[PIXEL] Water line at:', CONFIG.waterLine);
 }
 
-// Initialize canvas size on load
-function initCanvasSize() {
-    resizeCanvas();
+/**
+ * Disable all image smoothing on canvas context.
+ * Must be called after any context state change that might reset it.
+ */
+function disableImageSmoothing() {
+    ctx.imageSmoothingEnabled = false;
+    ctx.webkitImageSmoothingEnabled = false;
+    ctx.mozImageSmoothingEnabled = false;
+    ctx.msImageSmoothingEnabled = false;
+}
 
-    // Add resize listener with debounce
-    let resizeTimeout;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(resizeCanvas, 100);
-    });
+/**
+ * Legacy function for compatibility - no longer dynamically resizes.
+ * Canvas stays at fixed pixel art resolution, CSS handles display scaling.
+ */
+function resizeCanvas() {
+    // Canvas stays at fixed resolution - CSS handles scaling
+    // Just ensure image smoothing is still disabled
+    disableImageSmoothing();
 }
 
 function update(deltaTime) {
@@ -187,6 +195,9 @@ function update(deltaTime) {
 }
 
 function render() {
+    // Ensure pixel-perfect rendering every frame
+    disableImageSmoothing();
+
     ctx.clearRect(0, 0, CONFIG.canvas.width, CONFIG.canvas.height);
 
     if (game.state === 'title') return;

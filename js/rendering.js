@@ -594,45 +594,48 @@ function drawLoreBottles() {
 function drawLorePopup() {
     if (!game.currentLore) return;
 
-    const w = 400, h = 180;
+    // Scaled for low resolution
+    const w = Math.min(280, CONFIG.canvas.width - 20);
+    const h = Math.min(120, CONFIG.canvas.height - 30);
     const x = (CONFIG.canvas.width - w) / 2;
     const y = (CONFIG.canvas.height - h) / 2;
 
     ctx.fillStyle = 'rgba(20, 25, 30, 0.95)';
     ctx.fillRect(x, y, w, h);
     ctx.strokeStyle = '#5a8a7a';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1;
     ctx.strokeRect(x, y, w, h);
 
-    ctx.font = '18px "Press Start 2P"';
+    ctx.font = '8px "Press Start 2P"';
     ctx.fillStyle = '#8aba9a';
     ctx.textAlign = 'center';
-    ctx.fillText('LORE FOUND', x + w/2, y + 30);
+    ctx.fillText('LORE FOUND', x + w/2, y + 15);
 
-    ctx.font = '16px VT323';
+    ctx.font = '10px VT323';
     ctx.fillStyle = '#c0d0c0';
-    ctx.fillText(game.currentLore.title, x + w/2, y + 60);
+    ctx.fillText(game.currentLore.title, x + w/2, y + 32);
 
-    ctx.font = '14px VT323';
+    ctx.font = '8px VT323';
     ctx.fillStyle = '#a0b0a0';
     const words = game.currentLore.text.split(' ');
     let line = '';
-    let lineY = y + 90;
+    let lineY = y + 50;
     words.forEach(word => {
         const testLine = line + word + ' ';
-        if (ctx.measureText(testLine).width > w - 40) {
+        if (ctx.measureText(testLine).width > w - 20) {
             ctx.fillText(line, x + w/2, lineY);
             line = word + ' ';
-            lineY += 18;
+            lineY += 12;
+            if (lineY > y + h - 25) return; // Don't overflow
         } else {
             line = testLine;
         }
     });
-    ctx.fillText(line, x + w/2, lineY);
+    if (lineY <= y + h - 25) ctx.fillText(line, x + w/2, lineY);
 
-    ctx.font = '12px VT323';
+    ctx.font = '7px VT323';
     ctx.fillStyle = '#6a8a7a';
-    ctx.fillText('[SPACE] to continue', x + w/2, y + h - 15);
+    ctx.fillText('[SPACE]', x + w/2, y + h - 8);
     ctx.textAlign = 'left';
 }
 
@@ -641,22 +644,25 @@ function drawMinigame() {
     if (!game.minigame.active) return;
 
     const mg = game.minigame;
-    const barWidth = 320, barHeight = 35;
+    // Scaled for low resolution
+    const barWidth = Math.min(200, CONFIG.canvas.width - 40);
+    const barHeight = 20;
     const x = (CONFIG.canvas.width - barWidth) / 2;
-    const y = CONFIG.canvas.height - 110;
+    const y = CONFIG.canvas.height - 55;
 
-    // Background panel
+    // Background panel - scaled for low res
+    const panelH = 55;
     ctx.fillStyle = 'rgba(15, 25, 35, 0.92)';
-    ctx.fillRect(x - 15, y - 40, barWidth + 30, 100);
+    ctx.fillRect(x - 10, y - 22, barWidth + 20, panelH);
     ctx.strokeStyle = '#4a7a6a';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x - 15, y - 40, barWidth + 30, 100);
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x - 10, y - 22, barWidth + 20, panelH);
 
     // Title
-    ctx.font = '14px VT323';
+    ctx.font = '8px VT323';
     ctx.fillStyle = '#8aba9a';
     ctx.textAlign = 'center';
-    ctx.fillText('REELING IN...', x + barWidth/2, y - 20);
+    ctx.fillText('REELING IN...', x + barWidth/2, y - 12);
 
     // Progress bar background
     ctx.fillStyle = 'rgba(30, 50, 60, 0.9)';
@@ -689,82 +695,87 @@ function drawMinigame() {
     ctx.translate(fishX, fishY);
     ctx.rotate(Math.sin(game.time * 0.1) * 0.1 * (100 - mg.progress) / 100);
 
-    // Draw fish
+    // Draw fish - smaller for low res
     ctx.fillStyle = '#d0e0f0';
-    ctx.font = '22px VT323';
+    ctx.font = '12px VT323';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🐟', 0, 0);
+    ctx.fillText('><>', 0, 0);
     ctx.restore();
 
     // Splash effect when reeling
     if (mg.splashTimer > 0) {
         ctx.fillStyle = `rgba(150, 200, 255, ${mg.splashTimer / 15})`;
-        for (let i = 0; i < 3; i++) {
-            const splashX = fishX + Math.random() * 20 - 10;
-            const splashY = fishY + Math.random() * 10 - 15;
+        for (let i = 0; i < 2; i++) {
+            const splashX = fishX + Math.random() * 10 - 5;
+            const splashY = fishY + Math.random() * 6 - 8;
             ctx.beginPath();
-            ctx.arc(splashX, splashY, 2 + Math.random() * 3, 0, Math.PI * 2);
+            ctx.arc(splashX, splashY, 1 + Math.random() * 2, 0, Math.PI * 2);
             ctx.fill();
         }
     }
 
     // Percentage text
-    ctx.font = '16px VT323';
+    ctx.font = '10px VT323';
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(`${Math.floor(mg.progress)}%`, x + barWidth / 2, y + barHeight / 2);
 
     // Instructions
-    ctx.font = '12px VT323';
+    ctx.font = '7px VT323';
     ctx.fillStyle = mg.reeling ? '#aaddaa' : '#7a9a8a';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
-    const instruction = mg.reeling ? 'Reeling! Keep holding!' : 'Hold [SPACE] to reel faster!';
-    ctx.fillText(instruction, x + barWidth / 2, y + barHeight + 18);
+    const instruction = mg.reeling ? 'Reeling!' : 'Hold [SPACE]';
+    ctx.fillText(instruction, x + barWidth / 2, y + barHeight + 10);
 }
 
 function drawCatchPopup() {
     if (!game.currentCatch) return;
 
     const c = game.currentCatch;
-    const px = (CONFIG.canvas.width - 350) / 2;
-    const py = 100;
+    // Scaled for low resolution
+    const w = Math.min(220, CONFIG.canvas.width - 20);
+    const h = 100;
+    const px = (CONFIG.canvas.width - w) / 2;
+    const py = 50;
 
     ctx.fillStyle = 'rgba(5, 10, 8, 0.95)';
-    ctx.fillRect(px - 5, py - 5, 360, 190);
+    ctx.fillRect(px - 3, py - 3, w + 6, h + 6);
     ctx.strokeStyle = '#5a8a6a';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(px, py, 350, 180);
+    ctx.lineWidth = 1;
+    ctx.strokeRect(px, py, w, h);
 
     ctx.fillStyle = '#aaddaa';
-    ctx.font = '12px "Press Start 2P"';
-    ctx.fillText('CAUGHT!', px + 120, py + 30);
+    ctx.font = '8px "Press Start 2P"';
+    ctx.textAlign = 'center';
+    ctx.fillText('CAUGHT!', px + w/2, py + 15);
 
+    ctx.textAlign = 'left';
     ctx.fillStyle = '#8aba9a';
-    ctx.font = '22px VT323';
-    ctx.fillText(c.name, px + 20, py + 60);
+    ctx.font = '12px VT323';
+    ctx.fillText(c.name, px + 10, py + 32);
 
     ctx.fillStyle = '#d0d080';
-    ctx.font = '18px VT323';
-    ctx.fillText(`${c.value} gold`, px + 20, py + 90);
+    ctx.font = '10px VT323';
+    ctx.fillText(`${c.value}g`, px + 10, py + 48);
 
     if (c.sanityLoss > 15) {
         ctx.fillStyle = '#a06060';
-        ctx.fillText(`-${c.sanityLoss} sanity`, px + 150, py + 90);
+        ctx.fillText(`-${c.sanityLoss} san`, px + 60, py + 48);
     }
 
     ctx.fillStyle = '#6a8a7a';
-    ctx.font = '16px VT323';
-    ctx.fillText(c.desc, px + 20, py + 120);
-
-    // Trophy info (Cast n Chill inspired)
-    if (typeof drawTrophyInfo === 'function') {
-        drawTrophyInfo(c, px + 20, py + 145);
-    }
+    ctx.font = '8px VT323';
+    // Truncate description for low res
+    const maxChars = Math.floor((w - 20) / 4);
+    const desc = c.desc.length > maxChars ? c.desc.substring(0, maxChars - 3) + '...' : c.desc;
+    ctx.fillText(desc, px + 10, py + 65);
 
     ctx.fillStyle = '#5a6a5a';
-    ctx.font = '14px VT323';
-    ctx.fillText('[SPACE] continue', px + 220, py + 170);
+    ctx.font = '7px VT323';
+    ctx.textAlign = 'center';
+    ctx.fillText('[SPACE]', px + w/2, py + h - 8);
+    ctx.textAlign = 'left';
 }
