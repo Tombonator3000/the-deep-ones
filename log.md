@@ -5690,3 +5690,129 @@ node -c js/rendering.js    # ✓ No errors
 4. Mulig optimalisering av loop-hastighet hvis performance issues
 
 ---
+## 2025-12-30 — FIX: Water Reflections Not Visible
+
+### Problem Report
+Brukeren rapporterte at vannrefleksjoner ikke var synlige:
+- Ingen refleksjon av himmel i vannet
+- Ingen refleksjon av fjell i vannet
+- Ingen refleksjon av trær i vannet
+
+Fra screenshot: Vannet viste kun en flat blå/cyan farge uten synlige refleksjoner.
+
+### Root Cause Analysis
+
+**Refleksjonssystem:**
+Det finnes to vannrefleksjonssystemer i koden:
+1. `FALLBACKS['water-reflection']` i fallbacks.js (omfattende prosedyral refleksjon)
+2. `drawEnhancedWaterReflection()` i systems.js (canvas-basert refleksjon med wave distortion)
+
+Begge systemene implementerer refleksjoner av himmel, fjell og trær.
+
+**Problemet:**
+`drawEnhancedWaterReflection()` kjører ETTER layers er tegnet (main.js:391-392), og tegner dermed over `FALLBACKS['water-reflection']`.
+
+Systemet rendrer korrekt til reflectionCanvas (himmel, sol/måne, skyer, fjell, trær), men refleksjonene var **for svake til å være synlige**:
+
+1. **For lav opacity:** 0.35 (base opacity)
+2. **For sterk tint:** 0.15 (blå-grønn overlay som skjulte refleksjonene)
+3. **For liten fadeHeight:** 50px (refleksjonene strakte seg ikke langt nok ned)
+
+### Løsning
+
+Økte synligheten av vannrefleksjoner ved å justere `REFLECTION_CONFIG` i systems.js:
+
+**Endringer:**
+```javascript
+// FØR:
+opacity: 0.35              // For svak!
+fadeHeight: 50             // For grunt!
+tintStrength: 0.15         // Skjuler refleksjonene!
+
+// ETTER:
+opacity: 0.7               // 2x sterkere - tydelig synlig
+fadeHeight: 70             // 40% dypere - bedre dybde
+tintStrength: 0.05         // 1/3 av original - lar refleksjonene skinne gjennom
+```
+
+### Tekniske Detaljer
+
+**Refleksjonsinnhold (renderAboveWaterToReflection):**
+- Sky-gradient (invertert fra palette)
+- Sol/måne med glow-effekt
+- Skyer (3 lag med parallax)
+- Fjell (3 lag: far, mid, near med forskjellige y-posisjoner)
+- Trær (2 lag: far og near med triangle-shapes)
+- Fyrtårn (hvis synlig i viewport)
+
+**Wave Distortion:**
+Refleksjonene tegnes i horisontale strips (2px høye) med:
+- Sinusbølge-basert horisontal forskyvning
+- Dual wave for organisk bevegelse
+- Fade-out med dybde (opacity: 0.7 → 0.14)
+
+**Opacity Beregning:**
+```javascript
+fadeProgress = stripIndex / totalStrips
+opacity = 0.7 * (1 - fadeProgress * 0.8)
+// Resultat: 0.7 (topp) til 0.14 (bunn)
+```
+
+### Endrede Filer
+
+**js/systems.js (linje 2043-2053):**
+- REFLECTION_CONFIG.opacity: `0.35` → `0.7`
+- REFLECTION_CONFIG.fadeHeight: `50` → `70`
+- REFLECTION_CONFIG.tintStrength: `0.15` → `0.05`
+
+### Visuell Effekt
+
+**Før:**
+- Refleksjoner var teknisk korrekt implementert
+- Men for svake til å være synlige (opacity 0.35)
+- Blå-grønn tint (0.15) skjulte detaljene
+- Refleksjoner strakte seg kun 50px ned
+
+**Etter:**
+- Refleksjoner er tydelig synlige (opacity 0.7)
+- Himmel-gradient reflekteres i vannet (invertert)
+- Fjell-silhuetter synlige med wave distortion
+- Tre-silhuetter synlige med wave distortion
+- Sol/måne-shimmer tydelig (hvis synlig)
+- Refleksjoner strekker seg 70px ned for bedre dybde
+- Minimal tint (0.05) lar detaljer skinne gjennom
+
+### Testing
+
+**Forventet resultat:**
+Når spillet kjøres, skal vannet nå vise:
+1. ✓ Himmel-refleksjon (invertert gradient fra palette)
+2. ✓ Fjell-refleksjon (3 lag med wave distortion)
+3. ✓ Tre-refleksjon (2 lag med wave distortion)
+4. ✓ Sol/måne-shimmer (vertikal lyskolonne hvis celestial bodies synlig)
+5. ✓ Animerte shimmer-highlights på vannoverflaten
+6. ✓ Ripple-ringer rundt båten
+
+**Test ved alle tider:**
+- Dawn: Refleksjon av morgen-himmel og sol
+- Day: Refleksjon av dag-himmel og sol
+- Dusk: Refleksjon av skumrings-himmel, sol og måne
+- Night: Refleksjon av natt-himmel og måne
+
+### Performance
+
+Ingen performance-endringer - kun parameterjusteringer.
+Systemet bruker fortsatt samme rendering-metode:
+- Offscreen canvas for refleksjon
+- Horizontal strip-based rendering (2px strips)
+- Try-catch for sikker drawImage
+
+### Neste Steg
+
+Refleksjonene skal nå være tydelig synlige. Hvis de fortsatt er for svake eller for sterke, kan følgende justeres:
+- `opacity`: 0.7 (kan justeres 0.5-0.9)
+- `fadeHeight`: 70 (kan justeres 50-100)
+- `tintStrength`: 0.05 (kan justeres 0-0.1)
+
+---
+
