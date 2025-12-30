@@ -5464,3 +5464,229 @@ Ambient effects var eneste sted hvor **runtime particle positions** ble brukt ut
 
 ---
 
+
+---
+
+## 2025-12-30 - Layout Graphics Optimization
+
+**Mål:** Optimalisere layout og grafikk basert på visuell testing
+
+### Identifiserte Problemer
+
+1. **Sky dekker ikke nok øverst** - Potensielt gap i sky-rendering
+2. **Båten svever over vannet** - Ikke realistisk plassering
+3. **Manglende refleksjoner** - Ingen speilbilde av himmel, fjell, trær i vannet
+
+### Implementerte Løsninger
+
+#### 1. Sky-rendering Forbedring (js/fallbacks.js)
+
+**Problem:** Sky-gradienten kunne potensielt ha gap ved kantene.
+
+**Løsning:** 
+- Utvidet sky-gradient fillRect fra `(0, 0, w, CONFIG.waterLine)` til `(-1, -1, w+2, CONFIG.waterLine+2)`
+- Sikrer fullstendig dekning uten gap ved kanter
+- Gradienten dekker nå garantert hele området fra topp til vannlinje
+
+```javascript
+// Før:
+ctx.fillRect(0, 0, w, CONFIG.waterLine);
+
+// Etter:
+ctx.fillRect(-1, -1, w + 2, CONFIG.waterLine + 2);
+```
+
+#### 2. Båt Posisjonering (js/rendering.js)
+
+**Problem:** Båten var posisjonert 15px over vannlinjen, så ut som den svevet.
+
+**Løsning:**
+- Justert båt y-posisjon fra `CONFIG.waterLine - 15` til `CONFIG.waterLine - 5`
+- Båten sitter nå 10px lavere, med skrog delvis i vannet
+- Mer realistisk plassering med hull-bunnen ved/i vannet
+
+```javascript
+// Før:
+const y = CONFIG.waterLine - 15 + bob;
+
+// Etter (med kommentar):
+// Adjusted: boat sits IN the water, not above it (hull bottom at waterline + 8px)
+const y = CONFIG.waterLine - 5 + bob;
+```
+
+**Resultat:** Båten ser nå ut som den flyter i vannet i stedet for å sveve over det.
+
+#### 3. Vannrefleksjoner - Fullstendig Implementering (js/fallbacks.js)
+
+**Problem:** Eksisterende refleksjon var kun enkel fjell-refleksjon uten himmel eller trær.
+
+**Løsning:** Implementert omfattende refleksjonssystem med 5 komponenter:
+
+##### A. Himmel-refleksjon (Sky Reflection)
+- Invertert sky-gradient i vannet
+- Bruker reverserte farger fra palette.sky
+- Alpha: 0.12 for subtil effekt
+- Dekker øverste 36px av vannoverflate (60% av refleksjonshøyde)
+
+```javascript
+const reversedSky = [...palette.sky].reverse();
+const skyReflGradient = ctx.createLinearGradient(0, waterStart, 0, waterStart + reflectionHeight * 0.6);
+```
+
+##### B. Fjell-refleksjon (Mountain Reflection)
+- Forbedret eksisterende fjell-refleksjon
+- Lagt til dobbel bølge-distorsjon for mer realistisk effekt
+- Fade-out gradient ettersom refleksjonen går dypere
+- Dekker 42px (70% av refleksjonshøyde)
+
+```javascript
+const distort = Math.sin(ry * 0.12 + game.time * 0.025 + offset * 0.008) * 3 +
+              Math.sin(ry * 0.2 + game.time * 0.015) * 1.5;
+const fadeOut = 1 - (ry / (reflectionHeight * 0.7));
+```
+
+##### C. Tre-refleksjon (Tree Reflection)
+- Ny funksjonalitet - reflekterer trærnes siluett
+- Mer forvrengning enn fjell (høyere distort-verdi)
+- Bruker palette.trees[0] farge
+- Dekker 18-48px under vannlinje (30-80% av refleksjonshøyde)
+
+```javascript
+const distort = Math.sin(ry * 0.18 + game.time * 0.03 + offset * 0.012) * 4 +
+              Math.sin(ry * 0.25 + game.time * 0.02) * 2;
+```
+
+##### D. Sol/Måne-refleksjon (Celestial Reflection)
+- Dynamisk refleksjon av sol (dag) eller måne (natt)
+- Vertikal lyskolonne med bølgende effekt
+- Sol: Gul/oransje shimmer med 40px høyde
+- Måne: Blå/hvit shimmer med 35px høyde
+- Animert med sinusbølger for realistisk vanndans
+
+**Sol-refleksjon:**
+```javascript
+const shimmerGrad = ctx.createLinearGradient(sunX, reflectY, sunX, reflectY + 40);
+shimmerGrad.addColorStop(0, 'rgba(255, 240, 180, 0.3)');
+shimmerGrad.addColorStop(0.3, 'rgba(255, 220, 150, 0.15)');
+shimmerGrad.addColorStop(1, 'transparent');
+
+for (let dy = 0; dy < 40; dy += 2) {
+    const wave = Math.sin(dy * 0.2 + game.time * 0.05) * 8;
+    const width = 6 + Math.sin(dy * 0.15) * 3;
+    ctx.fillRect(sunX - width/2 + wave, reflectY + dy, width, 2);
+}
+```
+
+**Måne-refleksjon:**
+```javascript
+const moonShimmer = ctx.createLinearGradient(moonX, reflectY, moonX, reflectY + 35);
+moonShimmer.addColorStop(0, 'rgba(200, 210, 230, 0.25)');
+```
+
+##### E. Overflate-shimmer (Surface Shimmer)
+- Animerte lysrefleksjoner på vannoverflaten
+- 10 individuelle shimmer-punkter
+- Beveger seg horisontalt med tid og kamera-offset
+- Varierende bredde basert på sinusbølge
+
+```javascript
+for (let i = 0; i < 10; i++) {
+    const shimmerX = (i * 48 + game.time * 0.4 + offset * 0.6) % w;
+    const shimmerY = waterStart + Math.sin(shimmerX * 0.05 + game.time * 0.03) * 2;
+    const shimmerWidth = 8 + Math.sin(game.time * 0.02 + i) * 4;
+    ctx.fillRect(shimmerX, shimmerY, shimmerWidth, 1);
+}
+```
+
+### Tekniske Detaljer
+
+**Refleksjonshøyde:** 60px under vannlinjen (CONFIG.waterLine + 60)
+
+**Fading-system:**
+- Sky-refleksjon: Konstant alpha 0.12
+- Fjell-refleksjon: Fade fra 0.18 til 0 over 42px
+- Tre-refleksjon: Fade fra 0.15 til 0 over 30px
+- Celestial: Konstant alpha 0.4 (sol) / 0.35 (måne)
+- Shimmer: Konstant alpha 0.2
+
+**Performance:**
+- Bruker ctx.save() / ctx.restore() for å isolere alpha-endringer
+- Loops optimalisert med increment (2-4px hopp i stedet for 1px)
+- Conditional rendering (sol/måne kun når synlig)
+
+### Testing
+
+**Syntaks validering:**
+```bash
+node -c js/fallbacks.js    # ✓ No errors
+node -c js/rendering.js    # ✓ No errors
+```
+
+**Forventede visuelle resultater:**
+1. ✓ Sky dekker fullstendig fra topp til vannlinje
+2. ✓ Båt sitter i vannet med hull delvis nedsunket
+3. ✓ Vannoverflate viser refleksjoner av:
+   - Himmelgradienten (invertert)
+   - Fjellsiluetter (med bølgedistorsjon)
+   - Trær (med sterk distorsjon)
+   - Sol eller måne (vertikal lyskolonne)
+   - Animerte shimmer-highlights
+
+**Visuell testing:**
+- Test ved alle 4 tider på døgnet (dawn, day, dusk, night)
+- Verifiser refleksjoner er synlige og realistiske
+- Sjekk at båten ikke lengre "svever"
+- Bekreft himmel-dekning er komplett
+
+### Filer Modifisert
+
+**js/rendering.js:**
+- Linje 116: Justert båt y-posisjon fra `-15` til `-5`
+- Lagt til kommentar som forklarer justeringen
+
+**js/fallbacks.js:**
+- Linje 6-16: Forbedret 'sky-gradient' for full dekning
+- Linje 658-785: Fullstendig omskrevet 'water-reflection' med 5 komponenter
+  - ~130 linjer ny kode (fra ~12 linjer)
+  - Lagt til himmel-, tre-, sol/måne-refleksjoner
+  - Forbedret fjell-refleksjon med bedre distorsjon
+  - Lagt til overflate-shimmer effekt
+
+### Kodestatistikk
+
+**Linjer endret totalt:** ~135 linjer
+- rendering.js: 2 linjer modifisert
+- fallbacks.js: ~133 linjer (10 modifisert + ~123 nye)
+
+**Nye funksjoner:**
+- Sky-refleksjon i vann
+- Tre-refleksjon i vann
+- Sol/måne-refleksjon med shimmer
+- Overflate shimmer-animasjon
+- Fade-out system for refleksjoner
+
+**Forbedrede funksjoner:**
+- Sky-gradient (kantutvidelse)
+- Båt-posisjonering (mer realistisk)
+- Fjell-refleksjon (dobbel distorsjon)
+
+### Visuell Impact
+
+**Før:**
+- Sky: Potensielle gap ved kanter
+- Båt: Svevde 15px over vannet
+- Refleksjoner: Kun enkle fjell-striper
+
+**Etter:**
+- Sky: Garantert full dekning
+- Båt: Sitter realistisk i vannet
+- Refleksjoner: Omfattende system med himmel, fjell, trær, sol/måne, og shimmer
+
+### Neste Steg
+
+1. Test i nettleser ved alle tider på døgnet
+2. Juster alpha-verdier hvis refleksjoner er for sterke/svake
+3. Vurder å legge til båt-refleksjon i vannet
+4. Mulig optimalisering av loop-hastighet hvis performance issues
+
+---
