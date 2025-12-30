@@ -388,18 +388,21 @@ function drawWeatherEffects() {
             ctx.stroke();
         }
 
-        // Rain ripples on water surface
-        for (let i = 0; i < 15; i++) {
-            const rippleX = (i * 73 + game.time * 0.5) % CONFIG.canvas.width;
-            const ripplePhase = (game.time * 0.01 + i * 0.5) % 1;
-            const rippleSize = ripplePhase * 8;
-            const rippleAlpha = (1 - ripplePhase) * 0.3;
+        // Rain ripples on water surface (handled by WaterEffects.js now)
+        // Keeping this code for fallback if WaterEffects is not loaded
+        if (typeof WaterEffects === 'undefined') {
+            for (let i = 0; i < 15; i++) {
+                const rippleX = (i * 73 + game.time * 0.5) % CONFIG.canvas.width;
+                const ripplePhase = (game.time * 0.01 + i * 0.5) % 1;
+                const rippleSize = ripplePhase * 8;
+                const rippleAlpha = (1 - ripplePhase) * 0.3;
 
-            ctx.strokeStyle = `rgba(200, 220, 255, ${rippleAlpha})`;
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.ellipse(rippleX, CONFIG.waterLine + 5, rippleSize, rippleSize * 0.3, 0, 0, Math.PI * 2);
-            ctx.stroke();
+                ctx.strokeStyle = `rgba(200, 220, 255, ${rippleAlpha})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.ellipse(rippleX, CONFIG.waterLine + 5, rippleSize, rippleSize * 0.3, 0, 0, Math.PI * 2);
+                ctx.stroke();
+            }
         }
     }
 

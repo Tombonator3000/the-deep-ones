@@ -319,6 +319,10 @@ function setupInputHandlers() {
                     game.depth = 0;
                     triggerSplashSound();
                     if (typeof playSplash === 'function') playSplash();
+                    // Add water ripple effect when casting
+                    if (typeof WaterEffects !== 'undefined' && typeof WaterEffects.addRipple === 'function') {
+                        WaterEffects.addRipple(game.boatX, CONFIG.waterLine, 1.5);
+                    }
                 } else if (game.state === 'waiting') {
                     game.state = 'sailing';
                     game.depth = 0;

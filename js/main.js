@@ -359,8 +359,11 @@ function render() {
     // Draw fish
     drawFish();
 
-    // Draw enhanced water reflection (Cast n Chill inspired)
-    if (typeof drawEnhancedWaterReflection === 'function') {
+    // Draw water effects system (Cast 'n' Chill inspired)
+    if (typeof WaterEffects !== 'undefined' && typeof WaterEffects.draw === 'function') {
+        const panOffset = typeof getCameraPanOffset === 'function' ? getCameraPanOffset() : 0;
+        WaterEffects.draw(ctx, game, game.cameraX, panOffset);
+    } else if (typeof drawEnhancedWaterReflection === 'function') {
         drawEnhancedWaterReflection();
     } else if (typeof drawWaterReflection === 'function') {
         drawWaterReflection();
