@@ -1667,44 +1667,59 @@ function updateCameraPan() {
         cam.y = 0;
     }
 
-    // Determine target pan based on game state
+    // NEW CAMERA LOGIC FOR SPLIT-SCREEN EFFECT:
+    // - SAILING: Push world DOWN so waterLine (y=116) appears at ~80% of screen (y=216)
+    //   → Requires moving world down by 100px → camera.y = -100
+    // - FISHING: Show split view with waterLine in center/slightly below center
+    //   → camera.y = 0 to +40 (pan slightly down as depth increases)
+
     if (game.state === 'waiting' || game.state === 'reeling' || game.minigame.active) {
-        // Calculate target depth based on fishing line
+        // FISHING MODE: Split-screen view with waterLine in center
+        // Gently pan down as fishing depth increases to show more underwater
         const rod = (typeof getCurrentRod === 'function') ? getCurrentRod() : null;
         const maxDepth = (rod && typeof rod.depthMax === 'number') ? rod.depthMax : 30;
         const depth = (typeof game.depth === 'number' && !isNaN(game.depth)) ? game.depth : 0;
 
-        // Safely calculate depth percent (0 to 1)
+        // Calculate depth percent (0 to 1)
         const depthPercent = maxDepth > 0 ? Math.min(1, Math.max(0, depth / maxDepth)) : 0;
 
-        // Reduced pan amount - max 100px instead of 200px for better visibility
-        const maxPan = Math.min(cam.maxPan || 200, 100);
-
-        // Pan down into the water when fishing (reduced multiplier from 1.5 to 0.8)
-        cam.targetY = depthPercent * maxPan * 0.8;
+        // Gentle pan down based on fishing depth (0 to +40px)
+        // This progressively shows more underwater as you fish deeper
+        cam.targetY = depthPercent * 40;
         cam.mode = 'underwater';
     } else if (game.state === 'caught') {
-        // Quickly return camera when catching - faster reduction
-        cam.targetY = Math.max(0, (cam.targetY || 0) * 0.8);
-        cam.mode = cam.targetY > 5 ? 'transitioning' : 'surface';
+        // Transition back to sailing view when catching
+        // Move towards sailing position (-100)
+        const targetSailing = -100;
+        const diff = targetSailing - (cam.targetY || 0);
+        cam.targetY = (cam.targetY || 0) + diff * 0.15;
+
+        // Snap to sailing view if close
+        if (Math.abs(cam.targetY - targetSailing) < 2) {
+            cam.targetY = targetSailing;
+        }
+        cam.mode = 'transitioning';
     } else {
-        // Return to surface view immediately
-        cam.targetY = 0;
+        // SAILING MODE: Push world down so fisher/boat appears near bottom of screen
+        // WaterLine at y=116 should appear at y=216 (80% of screen height 270px)
+        // This requires translating world down by 100px
+        // Since we use ctx.translate(0, -camera.y), we need camera.y = -100
+        cam.targetY = -100;
         cam.mode = 'surface';
     }
 
-    // Smooth interpolation with faster return speed when going back to surface
+    // Smooth interpolation to target
     const diff = (cam.targetY || 0) - cam.y;
-    const speed = cam.targetY < cam.y ? 0.1 : (cam.panSpeed || 0.05);  // Faster when returning up
+    const speed = (cam.panSpeed || 0.05);
     cam.y = cam.y + diff * speed;
 
-    // Snap to 0 if very close to surface
-    if (cam.targetY === 0 && Math.abs(cam.y) < 1) {
-        cam.y = 0;
+    // Snap to target if very close
+    if (Math.abs(diff) < 1) {
+        cam.y = cam.targetY;
     }
 
-    // Clamp values
-    cam.y = Math.max(0, Math.min(100, cam.y));
+    // Clamp values to reasonable range (-120 to +60)
+    cam.y = Math.max(-120, Math.min(60, cam.y));
 
     // Final NaN guard
     if (isNaN(cam.y)) {

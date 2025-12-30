@@ -1085,3 +1085,56 @@ function drawCatchPopup() {
         align: 'center'
     });
 }
+
+// Water Surface Split Line
+function drawWaterSurfaceLine() {
+    // Draw enhanced water surface line when in split-screen fishing mode
+    if (game.state !== 'waiting' && game.state !== 'reeling' && !game.minigame.active) {
+        return;  // Only draw when fishing
+    }
+
+    const y = CONFIG.waterLine;
+    const palette = getTimePalette();
+
+    // Main water surface line - bright white/cyan to clearly separate above/below water
+    ctx.save();
+
+    // Subtle animated ripple effect
+    ctx.strokeStyle = 'rgba(200, 230, 255, 0.8)';  // Bright cyan-white
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    for (let x = 0; x < CONFIG.canvas.width; x += 2) {
+        const ripple = Math.sin((x + game.time * 0.05) * 0.08 + game.time * 0.002) * 0.5;
+        if (x === 0) {
+            ctx.moveTo(x, y + ripple);
+        } else {
+            ctx.lineTo(x, y + ripple);
+        }
+    }
+    ctx.stroke();
+
+    // Add a second, thinner highlight line above for better visibility
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = 0; x < CONFIG.canvas.width; x += 2) {
+        const ripple = Math.sin((x + game.time * 0.05) * 0.08 + game.time * 0.002) * 0.5;
+        if (x === 0) {
+            ctx.moveTo(x, y + ripple - 1);
+        } else {
+            ctx.lineTo(x, y + ripple - 1);
+        }
+    }
+    ctx.stroke();
+
+    // Add subtle glow effect for depth
+    const gradient = ctx.createLinearGradient(0, y - 3, 0, y + 3);
+    gradient.addColorStop(0, 'rgba(180, 220, 255, 0)');
+    gradient.addColorStop(0.5, 'rgba(200, 230, 255, 0.2)');
+    gradient.addColorStop(1, 'rgba(180, 220, 255, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, y - 3, CONFIG.canvas.width, 6);
+
+    ctx.restore();
+}
