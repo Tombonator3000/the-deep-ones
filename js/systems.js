@@ -2042,14 +2042,14 @@ let reflectionCtx = null;
 // Reflection configuration - scaled for 480x270 resolution
 const REFLECTION_CONFIG = {
     enabled: true,
-    opacity: 0.35,              // Base opacity of reflection
-    fadeHeight: 50,             // How far down the reflection fades (scaled from 120)
+    opacity: 0.7,               // Base opacity of reflection (increased from 0.35 for visibility)
+    fadeHeight: 70,             // How far down the reflection fades (increased from 50 for more depth)
     waveSpeed: 0.003,           // Speed of wave animation
     waveFrequency: 0.06,        // Frequency of sine wave distortion (increased for smaller canvas)
     waveAmplitude: 2,           // Maximum pixel displacement (scaled from 4)
     verticalCompression: 0.85,  // Slight vertical squish for realism
     tintColor: { r: 40, g: 80, b: 100 },  // Blue-green water tint
-    tintStrength: 0.15          // How much tint to apply
+    tintStrength: 0.05          // How much tint to apply (reduced from 0.15 to show reflections better)
 };
 
 // Initialize reflection canvas
