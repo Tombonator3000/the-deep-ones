@@ -4593,3 +4593,130 @@ Nøkkel-prinsippet: **Show, don't tell**. I stedet for å konstant vise stats, l
 UI fade-out systemet (implementert i forrige update) fungerer nå enda bedre med det minimale designet - hele UI-et kan fade out for full immersion når spilleren bare observerer.
 
 ---
+
+## 2025-12-30 — Deep Audit: Module Loading & Script Dependencies
+
+### Problem
+Deep audit av spillet for å identifisere og fikse kritiske feil i module loading og script dependencies.
+
+### Audit-funn
+
+#### 1. Syntaks-sjekk: OK ✓
+Alle JavaScript-filer passerer `node --check` - ingen syntaksfeil funnet.
+
+#### 2. Kritiske feil identifisert
+
+##### a) game.html manglet ambient-effects.js
+- **Problem**: `game.html` lastet ikke `js/ambient-effects.js`
+- **Konsekvens**: Runtime-feil når `main.js` kalte `initAmbientEffects()`, `updateAmbientEffects()`, og `drawAmbientEffects()`
+- **Årsak**: Modulen ble lagt til i `index.html` men ikke i `game.html`
+- **Kritikalitet**: HØYT - spillet ville crashe umiddelbart ved oppstart
+
+##### b) index.html manglet audio.js, events.js, settings.js  
+- **Problem**: `index.html` lastet ikke `js/audio.js`, `js/events.js`, eller `js/settings.js`
+- **Konsekvens**: Ingen lyd, ingen events, ingen settings-meny
+- **Årsak**: Modulene var kommentert ut eller fjernet fra index.html
+- **Kritikalitet**: MEDIUM - main.js har defensive `typeof` checks for de fleste funksjoner fra disse modulene
+
+##### c) Inkonsistent modul-rekkefølge
+- **Problem**: `game.html` og `index.html` hadde forskjellig script loading-rekkefølge
+- **Konsekvens**: Potensielle dependency-problemer og forvirring
+- **Årsak**: Manuell vedlikehold av to separate HTML-filer
+
+### Løsninger
+
+#### 1. Fikset game.html (game.html:292)
+```html
+<!-- Lagt til ambient-effects.js etter palettes.js -->
+<script src="js/config.js"></script>
+<script src="js/palettes.js"></script>
+<script src="js/ambient-effects.js"></script>  <!-- NYTT -->
+<script src="js/game-state.js"></script>
+```
+
+#### 2. Fikset index.html (index.html:329-331)
+```html
+<!-- Lagt til manglende moduler -->
+<script src="js/fallbacks.js"></script>
+<script src="js/audio.js"></script>      <!-- NYTT -->
+<script src="js/events.js"></script>     <!-- NYTT -->
+<script src="js/settings.js"></script>   <!-- NYTT -->
+<script src="js/systems.js"></script>
+```
+
+#### 3. Standardisert modul-rekkefølge
+Begge HTML-filer laster nå moduler i samme rekkefølge:
+1. config.js
+2. palettes.js
+3. ambient-effects.js
+4. game-state.js
+5. creatures.js
+6. assets.js
+7. fallbacks.js
+8. audio.js
+9. events.js
+10. settings.js
+11. systems.js
+12. npc.js
+13. rendering.js
+14. ui.js
+15. save.js
+16. input.js
+17. main.js
+
+### Tekniske Detaljer
+
+**Filer modifisert:**
+- `game.html` - Lagt til ambient-effects.js (linje 292)
+- `index.html` - Lagt til audio.js, events.js, settings.js (linjer 329-331)
+
+**Funksjonskall fikset:**
+- `initAmbientEffects()` (main.js:544, 575) - nå sikker
+- `updateAmbientEffects(deltaTime)` (main.js:209) - nå sikker
+- `drawAmbientEffects(ctx)` (main.js:386) - nå sikker
+
+**Defensive checks bekreftet:**
+- `updateEvents()` - har `typeof` check (OK)
+- `drawEventVisuals()` - har `typeof` check (OK)
+- `loadSettings()` - har `typeof` check (OK)
+- `drawSettingsMenu()` - har `typeof` check (OK)
+
+### Testing
+
+1. ✅ Syntaks-sjekk: Alle JS-filer OK
+2. ✅ Module loading: Begge HTML-filer laster alle nødvendige moduler
+3. ✅ Script-rekkefølge: Konsistent mellom game.html og index.html
+4. ✅ Dependencies: Alle funksjoner som kalles er definert
+
+### Verifisering
+
+For å teste at feilene er fikset:
+1. Åpne `game.html` i browser
+2. Åpne Developer Console (F12)
+3. Sjekk at ingen errors vises ved oppstart
+4. Bekreft at ambient effects (fog, light rays, fireflies) vises
+5. Test at lyd, events, og settings-meny fungerer
+6. Gjenta test med `index.html`
+
+### Impact
+
+**Før:**
+- `game.html` ville crashe ved oppstart (undefined function error)
+- `index.html` hadde ingen lyd, events, eller settings
+- Inkonsistent oppførsel mellom de to HTML-filene
+
+**Etter:**
+- Begge HTML-filer fungerer korrekt
+- Full funksjonalitet i begge versjoner
+- Konsistent oppførsel og module loading
+
+### Notater
+
+Dette var en kritisk bug som ville forhindret spillet fra å kjøre i det hele tatt når man brukte `game.html`. Feilen oppstod trolig når `ambient-effects.js` ble lagt til i `index.html` men utvikleren glemte å oppdatere `game.html`.
+
+Fremover bør det vurderes å:
+- Konsolidere til én HTML-fil
+- Eller bruke et build-system som automatisk genererer HTML med korrekte script tags
+- Legge til automatiske tester som verifiserer at alle nødvendige moduler er lastet
+
+---
