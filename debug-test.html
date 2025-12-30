@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Canvas Initialization Test</title>
+    <style>
+        body {
+            background: #0a0a12;
+            color: #0f0;
+            font-family: monospace;
+            padding: 20px;
+        }
+        #testCanvas {
+            border: 2px solid #0f0;
+            display: block;
+            margin: 20px 0;
+        }
+        .error { color: #f00; }
+        .success { color: #0f0; }
+        .info { color: #ff0; }
+    </style>
+</head>
+<body>
+    <h1>Canvas Initialization Debug Test</h1>
+    <div id="output"></div>
+    <canvas id="testCanvas"></canvas>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = msg;
+            output.appendChild(div);
+            console.log(msg);
+        }
+
+        // Test 1: Check if canvas exists
+        const testCanvas = document.getElementById('testCanvas');
+        if (testCanvas) {
+            log('✓ Canvas element exists', 'success');
+        } else {
+            log('✗ Canvas element NOT found', 'error');
+        }
+
+        // Test 2: Try to get context
+        let testCtx;
+        try {
+            testCtx = testCanvas.getContext('2d');
+            if (testCtx) {
+                log('✓ Canvas 2D context obtained', 'success');
+            } else {
+                log('✗ Failed to get 2D context', 'error');
+            }
+        } catch (e) {
+            log('✗ Error getting context: ' + e.message, 'error');
+        }
+
+        // Test 3: Set canvas dimensions (like the game does)
+        try {
+            testCanvas.width = 480;
+            testCanvas.height = 270;
+            log(`✓ Canvas dimensions set to ${testCanvas.width}x${testCanvas.height}`, 'success');
+        } catch (e) {
+            log('✗ Error setting dimensions: ' + e.message, 'error');
+        }
+
+        // Test 4: Try to draw something
+        try {
+            testCtx.fillStyle = '#ff0000';
+            testCtx.fillRect(0, 0, 480, 270);
+            testCtx.fillStyle = '#00ff00';
+            testCtx.fillRect(100, 100, 280, 70);
+            testCtx.fillStyle = '#ffffff';
+            testCtx.font = '20px monospace';
+            testCtx.fillText('TEST RENDER', 150, 145);
+            log('✓ Drawing operations completed', 'success');
+        } catch (e) {
+            log('✗ Error drawing: ' + e.message, 'error');
+        }
+
+        // Test 5: Test window.onload
+        window.addEventListener('load', function() {
+            log('✓ window.onload fired', 'success');
+        });
+
+        // Test 6: Check if main game canvas exists in index.html scenario
+        log('\n--- Simulating main.js initialization ---', 'info');
+
+        // Create a mock game container like index.html
+        const container = document.createElement('div');
+        container.id = 'gameContainer';
+        container.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;';
+
+        const gameCanvas = document.createElement('canvas');
+        gameCanvas.id = 'gameCanvas';
+        gameCanvas.style.cssText = 'display:block;width:100%;height:100%;';
+
+        const titleScreen = document.createElement('div');
+        titleScreen.id = 'title-screen';
+        titleScreen.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(180deg,#1a1525 0%,#0a1015 100%);display:flex;justify-content:center;align-items:center;z-index:100;color:#5a9a7a;font-size:24px;';
+        titleScreen.textContent = 'TITLE SCREEN TEST';
+
+        container.appendChild(gameCanvas);
+        container.appendChild(titleScreen);
+        document.body.appendChild(container);
+
+        // Now try to initialize like main.js does
+        try {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // Set internal resolution
+            canvas.width = 480;
+            canvas.height = 270;
+
+            log(`✓ Game canvas initialized: ${canvas.width}x${canvas.height}`, 'success');
+
+            // Try to render
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            log('✓ Game canvas cleared to black', 'success');
+            log('✓ Title screen should be visible with z-index: 100', 'success');
+
+            // Check if title screen is visible
+            const titleScreenEl = document.getElementById('title-screen');
+            const computedStyle = window.getComputedStyle(titleScreenEl);
+            log(`Title screen display: ${computedStyle.display}`, 'info');
+            log(`Title screen z-index: ${computedStyle.zIndex}`, 'info');
+
+        } catch (e) {
+            log('✗ Error in game canvas initialization: ' + e.message, 'error');
+        }
+
+        log('\n=== TEST COMPLETE ===', 'success');
+    </script>
+</body>
+</html>

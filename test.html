@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Game Test - Console Errors</title>
+    <style>
+        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; }
+        #log { white-space: pre-wrap; }
+        .error { color: #f00; }
+        .success { color: #0f0; }
+    </style>
+</head>
+<body>
+    <h1>The Deep Ones - Initialization Test</h1>
+    <div id="log"></div>
+
+    <script>
+        const log = document.getElementById('log');
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+
+        console.log = function(...args) {
+            log.innerHTML += `<div class="success">[LOG] ${args.join(' ')}</div>`;
+            originalConsoleLog.apply(console, args);
+        };
+
+        console.error = function(...args) {
+            log.innerHTML += `<div class="error">[ERROR] ${args.join(' ')}</div>`;
+            originalConsoleError.apply(console, args);
+        };
+
+        window.onerror = function(msg, url, line, col, error) {
+            log.innerHTML += `<div class="error">[WINDOW ERROR] ${msg} at ${url}:${line}:${col}</div>`;
+            return false;
+        };
+
+        console.log('Starting initialization test...');
+    </script>
+
+    <!-- Load all modules in order -->
+    <script src="js/config.js"></script>
+    <script>console.log('✓ config.js loaded - PIXEL_CONFIG:', typeof PIXEL_CONFIG !== 'undefined' ? 'OK' : 'MISSING');</script>
+
+    <script src="js/palettes.js"></script>
+    <script>console.log('✓ palettes.js loaded - TIME_PALETTES:', typeof TIME_PALETTES !== 'undefined' ? 'OK' : 'MISSING');</script>
+
+    <script src="js/ambient-effects.js"></script>
+    <script>console.log('✓ ambient-effects.js loaded - initAmbientEffects:', typeof initAmbientEffects === 'function' ? 'OK' : 'MISSING');</script>
+
+    <script src="js/game-state.js"></script>
+    <script>console.log('✓ game-state.js loaded - game:', typeof game !== 'undefined' ? 'OK' : 'MISSING');</script>
+
+    <script src="js/creatures.js"></script>
+    <script>console.log('✓ creatures.js loaded');</script>
+
+    <script src="js/assets.js"></script>
+    <script>console.log('✓ assets.js loaded - PARALLAX_LAYERS:', typeof PARALLAX_LAYERS !== 'undefined' ? 'OK' : 'MISSING');</script>
+
+    <script src="js/fallbacks.js"></script>
+    <script>console.log('✓ fallbacks.js loaded - FALLBACKS:', typeof FALLBACKS !== 'undefined' ? 'OK' : 'MISSING');</script>
+
+    <script src="js/audio.js"></script>
+    <script>console.log('✓ audio.js loaded');</script>
+
+    <script src="js/events.js"></script>
+    <script>console.log('✓ events.js loaded');</script>
+
+    <script src="js/settings.js"></script>
+    <script>console.log('✓ settings.js loaded');</script>
+
+    <script src="js/systems.js"></script>
+    <script>console.log('✓ systems.js loaded');</script>
+
+    <script src="js/npc.js"></script>
+    <script>console.log('✓ npc.js loaded');</script>
+
+    <script src="js/rendering.js"></script>
+    <script>console.log('✓ rendering.js loaded');</script>
+
+    <script src="js/ui.js"></script>
+    <script>console.log('✓ ui.js loaded');</script>
+
+    <script src="js/save.js"></script>
+    <script>console.log('✓ save.js loaded');</script>
+
+    <script src="js/input.js"></script>
+    <script>console.log('✓ input.js loaded');</script>
+
+    <script src="js/main.js"></script>
+    <script>console.log('✓ main.js loaded');</script>
+
+    <script>
+        console.log('\n===== INITIALIZATION TEST COMPLETE =====');
+        console.log('All modules loaded successfully!');
+        console.log('Game object state:', game.state);
+        console.log('PIXEL_CONFIG:', PIXEL_CONFIG);
+        console.log('CONFIG.canvas:', CONFIG.canvas);
+    </script>
+</body>
+</html>
