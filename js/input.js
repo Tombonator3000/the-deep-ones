@@ -285,7 +285,8 @@ function setupInputHandlers() {
 
         const rod = getCurrentRod();
         const boat = getCurrentBoat();
-        const speed = (boat ? boat.speed : 1) * 3;
+        // Reduced multiplier from 3 to 1.5 for smoother movement at 480x270 resolution
+        const speed = (boat ? boat.speed : 1) * 1.5;
 
         switch (e.key) {
             case 'ArrowLeft':

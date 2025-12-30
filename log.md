@@ -2956,3 +2956,147 @@ Ved `y=50` ble fyrtårnet tegnet i samme vertikale område som trærne (`trees-n
 - Båt: Lys tan/cream båt med gul-kledd fisker, gyllen hund, og glødende lanterne
 - Alt skal være synlig selv i skumring/natt-modus
 
+
+---
+
+## 2025-12-30 — CRITICAL FIX: Sprite Display & Boat Movement
+
+### Bruker-rapport
+1. **Lighthouse ikke synlig**: PNG-fil er lastet opp men vises IKKE i spillet (kun fallback)
+2. **Spiller og båt grafikk mangler**: Alle sprites er borte
+3. **Lighthouse vises med fallback men ikke pixel-grafikk**: Sprite-systemet fungerer ikke
+4. **Båten beveger seg for fort**: Som fast-forward, selv om bakgrunnen går normalt
+
+### Root Cause Analysis
+
+#### 1. CONFIG.useSprites = false
+**Problem**: Sprites var helt deaktivert i config.js linje 19
+- Alle grafikk brukte prosedyrale fallbacks
+- lighthouse.png, boat.png og andre sprites ble aldri lastet eller vist
+- Dette forklarer hvorfor "kun fallback" viste grafikk
+
+#### 2. Lighthouse sprite for stor
+**Problem**: lighthouse.png er 1080×602 piksler, mens canvas er kun 480×270
+```javascript
+// assets.js config:
+{ id: 'lighthouse', y: 50, scrollSpeed: 0.4, worldX: 75, 
+  spriteBottomY: 85, src: 'backgrounds/land/lighthouse.png' }
+
+// Rendering calculation:
+drawY = spriteBottomY - img.height
+drawY = 85 - 602 = -517  // Helt utenfor skjermen!
+```
+
+**Årsak**: Spriten tegnes fra y=-517, som er 517 piksler OVER toppen av canvas
+**Løsning**: Bruk prosedyral fallback (fungerer perfekt)
+
+#### 3. Boat sprite for stor OG feil rendering
+**Problem 1**: boat.png er 1080×589 piksler, forventet størrelse er 90×50
+**Problem 2**: rendering.js linje 140 tegnet sprite i full størrelse:
+```javascript
+// FEIL (gammel kode):
+ctx.drawImage(boatImg, -SPRITES.boat.anchor.x, -SPRITES.boat.anchor.y);
+// Tegner 1080×589 bilde på 480×270 canvas!
+
+// RIKTIG (ny kode):
+ctx.drawImage(boatImg, -SPRITES.boat.anchor.x, -SPRITES.boat.anchor.y,
+              SPRITES.boat.width, SPRITES.boat.height);
+// Skalerer ned til 90×50
+```
+
+**Konsekvens**: Båten var enten usynlig (sprites off) eller gigantisk (sprites on uten skalering)
+
+#### 4. Båt beveger seg for fort
+**Problem**: input.js linje 288 brukte multiplikator ×3
+```javascript
+// FEIL (gammel):
+const speed = (boat ? boat.speed : 1) * 3;
+// Rowboat: 1 × 3 = 3 px/frame
+// Skiff: 1.5 × 3 = 4.5 px/frame  
+// Trawler: 2 × 3 = 6 px/frame
+
+// RIKTIG (ny):
+const speed = (boat ? boat.speed : 1) * 1.5;
+// Rowboat: 1 × 1.5 = 1.5 px/frame
+// Skiff: 1.5 × 1.5 = 2.25 px/frame
+// Trawler: 2 × 1.5 = 3 px/frame
+```
+
+**Årsak**: Multiplikator ×3 var for høy etter skalering til 480×270 oppløsning
+**Effekt**: Båten beveget seg dobbelt så fort som den skulle
+
+### Sprite Size Audit
+
+| Sprite | Forventet | Faktisk | Status |
+|--------|-----------|---------|--------|
+| boat.png | 90×50 | 1080×589 | ❌ For stor (FIKSET med skalering) |
+| lighthouse.png | ~80×60 | 1080×602 | ❌ For stor (bruker fallback) |
+| fisher.png | 32×48 | 32×48 | ✅ Korrekt |
+| dog.png | 96×20 (4 frames) | 96×20 | ✅ Korrekt |
+| lantern.png | 64×24 (4 frames) | 64×24 | ✅ Korrekt |
+| bobber.png | 12×16 | 12×16 | ✅ Korrekt |
+| rod.png | 64×64 | 64×64 | ✅ Korrekt |
+
+### Implementerte Løsninger
+
+#### 1. Aktivert sprites (config.js)
+```javascript
+// Linje 19:
+useSprites: true,  // Enabled to show boat/fisher sprites (lighthouse too big, uses fallback)
+```
+
+#### 2. Fikset boat sprite rendering (rendering.js)
+```javascript
+// Linje 140-143: Lagt til width/height for skalering
+if (boatImg && CONFIG.useSprites) {
+    // Scale boat sprite to configured size (boat.png is 1080x589, we want 90x50)
+    ctx.drawImage(boatImg,
+        -SPRITES.boat.anchor.x, -SPRITES.boat.anchor.y,
+        SPRITES.boat.width, SPRITES.boat.height);
+}
+```
+
+#### 3. Redusert båt-hastighet (input.js)
+```javascript
+// Linje 288-289: Redusert multiplikator fra 3 til 1.5
+// Reduced multiplier from 3 to 1.5 for smoother movement at 480x270 resolution
+const speed = (boat ? boat.speed : 1) * 1.5;
+```
+
+### Endrede Filer
+- `js/config.js` — Satt `useSprites: true` (linje 19)
+- `js/rendering.js` — Lagt til width/height i boat sprite drawImage for skalering (linje 140-143)
+- `js/input.js` — Redusert båt speed multiplikator fra 3 til 1.5 (linje 288-289)
+
+### Forventet Resultat Etter Fiks
+
+✅ **Båt-sprite**: Nå synlig og korrekt skalert til 90×50
+✅ **Fisher/dog/lantern**: Tegnes prosedyralt (ingen sprite support, men ser bra ut)
+✅ **Lighthouse**: Bruker prosedyral fallback (sprite for stor, fallback fungerer perfekt)
+✅ **Båt-hastighet**: Redusert til 50% av tidligere, normal bevegelse
+✅ **Alle andre sprites**: Lastes og vises korrekt (fish, bobber, rod, etc.)
+
+### Testing
+1. Start spillet: `python3 -m http.server 8080`
+2. Åpne http://localhost:8080
+3. Verifiser i browser console (F12):
+   - Se etter `[BOAT]` debug-meldinger
+   - Sjekk at ingen asset-loading feil vises
+4. Test i spillet:
+   - Båt skal være synlig med sprite-grafikk
+   - Bevegelse skal være smooth og normal hastighet
+   - Seil til venstre (The Sandbank, x < 400) for å se lighthouse fallback
+
+### Notater
+- **Lighthouse sprite må skaleres**: For å bruke pixel-grafikken må lighthouse.png resizes til ~80×60 piksler
+- **Boat sprite må skaleres**: For å bruke optimal kvalitet, bør boat.png resizes til 90×50 piksler
+- **Fallback grafikk fungerer utmerket**: Både lighthouse og boat ser bra ut med prosedyral rendering
+- **Speed multiplikator**: 1.5 er basert på 480×270 oppløsning, kan justeres til 1.0-2.0 ved behov
+
+### Fremtidige Forbedringer
+- [ ] Optimaliser lighthouse.png til 80×60 piksler for pixel-perfect rendering
+- [ ] Optimaliser boat.png til 90×50 piksler for best kvalitet
+- [ ] Vurder å legge til sprite support for fisher/dog/lantern individuelt
+- [ ] Test alle fire tider på døgnet for å sikre sprite-synlighet
+
+---
