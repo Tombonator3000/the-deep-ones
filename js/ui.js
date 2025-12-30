@@ -6,6 +6,10 @@ function drawLocationIndicator() {
     const loc = CONFIG.locations[game.currentLocation];
     if (!loc) return;
 
+    // Apply UI fade-out opacity
+    ctx.save();
+    ctx.globalAlpha = game.ui?.opacity ?? 1.0;
+
     // Use crisp text for location name
     drawCrispText(loc.name, CONFIG.canvas.width / 2, 25, {
         font: '18px VT323',
@@ -39,6 +43,7 @@ function drawLocationIndicator() {
     ctx.fill();
 
     ctx.textAlign = 'left';
+    ctx.restore();
 }
 
 function drawWeatherIndicator() {
@@ -51,15 +56,25 @@ function drawWeatherIndicator() {
     else if (game.weather.current === 'fog') icon = 'Fog';
     else if (game.weather.current === 'storm') icon = 'Storm';
 
+    // Apply UI fade-out opacity
+    ctx.save();
+    ctx.globalAlpha = game.ui?.opacity ?? 1.0;
+
     drawCrispText(icon, CONFIG.canvas.width - 15, 50, {
         font: '14px VT323',
         color: 'rgba(200, 220, 210, 0.8)',
         align: 'right'
     });
+
+    ctx.restore();
 }
 
 function drawDogIndicator() {
     const x = 15, y = CONFIG.canvas.height - 60;
+
+    // Apply UI fade-out opacity
+    ctx.save();
+    ctx.globalAlpha = game.ui?.opacity ?? 1.0;
 
     let dogEmoji = 'Dog';
     if (game.dog.animation === 'sleep') dogEmoji = 'Zzz';
@@ -88,6 +103,8 @@ function drawDogIndicator() {
     ctx.font = '10px VT323';
     ctx.fillStyle = '#5a7a6a';
     ctx.fillText('[P] Pet dog', x, y + 15);
+
+    ctx.restore();
 }
 
 function drawLoreCollection() {

@@ -255,6 +255,8 @@ const FALLBACKS = {
     // Mountains scaled for 480x270 resolution (scaled from original 1000x650)
     'mountains-far': (ctx, offset, y, w, h, layer) => {
         const palette = getTimePalette();
+
+        // Draw mountain shape
         ctx.fillStyle = palette.mountains[0];
         ctx.beginPath();
         ctx.moveTo(-offset % 200 - 200, CONFIG.waterLine);
@@ -266,52 +268,151 @@ const FALLBACKS = {
         ctx.lineTo(w + 50, CONFIG.waterLine);
         ctx.closePath();
         ctx.fill();
+
+        // ATMOSPHERIC PERSPECTIVE: Add haze overlay on distant mountains
+        if (palette.fogColor) {
+            ctx.fillStyle = palette.fogColor;
+            ctx.beginPath();
+            ctx.moveTo(-offset % 200 - 200, CONFIG.waterLine);
+            for (let x = -200; x < w + 200; x += 80) {
+                const px = x - (offset % 200);
+                const py = y + Math.sin(x * 0.01) * 15 + 20;
+                ctx.lineTo(px, py);
+            }
+            ctx.lineTo(w + 50, CONFIG.waterLine);
+            ctx.closePath();
+            ctx.fill();
+        }
     },
 
     'mountains-mid': (ctx, offset, y, w, h, layer) => {
         const palette = getTimePalette();
+
+        // Draw mountain shape with more varied peaks
         ctx.fillStyle = palette.mountains[1];
         ctx.beginPath();
         ctx.moveTo(-offset % 150 - 150, CONFIG.waterLine);
         for (let x = -150; x < w + 150; x += 60) {
             const px = x - (offset % 150);
-            const py = y + Math.sin(x * 0.015 + 1) * 12 + 15;
+            // Add layered sine waves for more natural mountain shapes
+            const py = y + Math.sin(x * 0.015 + 1) * 12 + Math.cos(x * 0.025) * 6 + 15;
             ctx.lineTo(px, py);
         }
         ctx.lineTo(w + 50, CONFIG.waterLine);
         ctx.closePath();
         ctx.fill();
+
+        // ATMOSPHERIC PERSPECTIVE: Lighter haze for mid-distance
+        if (palette.fogColor) {
+            // Extract rgba values and reduce alpha by half for mid-distance
+            const fogMatch = palette.fogColor.match(/[\d.]+/g);
+            if (fogMatch) {
+                const [r, g, b, a] = fogMatch.map(Number);
+                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a * 0.5})`;
+                ctx.beginPath();
+                ctx.moveTo(-offset % 150 - 150, CONFIG.waterLine);
+                for (let x = -150; x < w + 150; x += 60) {
+                    const px = x - (offset % 150);
+                    const py = y + Math.sin(x * 0.015 + 1) * 12 + Math.cos(x * 0.025) * 6 + 15;
+                    ctx.lineTo(px, py);
+                }
+                ctx.lineTo(w + 50, CONFIG.waterLine);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
     },
 
     'mountains-near': (ctx, offset, y, w, h, layer) => {
         const palette = getTimePalette();
+
+        // Draw mountain with complex, layered details
         ctx.fillStyle = palette.mountains[2] || palette.mountains[1];
         ctx.beginPath();
         ctx.moveTo(-offset % 120 - 120, CONFIG.waterLine);
         for (let x = -120; x < w + 120; x += 50) {
             const px = x - (offset % 120);
-            const py = y + Math.sin(x * 0.02 + 2) * 10 + 12;
+            // Triple-layered sine for complex, natural peaks
+            const py = y + Math.sin(x * 0.02 + 2) * 10 + Math.cos(x * 0.035) * 5 + Math.sin(x * 0.008) * 3 + 12;
             ctx.lineTo(px, py);
         }
         ctx.lineTo(w + 50, CONFIG.waterLine);
         ctx.closePath();
         ctx.fill();
+
+        // Add subtle shadow details on near mountains for depth
+        ctx.fillStyle = palette.shadowColor;
+        ctx.globalAlpha = 0.15;
+        ctx.beginPath();
+        ctx.moveTo(-offset % 120 - 120, CONFIG.waterLine);
+        for (let x = -120; x < w + 120; x += 50) {
+            const px = x - (offset % 120);
+            const py = y + Math.sin(x * 0.02 + 2) * 10 + Math.cos(x * 0.035) * 5 + Math.sin(x * 0.008) * 3 + 12;
+            ctx.lineTo(px, py);
+        }
+        ctx.lineTo(w + 50, CONFIG.waterLine);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
     },
 
     // Trees scaled for 480x270 resolution
     'trees-far': (ctx, offset, y, w, h, layer) => {
         const palette = getTimePalette();
+
+        // Draw trees with varying heights for depth
         for (let i = 0; i < 20; i++) {
             const x = ((i * 40 - offset) % (w + 100)) - 50;
-            drawTree(ctx, x, y + 25, 20 + (i % 3) * 5, palette.trees[0]);
+            const heightVariation = 20 + (i % 3) * 5 + Math.sin(i * 1.3) * 3;
+            drawTree(ctx, x, y + 25, heightVariation, palette.trees[0]);
+        }
+
+        // ATMOSPHERIC PERSPECTIVE: Add fog overlay on distant trees
+        if (palette.fogColor) {
+            const fogMatch = palette.fogColor.match(/[\d.]+/g);
+            if (fogMatch) {
+                const [r, g, b, a] = fogMatch.map(Number);
+                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a * 0.7})`;
+                for (let i = 0; i < 20; i++) {
+                    const x = ((i * 40 - offset) % (w + 100)) - 50;
+                    const heightVariation = 20 + (i % 3) * 5 + Math.sin(i * 1.3) * 3;
+                    // Draw simplified tree silhouette for fog overlay
+                    ctx.fillRect(x - 3, y + 25 - heightVariation, 6, heightVariation);
+                }
+            }
         }
     },
 
     'trees-near': (ctx, offset, y, w, h, layer) => {
         const palette = getTimePalette();
+
+        // Draw trees with more variation and overlapping
         for (let i = 0; i < 15; i++) {
             const x = ((i * 55 - offset) % (w + 100)) - 50;
-            drawTree(ctx, x, y + 20, 28 + (i % 4) * 4, palette.trees[1]);
+            const heightVariation = 28 + (i % 4) * 4 + Math.sin(i * 0.8) * 4;
+
+            // Add subtle shadow behind each tree for depth
+            ctx.fillStyle = palette.shadowColor;
+            ctx.globalAlpha = 0.2;
+            ctx.fillRect(x + 1, y + 20 - heightVariation * 0.3, 3, heightVariation * 0.3);
+            ctx.globalAlpha = 1.0;
+
+            // Draw main tree
+            drawTree(ctx, x, y + 20, heightVariation, palette.trees[1]);
+
+            // Add highlight on some trees for depth variation
+            if (i % 3 === 0 && palette.highlightColor) {
+                ctx.fillStyle = palette.highlightColor;
+                ctx.globalAlpha = 0.15;
+                // Small highlight on tree top
+                ctx.beginPath();
+                ctx.moveTo(x, y + 20 - heightVariation);
+                ctx.lineTo(x - 4, y + 20 - heightVariation * 0.3);
+                ctx.lineTo(x + 4, y + 20 - heightVariation * 0.3);
+                ctx.closePath();
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
         }
     },
 
@@ -459,6 +560,75 @@ const FALLBACKS = {
             ctx.moveTo(x, y);
             ctx.quadraticCurveTo(x + sway, y - height/2, x + sway * 1.5, y - height);
             ctx.stroke();
+        }
+    },
+
+    // FOREGROUND ELEMENTS - Added for enhanced depth perception
+    'grass-foreground': (ctx, offset, y, w, h, layer) => {
+        const palette = getTimePalette();
+
+        // Draw grass blades close to camera with strong parallax
+        for (let i = 0; i < 40; i++) {
+            const x = ((i * 12 - offset * 0.8) % (w + 50)) - 25;
+            const height = 8 + (i % 3) * 3;
+            const sway = Math.sin(game.time * 0.025 + i * 0.7) * 1.5;
+
+            // Draw grass blade
+            ctx.strokeStyle = palette.trees[1];
+            ctx.lineWidth = 1.5;
+            ctx.globalAlpha = 0.6;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.quadraticCurveTo(x + sway * 0.5, y - height * 0.5, x + sway, y - height);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+
+            // Add highlight on some blades
+            if (i % 4 === 0 && palette.highlightColor) {
+                ctx.strokeStyle = palette.highlightColor;
+                ctx.lineWidth = 0.5;
+                ctx.globalAlpha = 0.3;
+                ctx.beginPath();
+                ctx.moveTo(x, y - height * 0.3);
+                ctx.lineTo(x + sway * 0.7, y - height * 0.8);
+                ctx.stroke();
+                ctx.globalAlpha = 1.0;
+            }
+        }
+    },
+
+    'rocks-foreground': (ctx, offset, y, w, h, layer) => {
+        const palette = getTimePalette();
+
+        // Draw foreground rocks just above waterline
+        for (let i = 0; i < 8; i++) {
+            const x = ((i * 60 - offset * 0.9) % (w + 80)) - 40;
+            const rockW = 8 + (i % 3) * 4;
+            const rockH = 4 + (i % 2) * 3;
+
+            // Shadow for rock
+            ctx.fillStyle = palette.shadowColor;
+            ctx.globalAlpha = 0.4;
+            ctx.beginPath();
+            ctx.ellipse(x + 2, y + rockH + 1, rockW * 0.6, rockH * 0.3, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+
+            // Rock body
+            ctx.fillStyle = palette.mountains[2] || palette.mountains[1];
+            ctx.beginPath();
+            ctx.ellipse(x, y + rockH * 0.5, rockW, rockH, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Rock highlight
+            if (palette.highlightColor) {
+                ctx.fillStyle = palette.highlightColor;
+                ctx.globalAlpha = 0.25;
+                ctx.beginPath();
+                ctx.ellipse(x - rockW * 0.3, y + rockH * 0.3, rockW * 0.4, rockH * 0.4, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
         }
     },
 
