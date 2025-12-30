@@ -87,6 +87,7 @@ function drawAmbientEffects(ctx) {
 // ============================================================
 
 function spawnFogParticle() {
+    const initialOpacity = 0.15 + Math.random() * 0.15;
     return {
         type: 'fog',
         x: Math.random() * CONFIG.canvas.width,
@@ -94,10 +95,11 @@ function spawnFogParticle() {
         vx: (Math.random() - 0.5) * 0.15, // Slow horizontal drift
         vy: Math.random() * 0.05 - 0.08, // Gentle upward movement
         size: 30 + Math.random() * 50,
-        opacity: 0.15 + Math.random() * 0.15,
+        opacity: initialOpacity,
         life: 0,
         maxLife: 8000 + Math.random() * 4000,
-        phase: Math.random() * Math.PI * 2 // For pulsing effect
+        phase: Math.random() * Math.PI * 2, // For pulsing effect
+        currentOpacity: initialOpacity // Initialize to prevent undefined
     };
 }
 
@@ -124,6 +126,12 @@ function updateFogParticle(p, deltaTime) {
 }
 
 function drawFogParticle(ctx, p, palette) {
+    // Defensive check: ensure all values are finite
+    if (!isFinite(p.x) || !isFinite(p.y) || !isFinite(p.size)) {
+        console.error('[AMBIENT] Non-finite fog gradient values:', { x: p.x, y: p.y, size: p.size });
+        return;
+    }
+
     const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
 
     // Use dawn palette colors for fog
@@ -157,7 +165,9 @@ function spawnLightRayParticle() {
         life: 0,
         maxLife: 6000 + Math.random() * 4000,
         phase: Math.random() * Math.PI * 2,
-        speed: 0.0005 + Math.random() * 0.001
+        speed: 0.0005 + Math.random() * 0.001,
+        angleOffset: 0, // Initialize to prevent NaN in first draw
+        currentOpacity: 0.08 + Math.random() * 0.08 // Initialize to initial opacity
     };
 }
 
@@ -178,9 +188,15 @@ function updateLightRayParticle(p, deltaTime) {
 }
 
 function drawLightRayParticle(ctx, p, palette) {
-    const currentAngle = p.angle + p.angleOffset;
+    const currentAngle = p.angle + (p.angleOffset || 0);
     const endX = p.x + Math.cos(currentAngle) * p.length;
     const endY = p.y + Math.sin(currentAngle) * p.length;
+
+    // Defensive check: ensure all values are finite
+    if (!isFinite(p.x) || !isFinite(p.y) || !isFinite(endX) || !isFinite(endY)) {
+        console.error('[AMBIENT] Non-finite gradient values:', { x: p.x, y: p.y, endX, endY, angle: currentAngle });
+        return;
+    }
 
     const gradient = ctx.createLinearGradient(p.x, p.y, endX, endY);
 
@@ -259,7 +275,13 @@ function updateFireflyParticle(p, deltaTime) {
 }
 
 function drawFireflyParticle(ctx, p) {
-    const alpha = p.currentGlow;
+    const alpha = p.currentGlow || 0.5;
+
+    // Defensive check: ensure all values are finite
+    if (!isFinite(p.x) || !isFinite(p.y) || !isFinite(p.size) || !isFinite(alpha)) {
+        console.error('[AMBIENT] Non-finite firefly gradient values:', { x: p.x, y: p.y, size: p.size, alpha });
+        return;
+    }
 
     // Draw glow
     const glowGradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 4);
