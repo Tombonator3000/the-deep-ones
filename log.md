@@ -3100,3 +3100,392 @@ const speed = (boat ? boat.speed : 1) * 1.5;
 - [ ] Test alle fire tider på døgnet for å sikre sprite-synlighet
 
 ---
+
+---
+
+## 2025-12-30 — Grafiske Systemer: Forklaring
+
+### Oppgave
+Forklare forskjellen mellom de to grafiske systemene i spillet:
+1. **Fallback Procedural Graphics** (prosedyral grafikk)
+2. **Sprites/Pixel Art System** (sprite-basert grafikk)
+
+---
+
+## De To Grafiske Systemene
+
+### 1. Fallback Procedural Graphics (Prosedyral Grafikk)
+
+**Hva det er:**
+Prosedyral grafikk er grafikk som **tegnes direkte med kode** ved hjelp av Canvas 2D API. Ingen bildefiler lastes inn – alt tegnes med geometriske former, gradienter, og matematiske funksjoner.
+
+**Hvordan det fungerer:**
+- Bruker Canvas 2D API-funksjoner som:
+  - `ctx.fillRect()` — rektangler
+  - `ctx.arc()` — sirkler
+  - `ctx.ellipse()` — ellipser
+  - `ctx.beginPath()` / `ctx.lineTo()` / `ctx.stroke()` — linjer og former
+  - `ctx.createRadialGradient()` / `ctx.createLinearGradient()` — fargegradienter
+- All grafikk genereres i sanntid basert på spillets tilstand (tid, sanity, posisjon, osv.)
+- Definert i **`js/fallbacks.js`** og **`js/rendering.js`**
+
+**Eksempler fra kodebasen:**
+
+**A) Lighthouse (Fyrtårn)** — `js/fallbacks.js:318-445`
+```javascript
+'lighthouse': (ctx, offset, y, w, h, layer) => {
+    // Tower body - MUCH LARGER (was 12px wide, now 24px)
+    ctx.fillStyle = '#f0e8e0';  // Bright cream white
+    ctx.beginPath();
+    ctx.moveTo(x - 12, y + 45);
+    ctx.lineTo(x - 8, y - 15);
+    ctx.lineTo(x + 8, y - 15);
+    ctx.lineTo(x + 12, y + 45);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Red stripes
+    ctx.fillStyle = '#c04040';
+    ctx.fillRect(x - 10, y + 30, 20, 10);
+    
+    // BRIGHT LIGHT BEAM (rotating)
+    const beamAngle = game.time * 0.002;
+    ctx.rotate(beamAngle);
+    // ...tegner roterende lysstråle
+}
+```
+
+**B) Boat (Båt)** — `js/rendering.js:153-221`
+```javascript
+function drawBoatHull(x, y) {
+    // Main hull shape
+    ctx.fillStyle = '#d4b896';  // Bright tan
+    ctx.beginPath();
+    ctx.moveTo(x - 45, y);
+    ctx.quadraticCurveTo(x - 50, y + 15, x - 35, y + 20);
+    ctx.lineTo(x + 35, y + 20);
+    ctx.quadraticCurveTo(x + 50, y + 15, x + 45, y);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Hull plank details
+    ctx.fillRect(x - 38, y + 3, 76, 3);
+    // ... flere detaljer
+}
+```
+
+**C) Sun/Moon Celestial Orbit** — `js/fallbacks.js:28-225`
+```javascript
+'sun': (ctx, offset, y, w, h, layer) => {
+    const sunPos = getSunPosition(); // Dynamisk posisjon basert på tid
+    
+    // Outer glow - større når solen er lavt
+    const glowSize = 80 + (1 - sunPos.heightRatio) * 60;
+    const outerGlow = ctx.createRadialGradient(x, sunY, 0, x, sunY, glowSize);
+    outerGlow.addColorStop(0, 'rgba(255, 150, 80, 0.8)');
+    // ... gradient-stops
+    
+    // Solstråler ved soloppgang/nedgang
+    if (sunPos.heightRatio < 0.4) {
+        for (let i = 0; i < 12; i++) {
+            const angle = (i / 12) * Math.PI * 2 + game.time * 0.0002;
+            // ...roterende stråler
+        }
+    }
+}
+```
+
+**Fordeler med prosedyral grafikk:**
+✅ **Ingen filstørrelse** — alt er kode, ingen PNG/JPG filer  
+✅ **Dynamisk** — kan endre seg basert på spilltilstand (sanity, tid, vær)  
+✅ **Skalerbar** — kan justere størrelse og detaljer programmatisk  
+✅ **Fallback-sikkerhet** — fungerer alltid, selv om bildefiler mangler  
+✅ **Animasjon** — enkelt å animere med Math.sin(), rotasjon, etc.  
+
+**Ulemper:**
+❌ **Krever mye kode** — komplekse former tar mange linjer  
+❌ **Mindre detaljert** — vanskelig å lage pixel-perfekt kunst  
+❌ **CPU-intensivt** — tegnes på nytt hver frame  
+❌ **Konsistensproblemer** — varierer mellom enheter/browsers  
+
+---
+
+### 2. Sprites/Pixel Art System
+
+**Hva det er:**
+Sprite-systemet bruker **forhåndslagde bildefiler** (PNG) som lastes inn og tegnes på canvas. Dette gir pixel-perfekt kontroll over hvordan grafikk ser ut.
+
+**Hvordan det fungerer:**
+- Bildefiler defineres i **`js/assets.js`** under `SPRITES` objektet
+- Laster inn PNG-filer med `loadImage()` funksjonen
+- Tegner sprites med `ctx.drawImage()`
+- Støtter animasjon gjennom spritesheets (flere frames i én fil)
+- Definert i **`js/assets.js`** og brukes i **`js/rendering.js`**
+
+**Sprite-konfigurasjon:**
+```javascript
+// js/assets.js:80-109
+const SPRITES = {
+    boat: { 
+        src: 'sprites/boat/boat.png', 
+        width: 90, height: 50, 
+        anchor: { x: 45, y: 25 } // Ankerpunkt for tegning
+    },
+    
+    fisher: { 
+        src: 'sprites/boat/fisher.png', 
+        width: 32, height: 48, 
+        anchor: { x: 16, y: 48 } 
+    },
+    
+    dog: { 
+        src: 'sprites/boat/dog.png', 
+        width: 24, height: 20, 
+        animated: true, frames: 4, fps: 6,  // 4 animasjonsframes
+        anchor: { x: 12, y: 20 } 
+    },
+    
+    fish: {
+        'Harbor Cod': { 
+            src: 'sprites/fish/surface/harbor-cod.png', 
+            width: 32, height: 16, frames: 4, fps: 6 
+        },
+        'The Unnamed': { 
+            src: 'sprites/fish/abyss/unnamed.png', 
+            width: 96, height: 64, frames: 4, fps: 2 
+        }
+        // ... 16 creatures totalt
+    }
+}
+```
+
+**Sprite-rendering:**
+```javascript
+// js/rendering.js:139-146 (Boat rendering)
+if (boatImg && CONFIG.useSprites) {
+    // Scale boat sprite to configured size (boat.png is 1080x589, we want 90x50)
+    ctx.drawImage(boatImg,
+        -SPRITES.boat.anchor.x, -SPRITES.boat.anchor.y,
+        SPRITES.boat.width, SPRITES.boat.height);
+} else {
+    drawBoatProcedural(0, 0);  // Fallback hvis sprite mangler
+}
+```
+
+**Animerte sprites (fish):**
+```javascript
+// js/rendering.js:50-60
+if (img && CONFIG.useSprites && spriteConfig) {
+    const frameWidth = spriteConfig.width;
+    const sx = fish.frame * frameWidth;  // Velg frame fra spritesheet
+    
+    if (fish.speed < 0) {
+        ctx.scale(-1, 1);  // Flip horisontalt
+        ctx.drawImage(img, sx, 0, frameWidth, spriteConfig.height, 
+                      -fish.x - frameWidth/2, fish.y - spriteConfig.height/2, 
+                      frameWidth, spriteConfig.height);
+    }
+}
+```
+
+**Fordeler med sprites:**
+✅ **Pixel-perfekt kontroll** — kunstneren bestemmer hver pixel  
+✅ **Detaljert grafikk** — kan ha komplekse detaljer og teksturer  
+✅ **Raskere rendering** — GPU-akselerert `drawImage()`  
+✅ **Konsistent utseende** — ser identisk ut på alle enheter  
+✅ **Enkel animasjon** — frame-by-frame spritesheets  
+
+**Ulemper:**
+❌ **Filstørrelse** — krever PNG-filer som må lastes ned  
+❌ **Loading-tid** — må vente på at bilder lastes  
+❌ **Statisk** — vanskelig å endre dynamisk basert på spilltilstand  
+❌ **Skaleringsproblemer** — sprites må lages i riktig størrelse  
+❌ **Avhengig av assets** — spillet fungerer ikke hvis filer mangler (uten fallback)  
+
+---
+
+## Fallback-systemet: Beste av Begge Verdener
+
+Spillet bruker et **intelligent fallback-system** som kombinerer begge tilnærmingene:
+
+### Hvordan Fallback Fungerer
+
+**1. Asset Loading (js/assets.js:125-160)**
+```javascript
+async function loadAllAssets() {
+    for (const asset of toLoad) {
+        loadedAssets.status[asset.id] = 'loading';
+        try {
+            loadedAssets.images[asset.id] = await loadImage(asset.src);
+            loadedAssets.status[asset.id] = 'loaded';
+        } catch (e) {
+            loadedAssets.status[asset.id] = 'failed';
+            console.log(`Using fallback for: ${asset.id}`);
+        }
+    }
+}
+```
+
+**2. Rendering Logic (js/rendering.js)**
+```javascript
+// Eksempel: Boat rendering
+const boatImg = loadedAssets.images['sprite-boat'];
+
+if (boatImg && CONFIG.useSprites) {
+    // BRUK SPRITE hvis lastet og sprites er enabled
+    ctx.drawImage(boatImg, ...);
+} else {
+    // BRUK FALLBACK PROCEDURAL hvis sprite mangler eller disabled
+    drawBoatProcedural(0, 0);
+}
+```
+
+**3. Parallax Layer System (js/assets.js:213-246)**
+```javascript
+draw(ctx, canvasWidth, canvasHeight, fallbackFn) {
+    const img = loadedAssets.images[this.id];
+    
+    if (img && CONFIG.useSprites) {
+        // Tegn sprite (animated eller static)
+        ctx.drawImage(img, drawX, drawY);
+    } else if (fallbackFn) {
+        // Fallback til prosedyral grafikk
+        fallbackFn(ctx, this.offset, this.y, canvasWidth, canvasHeight, this);
+    }
+}
+```
+
+### Nåværende Status i Spillet
+
+**Sprites AKTIVERT (`CONFIG.useSprites = true`):**
+| Element | Status | Grafikk-type | Grunn |
+|---------|--------|--------------|-------|
+| **Boat** | ✅ Bruker sprite | Sprite (skalert 1080×589 → 90×50) | boat.png lastet, skaleres i rendering |
+| **Lighthouse** | ❌ Bruker fallback | Procedural | lighthouse.png (1080×602) for stor for 480×270 canvas |
+| **Fisher** | ❌ Bruker fallback | Procedural | Ingen sprite-rendering implementert ennå |
+| **Dog** | ❌ Bruker fallback | Procedural | Ingen sprite-rendering implementert ennå |
+| **Lantern** | ❌ Bruker fallback | Procedural | Ingen sprite-rendering implementert ennå |
+| **Fish** | ✅ Bruker sprites | Sprite (varierer, 12×16 til 96×64) | 16 fish sprites lastet og animert |
+| **Bobber** | ⚠️ Delvis | Sprite (12×16) | Sprite tilgjengelig, men ikke brukt i rendering.js |
+| **Rod** | ⚠️ Delvis | Sprite (64×64) | Sprite tilgjengelig, men ikke brukt i rendering.js |
+
+**Parallax Background Layers:**
+- **Sky/Sun/Moon** → Prosedyral (dynamisk orbit-system)
+- **Mountains/Trees** → Prosedyral fallback (ingen sprites lagt til ennå)
+- **Water** → Prosedyral fallback (animert med Math.sin())
+- **Underwater** → Prosedyral fallback (seaweed, rocks, light rays)
+
+---
+
+## Tekniske Detaljer
+
+### Sprite Scaling Problem
+
+**Problem:** AI-genererte sprites er ofte for store for pixel art-oppløsningen (480×270).
+
+**Eksempel: boat.png**
+- **Faktisk størrelse:** 1080×589 piksler
+- **Ønsket størrelse:** 90×50 piksler
+- **Løsning:** Skalering i `ctx.drawImage()` med width/height parametere
+
+```javascript
+// js/rendering.js:141-143
+ctx.drawImage(boatImg,
+    -SPRITES.boat.anchor.x, -SPRITES.boat.anchor.y,
+    SPRITES.boat.width, SPRITES.boat.height);  // Skalerer til 90×50
+```
+
+**Problemet med lighthouse:**
+- **Faktisk størrelse:** 1080×602 piksler
+- **Ønsket størrelse:** ~80×60 piksler (13.5× nedskalering)
+- **Resultat:** Så mye nedskalering gir blur og tap av detaljer
+- **Løsning:** Bruk prosedyral fallback som ser bedre ut på lav oppløsning
+
+### Anchor Points (Ankerpunkter)
+
+Sprites har **anchor points** som definerer hvor sprite skal tegnes i forhold til posisjonen:
+
+```javascript
+boat: { 
+    anchor: { x: 45, y: 25 }  // Senter av båten (90×50 sprite)
+}
+
+fisher: { 
+    anchor: { x: 16, y: 48 }  // Bunnen av fisher (32×48 sprite)
+}
+```
+
+Dette gjør at vi kan plassere objekter presist på skjermen.
+
+### Animated Sprites (Spritesheets)
+
+Animerte sprites bruker **spritesheets** — én PNG med flere frames side-by-side:
+
+**Eksempel: dog.png (96×20 piksler)**
+```
+[Frame 0][Frame 1][Frame 2][Frame 3]
+  24×20   24×20    24×20    24×20
+```
+
+**Rendering:**
+```javascript
+const frameWidth = spriteConfig.width;  // 24px
+const sx = fish.frame * frameWidth;     // 0, 24, 48, eller 72
+
+ctx.drawImage(img, 
+    sx, 0, frameWidth, spriteConfig.height,  // Kilde: velg frame
+    x, y, frameWidth, spriteConfig.height);  // Mål: tegn på canvas
+```
+
+**Frame-oppdatering:**
+```javascript
+// js/rendering.js:41-45
+fish.frameTimer++;
+if (fish.frameTimer > 10) {
+    fish.frame = (fish.frame + 1) % 4;  // Loop: 0→1→2→3→0
+    fish.frameTimer = 0;
+}
+```
+
+---
+
+## Konklusjon
+
+**The Deep Ones** bruker en **hybrid tilnærming**:
+
+1. **Sprites for statiske, detaljerte elementer**  
+   → Båt, fisk, UI-elementer
+
+2. **Prosedyral grafikk for dynamiske, responsive elementer**  
+   → Sol/måne (orbit), skyggene (sanity-basert), lighthouse (lysstråle), vann (ripple), vær-effekter
+
+3. **Fallback-sikkerhet**  
+   → Spillet fungerer alltid, selv uten sprite-assets
+
+**Designfilosofi:**
+- **Sprites** gir pixel-perfekt kunst hvor det trengs
+- **Procedural** gir dynamikk og fleksibilitet hvor det trengs
+- **Fallback** sikrer at spillet aldri krasjer ved manglende assets
+
+Dette gir det beste av begge verdener: vakker pixel art kombinert med levende, reaktive omgivelser.
+
+---
+
+### Filer Involvert
+
+**Sprite System:**
+- `js/assets.js` — Sprite definitioner, asset loading, ParallaxLayer class
+- `sprites/` — PNG-filer (boat, fish, UI, backgrounds)
+
+**Procedural System:**
+- `js/fallbacks.js` — Alle fallback tegne-funksjoner
+- `js/rendering.js` — Boat, fisher, dog, lantern procedural drawing
+- `js/palettes.js` — Fargepaletter for ulike tider på døgnet
+
+**Konfigurasjon:**
+- `js/config.js` — `CONFIG.useSprites` toggle (linje 19)
+
+**Rendering Pipeline:**
+- `js/main.js` — Hovedløkke som kaller rendering
+- `js/ui.js` — Crisp UI rendering (separat canvas)
+
