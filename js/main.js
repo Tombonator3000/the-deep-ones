@@ -400,21 +400,28 @@ function render() {
 
     ctx.restore();  // Restore from screen shake and camera pan
 
-    // Draw UI elements
-    drawLocationIndicator();
-    drawWeatherIndicator();
-    drawDogIndicator();
+    // Draw minimal UI elements
+    drawLocationIndicator();  // Minimalized: just small minimap
+    drawWeatherIndicator();   // Hidden: weather shown through visual effects
+    drawDogIndicator();       // Minimalized: only barks shown
+
+    // Draw MINIMAL CONTROL HINTS (Chill n Fish style)
+    if (typeof drawMinimalControlHints === 'function') {
+        drawMinimalControlHints();
+    }
+
+    // Draw transformation indicator (important for gameplay)
     drawTransformationIndicator();
 
-    // Draw streak indicator
+    // Draw streak indicator (dynamic feedback)
     if (typeof drawStreakIndicator === 'function') {
         drawStreakIndicator();
     }
 
-    // Draw daily challenges
-    if (typeof drawDailyChallenges === 'function') {
-        drawDailyChallenges();
-    }
+    // Hide daily challenges for minimal UI
+    // if (typeof drawDailyChallenges === 'function') {
+    //     drawDailyChallenges();
+    // }
 
     // Draw mute indicator
     if (typeof drawMuteIndicator === 'function') {

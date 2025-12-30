@@ -2,109 +2,195 @@
 // THE DEEP ONES - UI RENDERING
 // ============================================================
 
+// ============================================================
+// MINIMAL CONTROL HINTS (Chill n Fish inspired)
+// ============================================================
+
+function drawMinimalControlHints() {
+    ctx.save();
+
+    // Apply UI fade-out opacity
+    ctx.globalAlpha = game.ui?.opacity ?? 1.0;
+
+    const w = CONFIG.canvas.width;
+    const h = CONFIG.canvas.height;
+    const hintColor = 'rgba(220, 230, 240, 0.85)';
+    const boxColor = 'rgba(20, 30, 40, 0.7)';
+    const borderColor = 'rgba(100, 120, 140, 0.4)';
+
+    // Helper function to draw a hint box
+    const drawHint = (text, x, y, align = 'center') => {
+        ctx.font = '12px VT323';
+        const metrics = ctx.measureText(text);
+        const padding = 8;
+        const boxW = metrics.width + padding * 2;
+        const boxH = 22;
+
+        let boxX = x - boxW / 2;
+        if (align === 'left') boxX = x;
+        if (align === 'right') boxX = x - boxW;
+
+        // Background box
+        ctx.fillStyle = boxColor;
+        ctx.fillRect(boxX, y - boxH / 2, boxW, boxH);
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(boxX, y - boxH / 2, boxW, boxH);
+
+        // Text
+        ctx.fillStyle = hintColor;
+        ctx.textAlign = align;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, x, y);
+    };
+
+    // CONTEXT-SENSITIVE HINTS based on game state
+
+    // LEFT SIDE - Movement/Navigation
+    if (game.state === 'sailing') {
+        drawHint('[←→] DRIVE BOAT', 15, h / 2, 'left');
+    }
+
+    // BOTTOM LEFT - Pet Dog (always available when not in menus)
+    if (!game.shop.open && !game.villageMenu?.open && !game.journal?.open && !game.loreViewer?.open) {
+        drawHint('[P] PAT DOG', 15, h - 25, 'left');
+    }
+
+    // CENTER - Main Action (context-sensitive)
+    if (game.state === 'sailing') {
+        drawHint('[SPACE] CAST YOUR LINE', w / 2, h - 40, 'center');
+    } else if (game.state === 'waiting') {
+        drawHint('[SPACE] REEL IN', w / 2, h - 40, 'center');
+        drawHint('[↑↓] ADJUST DEPTH', w / 2, h - 70, 'center');
+    } else if (game.state === 'caught') {
+        drawHint('[SPACE] CONTINUE', w / 2, h - 40, 'center');
+    }
+
+    // BOTTOM CENTER - Harbor (when near dock)
+    if (game.nearDock && game.state === 'sailing') {
+        drawHint('[E] HARBOR', w / 2, h - 70, 'center');
+    }
+
+    // RIGHT SIDE - Secondary Actions
+    drawHint('[J] JOURNAL', w - 15, h - 85, 'right');
+    drawHint('[L] LORE', w - 15, h - 55, 'right');
+    drawHint('[H] HELP', w - 15, h - 25, 'right');
+
+    // TOP RIGHT - Idle Mode indicator (if active)
+    if (game.idleFishing?.active) {
+        const idleX = w - 15;
+        const idleY = 25;
+        ctx.font = '14px VT323';
+        const idleText = 'IDLE MODE';
+        const metrics = ctx.measureText(idleText);
+        const padding = 10;
+        const boxW = metrics.width + padding * 2;
+        const boxH = 28;
+
+        // Pulsing effect
+        const pulse = (Math.sin(game.time * 0.003) + 1) / 2;
+        ctx.globalAlpha = (game.ui?.opacity ?? 1.0) * (0.7 + pulse * 0.3);
+
+        ctx.fillStyle = 'rgba(80, 120, 100, 0.6)';
+        ctx.fillRect(idleX - boxW, idleY - boxH / 2, boxW, boxH);
+        ctx.strokeStyle = 'rgba(120, 180, 140, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(idleX - boxW, idleY - boxH / 2, boxW, boxH);
+
+        ctx.fillStyle = '#c0e0d0';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(idleText, idleX - padding, idleY);
+
+        ctx.globalAlpha = game.ui?.opacity ?? 1.0;
+    }
+
+    // TOP CENTER - Rod & Lure info (minimal)
+    if (game.state === 'sailing' || game.state === 'waiting') {
+        const rod = getCurrentRod();
+        const rodText = rod ? rod.name : 'No Rod';
+        drawHint(`🎣 ${rodText}`, w / 2, 25, 'center');
+    }
+
+    ctx.restore();
+}
+
 function drawLocationIndicator() {
+    // MINIMALIZED: Only show minimap, no location name text
     const loc = CONFIG.locations[game.currentLocation];
     if (!loc) return;
 
-    // Apply UI fade-out opacity
     ctx.save();
     ctx.globalAlpha = game.ui?.opacity ?? 1.0;
 
-    // Use crisp text for location name
-    drawCrispText(loc.name, CONFIG.canvas.width / 2, 25, {
-        font: '18px VT323',
-        color: 'rgba(200, 220, 210, 0.9)',
-        align: 'center'
-    });
+    // Smaller, more minimal minimap
+    const mapWidth = 120, mapHeight = 12;
+    const mapX = CONFIG.canvas.width - mapWidth - 10;
+    const mapY = CONFIG.canvas.height - mapHeight - 10;
 
-    // Minimap stays on pixel canvas (it's pixel art anyway)
-    const mapWidth = 200, mapHeight = 20;
-    const mapX = CONFIG.canvas.width - mapWidth - 15;
-    const mapY = CONFIG.canvas.height - mapHeight - 15;
-
-    ctx.fillStyle = 'rgba(10, 20, 30, 0.7)';
+    ctx.fillStyle = 'rgba(10, 20, 30, 0.5)';
     ctx.fillRect(mapX, mapY, mapWidth, mapHeight);
-    ctx.strokeStyle = 'rgba(100, 130, 120, 0.5)';
+    ctx.strokeStyle = 'rgba(100, 130, 120, 0.3)';
+    ctx.lineWidth = 1;
     ctx.strokeRect(mapX, mapY, mapWidth, mapHeight);
 
+    // Location markers (smaller)
     for (const [name, l] of Object.entries(CONFIG.locations)) {
         const markerX = mapX + (l.x / CONFIG.worldWidth) * mapWidth;
-        ctx.fillStyle = name === game.currentLocation ? '#8aba9a' : '#4a6a5a';
-        ctx.fillRect(markerX - 2, mapY + 2, 4, mapHeight - 4);
+        ctx.fillStyle = name === game.currentLocation ? 'rgba(138, 186, 154, 0.6)' : 'rgba(74, 106, 90, 0.4)';
+        ctx.fillRect(markerX - 1, mapY + 1, 2, mapHeight - 2);
     }
 
+    // Boat marker (smaller triangle)
     const boatMarkerX = mapX + (game.boatX / CONFIG.worldWidth) * mapWidth;
-    ctx.fillStyle = '#f0d080';
+    ctx.fillStyle = 'rgba(240, 208, 128, 0.8)';
     ctx.beginPath();
-    ctx.moveTo(boatMarkerX, mapY + 3);
-    ctx.lineTo(boatMarkerX - 4, mapY + mapHeight - 3);
-    ctx.lineTo(boatMarkerX + 4, mapY + mapHeight - 3);
+    ctx.moveTo(boatMarkerX, mapY + 2);
+    ctx.lineTo(boatMarkerX - 2, mapY + mapHeight - 2);
+    ctx.lineTo(boatMarkerX + 2, mapY + mapHeight - 2);
     ctx.closePath();
     ctx.fill();
 
-    ctx.textAlign = 'left';
     ctx.restore();
 }
 
 function drawWeatherIndicator() {
-    const weather = WEATHER.types[game.weather.current];
-
-    let icon = '';
-    if (game.weather.current === 'clear') icon = 'Clear';
-    else if (game.weather.current === 'cloudy') icon = 'Cloudy';
-    else if (game.weather.current === 'rain') icon = 'Rain';
-    else if (game.weather.current === 'fog') icon = 'Fog';
-    else if (game.weather.current === 'storm') icon = 'Storm';
-
-    // Apply UI fade-out opacity
-    ctx.save();
-    ctx.globalAlpha = game.ui?.opacity ?? 1.0;
-
-    drawCrispText(icon, CONFIG.canvas.width - 15, 50, {
-        font: '14px VT323',
-        color: 'rgba(200, 220, 210, 0.8)',
-        align: 'right'
-    });
-
-    ctx.restore();
+    // HIDDEN: Weather is now shown visually through effects, not as UI text
+    // Keeping function for compatibility but it does nothing
+    return;
 }
 
 function drawDogIndicator() {
-    const x = 15, y = CONFIG.canvas.height - 60;
-
-    // Apply UI fade-out opacity
-    ctx.save();
-    ctx.globalAlpha = game.ui?.opacity ?? 1.0;
-
-    let dogEmoji = 'Dog';
-    if (game.dog.animation === 'sleep') dogEmoji = 'Zzz';
-    else if (game.dog.animation === 'alert') dogEmoji = '!';
-    else if (game.dog.isBarking) dogEmoji = '!!!';
-
-    ctx.font = '16px VT323';
-    ctx.fillStyle = '#c0d0c0';
-    ctx.fillText(dogEmoji, x, y);
-
-    ctx.fillStyle = 'rgba(10, 20, 30, 0.7)';
-    ctx.fillRect(x + 30, y - 15, 60, 10);
-    ctx.fillStyle = game.dog.happiness > 50 ? '#6a9a6a' : '#9a6a6a';
-    ctx.fillRect(x + 31, y - 14, 58 * (game.dog.happiness / 100), 8);
+    // MINIMALIZED: Dog barks are now shown as floating text only, no constant UI element
+    // Happiness is communicated through dog behavior, not a bar
 
     if (game.dog.isBarking) {
-        ctx.font = '12px VT323';
-        ctx.fillStyle = '#c0d0c0';
+        ctx.save();
+        ctx.globalAlpha = game.ui?.opacity ?? 1.0;
+
+        const x = 60;
+        const y = CONFIG.canvas.height - 80;
+
+        ctx.font = '14px VT323';
+        ctx.fillStyle = '#e0e8f0';
+        ctx.textAlign = 'left';
+
         let barkText = '*woof!*';
         if (game.dog.barkReason === 'rare') barkText = '*BARK BARK!*';
         else if (game.dog.barkReason === 'danger') barkText = '*whimper*';
         else if (game.dog.barkReason === 'excited') barkText = '*happy bark!*';
-        ctx.fillText(barkText, x + 30, y + 5);
+
+        // Draw with subtle background
+        const metrics = ctx.measureText(barkText);
+        const padding = 6;
+        ctx.fillStyle = 'rgba(30, 40, 50, 0.6)';
+        ctx.fillRect(x - padding, y - 14, metrics.width + padding * 2, 20);
+
+        ctx.fillStyle = '#e0e8f0';
+        ctx.fillText(barkText, x, y);
+
+        ctx.restore();
     }
-
-    ctx.font = '10px VT323';
-    ctx.fillStyle = '#5a7a6a';
-    ctx.fillText('[P] Pet dog', x, y + 15);
-
-    ctx.restore();
 }
 
 function drawLoreCollection() {
@@ -271,50 +357,12 @@ function drawHotkeyHelp() {
     ctx.textAlign = 'left';
 }
 
-// Tutorial system
+// Tutorial system - REPLACED by minimal control hints
+// Keeping function for compatibility but it does nothing
 function drawTutorial() {
-    if (!game.tutorial.shown && game.state !== 'title' && game.caughtCreatures.length < 3) {
-        // Check which tutorial step to show
-        let currentTip = null;
-
-        if (game.caughtCreatures.length === 0 && game.state === 'sailing') {
-            currentTip = "Press [SPACE] to cast your line!";
-        } else if (game.state === 'waiting' && game.depth < 10) {
-            currentTip = "Use [UP/DOWN] to adjust fishing depth";
-        } else if (game.nearDock && game.inventory.length > 0) {
-            currentTip = "Press [E] to visit the harbor and sell fish";
-        } else if (game.sanity < 50 && game.achievements.stats.petCount < 3) {
-            currentTip = "Press [P] to pet your dog for sanity!";
-        }
-
-        if (currentTip) {
-            const tipWidth = ctx.measureText(currentTip).width + 40;
-            const tipX = (CONFIG.canvas.width - tipWidth) / 2;
-            const tipY = CONFIG.canvas.height - 140;
-
-            // Background with subtle animation
-            const pulse = (Math.sin(game.time * 0.005) + 1) / 2;
-            ctx.fillStyle = `rgba(30, 50, 60, ${0.85 + pulse * 0.1})`;
-            ctx.fillRect(tipX, tipY, tipWidth, 35);
-            ctx.strokeStyle = `rgba(100, 160, 180, ${0.5 + pulse * 0.3})`;
-            ctx.lineWidth = 1;
-            ctx.strokeRect(tipX, tipY, tipWidth, 35);
-
-            // Tip text
-            ctx.fillStyle = '#c0e0f0';
-            ctx.font = '14px VT323';
-            ctx.textAlign = 'center';
-            ctx.fillText(currentTip, CONFIG.canvas.width / 2, tipY + 23);
-            ctx.textAlign = 'left';
-
-            // Small indicator
-            ctx.fillStyle = '#80c0d0';
-            ctx.font = '10px VT323';
-            ctx.textAlign = 'center';
-            ctx.fillText('TIP', tipX + 20, tipY + 22);
-            ctx.textAlign = 'left';
-        }
-    }
+    // Tutorial tips are now integrated into drawMinimalControlHints()
+    // which shows contextual controls based on game state
+    return;
 }
 
 // Stats display for achievements viewer (extended)
