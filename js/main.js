@@ -198,6 +198,7 @@ function update(deltaTime) {
     updateAchievementNotification();
     updateSoundEffects();
     updateStreak();
+    updateUIOpacity(deltaTime);
 
     // Update new Cast n Chill inspired systems
     updateCameraPan();

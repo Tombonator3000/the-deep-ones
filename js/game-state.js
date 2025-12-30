@@ -60,6 +60,15 @@ const game = {
         animation: 'idle'
     },
 
+    // UI fade-out system
+    ui: {
+        lastActivity: 0,
+        opacity: 1.0,
+        fadeDelay: 3000,  // Start fading after 3 seconds of inactivity
+        fadeDuration: 2000,  // Fade over 2 seconds
+        minOpacity: 0.15  // Minimum opacity when faded (not completely invisible)
+    },
+
     loreFound: [],
     currentLore: null,
 

@@ -2469,3 +2469,41 @@ function drawWaterShimmer(panOffset) {
         }
     }
 }
+
+// ============================================================
+// UI FADE-OUT SYSTEM
+// ============================================================
+
+function updateUIOpacity(deltaTime) {
+    // Don't fade UI during menus or important moments
+    if (game.state === 'title' || game.state === 'village' ||
+        game.currentLore || game.currentCatch ||
+        game.shop.open || game.loreViewer.open ||
+        game.journal?.open || game.achievements?.viewerOpen) {
+        game.ui.opacity = 1.0;
+        return;
+    }
+
+    // Calculate time since last activity
+    const timeSinceActivity = game.time - game.ui.lastActivity;
+
+    if (timeSinceActivity < game.ui.fadeDelay) {
+        // Still active - full opacity with smooth transition
+        game.ui.opacity = Math.min(1.0, game.ui.opacity + (deltaTime / 300));
+    } else {
+        // Inactive - fade out
+        const fadeProgress = (timeSinceActivity - game.ui.fadeDelay) / game.ui.fadeDuration;
+        const targetOpacity = Math.max(game.ui.minOpacity, 1.0 - fadeProgress);
+
+        // Smooth transition
+        game.ui.opacity = game.ui.opacity * 0.95 + targetOpacity * 0.05;
+    }
+
+    // Clamp opacity
+    game.ui.opacity = Math.max(game.ui.minOpacity, Math.min(1.0, game.ui.opacity));
+}
+
+// Call this when user performs any action
+function markUIActivity() {
+    game.ui.lastActivity = game.time;
+}

@@ -150,6 +150,9 @@ function handleEndingInput(e) {
 
 function setupInputHandlers() {
     document.addEventListener('keydown', (e) => {
+        // Mark UI activity for fade-out system
+        markUIActivity();
+
         // Handle ending input first
         if (handleEndingInput(e)) return;
 

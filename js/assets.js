@@ -53,6 +53,9 @@ const PARALLAX_LAYERS = {
             { id: 'lighthouse', y: 50, scrollSpeed: 0.4, worldX: 75, spriteBottomY: 85, src: 'backgrounds/land/lighthouse.png' },
             // reeds just above waterline
             { id: 'reeds-left', y: 100, scrollSpeed: 0.5, src: 'backgrounds/land/reeds.png' },
+            // FOREGROUND ELEMENTS for enhanced depth
+            { id: 'grass-foreground', y: 105, scrollSpeed: 0.8, repeatX: true, src: 'backgrounds/land/grass-fg.png' },
+            { id: 'rocks-foreground', y: 108, scrollSpeed: 0.9, repeatX: true, src: 'backgrounds/land/rocks-fg.png' },
         ]
     },
     water: {

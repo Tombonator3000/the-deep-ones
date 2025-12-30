@@ -4271,3 +4271,156 @@ Implementeringen følger Cast 'n' Chill's approach til atmospheric rendering, me
 Partikkel-systemet er designet for å kunne utvides med flere effekter senere (f.eks. underwater particles, abyss effects, transformation particles).
 
 ---
+
+---
+
+## 2025-12-30 - Landscape Polish & UI Refinement
+
+### Implementert
+**Cast 'n' Chill-Inspirerte Forbedringer - Del 2: Parallax & UI**
+
+#### 1. Atmospheric Perspective på Parallax Layers
+
+**Mountains (fjell-layers):**
+- `mountains-far`: Full tåkeoverlay for maksimal dybdefølelse
+- `mountains-mid`: 50% tåkeoverlay med layered sine waves for naturlige topper
+- `mountains-near`: Triple-layered sine waves for komplekse peaks + shadow details
+
+**Trees (tre-layers):**
+- `trees-far`: Varierende høyder + 70% tåkeoverlay for distant atmosphere
+- `trees-near`: Individuell shadow rendering + highlight på 1/3 av trær for dybdevariasjon
+
+**Tekniske detaljer:**
+- Bruker `palette.fogColor` fra TIME_PALETTES
+- Regex parsing av rgba-verdier for å justere alpha
+- Shadows bruker `palette.shadowColor` med lav globalAlpha (0.15-0.2)
+- Highlights bruker `palette.highlightColor` for å skape lys/skygge kontrast
+
+#### 2. Foreground Elements for Dybde
+
+**Nye parallax layers i `assets.js`:**
+```javascript
+{ id: 'grass-foreground', y: 105, scrollSpeed: 0.8, repeatX: true }
+{ id: 'rocks-foreground', y: 108, scrollSpeed: 0.9, repeatX: true }
+```
+
+**grass-foreground:**
+- 40 gress-strå med sway-animasjon
+- Høy scrollSpeed (0.8) for nær-kamera følelse
+- Highlight på 1/4 av strå for lys-effekt
+- Opacity 0.6 for å ikke blokkere view
+
+**rocks-foreground:**
+- 8 steiner like over vannlinjen
+- Shadow rendering for grounded feeling
+- Highlight-spots for 3D-effekt
+- Varierende størrelser for dybde
+
+#### 3. UI Fade-Out System
+
+**Ny game state property:**
+```javascript
+ui: {
+    lastActivity: 0,
+    opacity: 1.0,
+    fadeDelay: 3000,      // Start fade etter 3 sek inaktivitet
+    fadeDuration: 2000,   // Fade over 2 sekunder
+    minOpacity: 0.15      // Minimum synlighet (ikke helt usynlig)
+}
+```
+
+**Implementering:**
+- `updateUIOpacity(deltaTime)` i systems.js - smooth fade-logikk
+- `markUIActivity()` kalles på keydown i input.js
+- UI elementer wrapper med `ctx.globalAlpha = game.ui.opacity`
+- Ikke fade under menyer eller viktige øyeblikk
+
+**Påvirkede UI elementer:**
+- Location indicator (navn + minimap)
+- Weather indicator
+- Dog indicator (emoji + happiness bar)
+
+**Smooth transition:**
+- Lerping mellom target og current opacity: `opacity = opacity * 0.95 + target * 0.05`
+- Gradual fade-in når bruker er aktiv igjen
+- Clamping mellom minOpacity og 1.0
+
+### Tekniske Detaljer
+
+**Filer modifisert:**
+- `js/fallbacks.js` - Atmospheric perspective på mountains/trees + foreground elements
+- `js/assets.js` - Nye foreground layers
+- `js/game-state.js` - UI fade-out state
+- `js/systems.js` - UI opacity update function
+- `js/main.js` - Call til updateUIOpacity()
+- `js/input.js` - markUIActivity() på keydown
+- `js/ui.js` - GlobalAlpha wrapping på UI elementer
+
+**Rendering order (updated):**
+```
+1. Sky layers (stars, sun, moon, clouds)
+2. Mountains (far → mid → near) + atmospheric perspective
+3. Trees (far → near) + shadows/highlights
+4. Lighthouse
+5. Reeds
+6. Foreground grass   ← NYT!
+7. Foreground rocks   ← NYT!
+8. Water surface
+9. Water reflection
+10. Underwater layers
+11. UI (med fade-out)  ← OPPDATERT!
+```
+
+**Performance notes:**
+- Foreground elements: Low particle count (40 grass, 8 rocks)
+- Atmospheric overlays: Reuse existing shapes (ingen ekstra geometry)
+- UI fade: Single lerp calculation per frame
+- Syntax validated: ✓ Alle filer OK
+
+### Visuell Impact
+
+**Dybdefølelse:**
+- Fjell og trær "fades" naturlig i avstanden med tåke
+- Foreground elementer skaper nær/fjern kontrast
+- Triple-layered sine waves gir organiske, naturlige former
+
+**Atmosfære:**
+- Dawn/Night: Tåke forsterker mystisk stemning
+- Day: Minimal tåke for klar sikt
+- Dusk: Medium tåke for dramatisk solnedgang
+
+**UI Polish:**
+- Fader smooth ut når man bare observerer
+- Kommer tilbake instant ved input
+- Aldri helt usynlig (minOpacity: 0.15)
+- Ikke distraksjon under viktige øyeblikk
+
+### Sammenligning med Cast 'n' Chill
+
+**Likheter:**
+- Atmospheric haze på distant layers
+- Smooth UI transitions
+- Foreground elements for dybde
+
+**Vårt unique touch:**
+- Lovecraftian color palette med shadowColor/fogColor
+- Tåke som forsterker horror-stemning vs cozy atmosphere
+- Parallax depth tilpasset pixel art æstetikk
+
+### Neste Steg
+
+Fra Cast 'n' Chill analyse-listen:
+- [x] Landscape Polish (parallax depth, atmospheric perspective)
+- [x] UI Refinement (fade-out, smooth transitions)
+- [ ] Water System Overhaul (reflection, enhanced ripples) ← Neste prioritet!
+
+### Kodestatistikk
+- **Modifiserte filer:** 7
+- **Nye funksjoner:** 4 (updateUIOpacity, markUIActivity, grass-foreground, rocks-foreground)
+- **Nye parallax layers:** 2 (foreground)
+- **Nye linjer kode:** ~200
+
+### Notater
+Landscape polish og UI refinement er fullført med Cast 'n' Chill som inspirasjon. Atmospheric perspective gir en merkbar dybdefølelse uten å miste pixel art-charmen. UI fade-out systemet er subtilt nok til å ikke være distraherende, men gir en mer polished "idle game" følelse når spilleren bare observerer.
+
+Neste fokus bør være water rendering for å matche Cast 'n' Chill's stunning water effects (innenfor våre vanilla JS constraints).
