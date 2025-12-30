@@ -5225,3 +5225,242 @@ This caused "SyntaxError: Failed to execute 'addColorStop' on
 
 ---
 
+
+
+## 2025-12-30 — Black Screen Bug Fix (Part 2: Non-finite Gradient Values)
+
+### Problem
+
+Forrige fix (#ARyJ3) addresserte RGBA color parsing issues, men spillet viser fortsatt svart skjerm. Nye console errors:
+
+```
+TypeError: Failed to execute 'createLinearGradient' on 'CanvasRenderingContext2D': 
+The provided double value is non-finite.
+    at drawLightRayParticle (ambient-effects.js:185:26)
+```
+
+**Symptomer:**
+- Spillet starter kort normalt  
+- Skjermen panner oppover og blir svart
+- Console full av "non-finite" errors (NaN eller Infinity verdier)
+- Rendering-loop krasjer ved ambient effects
+
+### Root Cause Analysis
+
+**Kritisk feil i `ambient-effects.js`:**
+
+Light ray particles ble spawnet uten å initialisere `angleOffset` property:
+
+```javascript
+// FEIL: spawnLightRayParticle() - Mangler angleOffset
+return {
+    type: 'lightRay',
+    angle: Math.PI * 0.5 + (Math.random() - 0.5) * 0.4,
+    // ... andre properties
+    // angleOffset: MANGLER! ❌
+};
+
+// Så brukt i drawLightRayParticle() UTEN null-check:
+const currentAngle = p.angle + p.angleOffset;  // undefined!
+const endX = p.x + Math.cos(currentAngle) * p.length;  // NaN!
+```
+
+**Hva skjer:**
+1. Particle spawnes uten `angleOffset`
+2. Draw kalles før first update (update setter angleOffset)
+3. `p.angleOffset` er `undefined`
+4. `p.angle + undefined = NaN`
+5. `Math.cos(NaN) = NaN`
+6. `p.x + NaN * p.length = NaN`
+7. `ctx.createLinearGradient(p.x, p.y, NaN, NaN)` → **TypeError!**
+8. Rendering stopper → svart skjerm
+
+**Samme problem med `currentOpacity`:**
+- Fog og light ray particles bruker `p.currentOpacity` 
+- Denne settes kun i `update()` funksjonen
+- Hvis `draw()` kalles før `update()`, er den `undefined`
+- Selv om det er `|| p.opacity` fallback, er det bedre å initialisere
+
+### Løsning
+
+**1. Initialize `angleOffset` i `spawnLightRayParticle()`**
+
+```javascript
+function spawnLightRayParticle() {
+    return {
+        // ... existing properties
+        angleOffset: 0,  // ✓ FIX: Initialize to prevent NaN
+        currentOpacity: 0.08 + Math.random() * 0.08  // ✓ FIX: Initialize
+    };
+}
+```
+
+**2. Initialize `currentOpacity` i `spawnFogParticle()`**
+
+```javascript
+function spawnFogParticle() {
+    const initialOpacity = 0.15 + Math.random() * 0.15;
+    return {
+        opacity: initialOpacity,
+        currentOpacity: initialOpacity  // ✓ FIX: Initialize to prevent undefined
+    };
+}
+```
+
+**3. Defensive checks i alle draw-funksjoner**
+
+```javascript
+function drawLightRayParticle(ctx, p, palette) {
+    const currentAngle = p.angle + (p.angleOffset || 0);  // ✓ Fallback
+    const endX = p.x + Math.cos(currentAngle) * p.length;
+    const endY = p.y + Math.sin(currentAngle) * p.length;
+
+    // ✓ NEW: Defensive check before gradient creation
+    if (!isFinite(p.x) || !isFinite(p.y) || !isFinite(endX) || !isFinite(endY)) {
+        console.error('[AMBIENT] Non-finite gradient values:', { x: p.x, y: p.y, endX, endY });
+        return;  // Skip drawing this particle
+    }
+
+    const gradient = ctx.createLinearGradient(p.x, p.y, endX, endY);
+    // ... rest of function
+}
+
+function drawFogParticle(ctx, p, palette) {
+    // ✓ NEW: Defensive check
+    if (!isFinite(p.x) || !isFinite(p.y) || !isFinite(p.size)) {
+        console.error('[AMBIENT] Non-finite fog gradient values:', { x: p.x, y: p.y, size: p.size });
+        return;
+    }
+    // ... rest of function
+}
+
+function drawFireflyParticle(ctx, p) {
+    const alpha = p.currentGlow || 0.5;  // ✓ Fallback
+    
+    // ✓ NEW: Defensive check
+    if (!isFinite(p.x) || !isFinite(p.y) || !isFinite(p.size) || !isFinite(alpha)) {
+        console.error('[AMBIENT] Non-finite firefly gradient values:', { x: p.x, y: p.y, size: p.size, alpha });
+        return;
+    }
+    // ... rest of function
+}
+```
+
+### Hvorfor skjedde dette?
+
+**Timing issue mellom update og draw:**
+
+```
+Frame 1:
+  1. spawnLightRayParticle() → particle uten angleOffset
+  2. AMBIENT_EFFECTS.particles.push(particle)
+  3. updateAmbientEffects() → setter angleOffset = Math.sin(...) * 0.05
+  4. drawAmbientEffects() → bruker angleOffset ✓ OK
+  
+Frame 2 (potensielt):
+  1. spawnLightRayParticle() → ny particle uten angleOffset
+  2. AMBIENT_EFFECTS.particles.push(particle)
+  3. drawAmbientEffects() kalles FØRST (før update) → angleOffset er undefined ❌
+  4. CRASH!
+```
+
+Race condition mellom spawn/update/draw cycle.
+
+### Endringer
+
+**Filer modifisert:** 1 (`js/ambient-effects.js`)
+
+**Funksjoner oppdatert:**
+1. `spawnLightRayParticle()` - linje 145-164
+   - Lagt til `angleOffset: 0`
+   - Lagt til `currentOpacity: 0.08 + Math.random() * 0.08`
+
+2. `spawnFogParticle()` - linje 89-104
+   - Lagt til `currentOpacity: initialOpacity`
+
+3. `drawFogParticle()` - linje 128-145
+   - Lagt til defensive check med `isFinite()`
+
+4. `drawLightRayParticle()` - linje 184-213
+   - Lagt til defensive check med `isFinite()`
+   - Lagt til fallback: `p.angleOffset || 0`
+
+5. `drawFireflyParticle()` - linje 277-295
+   - Lagt til defensive check med `isFinite()`
+   - Lagt til fallback: `p.currentGlow || 0.5`
+
+**Linjer endret:** ~30  
+**Nye defensive checks:** 3
+
+### Testing
+
+**Syntax validation:**
+```bash
+node -c js/ambient-effects.js
+# ✓ No errors
+```
+
+**Forventede resultater:**
+- ✓ Ingen "non-finite" gradient errors
+- ✓ Ambient effects (fog, light rays, fireflies) tegnes korrekt
+- ✓ Spillet renderer normalt uten black screen
+- ✓ Smooth transitions mellom time of day
+- ✓ Camera panning fungerer som normalt
+- ✓ Ingen rendering crashes
+
+**Defensive fallbacks sikrer:**
+- Selv om en particle får korrupte verdier, vil den skippes (ikke krasje hele spillet)
+- Console error logging hjelper med debugging hvis det skjer igjen
+- Graceful degradation i stedet for full crash
+
+### Kodestatistikk
+
+**Bug-fixes implementert:** 5
+- 2 initialization fixes (spawn functions)
+- 3 defensive checks (draw functions)
+
+**Impact:**
+- Critical: Prevents black screen crash
+- Severity: High (game-breaking bug)
+- Complexity: Low (simple initialization issue)
+
+### Relaterte Notater
+
+**Andre potensielle gradient issues funnet (IKKE kritiske):**
+
+Grep av alle gradient-bruk viser 30+ `createLinearGradient` og `createRadialGradient` calls. De fleste bruker statiske verdier eller garantert finite verdier:
+
+```javascript
+// Safe examples (alle verdier er finite):
+ctx.createLinearGradient(0, 0, 0, CONFIG.waterLine)  // ✓ Safe
+ctx.createRadialGradient(x, sunY, 0, x, sunY, glowSize)  // ✓ Safe (x = sun.x fra palette)
+```
+
+Ambient effects var eneste sted hvor **runtime particle positions** ble brukt uten validering.
+
+**Læring:**
+- ALLTID initialiser properties som brukes i beregninger
+- Legg til defensive checks når du bruker dynamiske/runtime verdier i canvas API
+- `isFinite()` er bedre enn manuell `!== undefined` check (fanger både NaN og Infinity)
+
+### Neste Steg
+
+1. **Deploy:**
+   - Commit til branch `claude/fix-black-screen-bug-SQUpS`
+   - Push til remote
+   - Test på live site
+
+2. **Verification:**
+   - Åpne spillet på deployed URL
+   - Vent til dusk (light rays spawner)
+   - Vent til dawn (fog spawner)
+   - Vent til night (fireflies spawner)
+   - Verifiser ingen console errors
+   - Verifiser ambient effects vises korrekt
+
+3. **Monitoring:**
+   - Sjekk console for eventuelle `[AMBIENT]` error logs
+   - Hvis det fortsatt er issues, vil de nå bli logget i stedet for å krasje
+
+---
+
