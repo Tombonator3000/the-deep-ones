@@ -217,19 +217,32 @@ class ParallaxLayer {
         if (img && CONFIG.useSprites) {
             // Calculate y position - use spriteBottomY if set (bottom-anchored)
             let drawY = this.y;
+            let drawWidth = img.width;
+            let drawHeight = img.height;
+
+            // Auto-scale oversized sprites to fit canvas
+            const maxHeight = canvasHeight * 0.4;  // Max 40% of canvas height
+            if (img.height > maxHeight) {
+                const scale = maxHeight / img.height;
+                drawWidth = img.width * scale;
+                drawHeight = img.height * scale;
+                console.log(`[SPRITE] Auto-scaling ${this.id}: ${img.width}x${img.height} → ${Math.round(drawWidth)}x${Math.round(drawHeight)}`);
+            }
+
             if (this.spriteBottomY !== null) {
-                drawY = this.spriteBottomY - img.height;
+                drawY = this.spriteBottomY - drawHeight;
             }
 
             if (this.animated) {
                 const frameWidth = img.width / this.frames;
+                const scaledFrameWidth = drawWidth / this.frames;
                 const sx = this.currentFrame * frameWidth;
                 if (this.repeatX) {
                     this.drawRepeating(ctx, img, canvasWidth, sx, frameWidth);
                 } else {
                     // Use worldX for positioned elements (like lighthouse)
                     const drawX = this.worldX - this.offset;
-                    ctx.drawImage(img, sx, 0, frameWidth, img.height, drawX, drawY, frameWidth, img.height);
+                    ctx.drawImage(img, sx, 0, frameWidth, img.height, drawX, drawY, scaledFrameWidth, drawHeight);
                 }
             } else {
                 if (this.repeatX) {
@@ -237,7 +250,7 @@ class ParallaxLayer {
                 } else {
                     // Use worldX for positioned elements (like lighthouse)
                     const drawX = this.worldX - this.offset;
-                    ctx.drawImage(img, drawX, drawY);
+                    ctx.drawImage(img, 0, 0, img.width, img.height, drawX, drawY, drawWidth, drawHeight);
                 }
             }
         } else if (fallbackFn) {
