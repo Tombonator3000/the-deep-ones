@@ -204,6 +204,9 @@ function update(deltaTime) {
     updateFishStruggleParticles();
     updateIdleFishing(deltaTime);
 
+    // Update ambient effects (fog, light rays, fireflies)
+    updateAmbientEffects(deltaTime);
+
     // Update events system
     if (typeof updateEvents === 'function') {
         updateEvents(deltaTime);
@@ -378,6 +381,9 @@ function render() {
     // Draw weather effects
     drawWeatherEffects();
 
+    // Draw ambient effects (fog, light rays, fireflies)
+    drawAmbientEffects(ctx);
+
     // Draw event visuals
     if (typeof drawEventVisuals === 'function') {
         drawEventVisuals();
@@ -527,6 +533,7 @@ function startGame(time) {
     initLayers();
     initFish();
     initLoreBottles();
+    initAmbientEffects();
 
     loadAllAssets();
 
@@ -557,6 +564,7 @@ function continueGame() {
         initLayers();
         initFish();
         initLoreBottles();
+        initAmbientEffects();
 
         loadAllAssets();
 
