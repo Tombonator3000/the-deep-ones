@@ -2,12 +2,34 @@
 // THE DEEP ONES - MAIN GAME LOOP
 // ============================================================
 
+// Early diagnostic check
+console.log('[MAIN] Main.js loading...');
+console.log('[MAIN] Checking for required DOM elements...');
+
 const canvas = document.getElementById('gameCanvas');
+if (!canvas) {
+    console.error('[MAIN] FATAL: gameCanvas element not found!');
+    throw new Error('gameCanvas element not found');
+}
+console.log('[MAIN] ✓ gameCanvas found');
+
 const ctx = canvas.getContext('2d');
+if (!ctx) {
+    console.error('[MAIN] FATAL: Could not get 2D context from canvas!');
+    throw new Error('Could not get 2D context from canvas');
+}
+console.log('[MAIN] ✓ Canvas 2D context obtained');
 
 // UI canvas for crisp text rendering (overlays pixel art canvas)
 const uiCanvas = document.getElementById('uiCanvas');
+if (uiCanvas) {
+    console.log('[MAIN] ✓ uiCanvas found');
+} else {
+    console.log('[MAIN] ⚠ uiCanvas not found (fallback to main canvas)');
+}
 const uiCtx = uiCanvas ? uiCanvas.getContext('2d') : null;
+
+console.log('[MAIN] ✓ Main.js loaded successfully');
 
 let lastTime = 0;
 
@@ -600,40 +622,91 @@ function initTitleScreen() {
 
 // Initialize
 window.onload = function() {
-    // Initialize canvas size FIRST (before anything else)
-    initCanvasSize();
+    console.log('[INIT] ========== THE DEEP ONES - INITIALIZATION START ==========');
 
-    // Initialize audio
-    if (typeof AudioManager !== 'undefined') {
-        AudioManager.init();
-    }
+    try {
+        // Initialize canvas size FIRST (before anything else)
+        console.log('[INIT] Step 1: Initializing canvas...');
+        initCanvasSize();
+        console.log('[INIT] ✓ Canvas initialized');
 
-    // Load settings
-    if (typeof loadSettings === 'function') {
-        loadSettings();
-    }
-
-    // Generate daily challenges
-    if (typeof generateDailyChallenges === 'function') {
-        generateDailyChallenges();
-    }
-
-    setupInputHandlers();
-    setupTouchControls();
-    setupMouseControls();
-    initTitleScreen();
-    requestAnimationFrame(gameLoop);
-
-    // Resume audio context on first user interaction
-    document.addEventListener('click', () => {
+        // Initialize audio
         if (typeof AudioManager !== 'undefined') {
-            AudioManager.resume();
+            console.log('[INIT] Step 2: Initializing audio...');
+            AudioManager.init();
+            console.log('[INIT] ✓ Audio initialized');
+        } else {
+            console.log('[INIT] ⚠ AudioManager not found, skipping');
         }
-    }, { once: true });
 
-    document.addEventListener('keydown', () => {
-        if (typeof AudioManager !== 'undefined') {
-            AudioManager.resume();
+        // Load settings
+        if (typeof loadSettings === 'function') {
+            console.log('[INIT] Step 3: Loading settings...');
+            loadSettings();
+            console.log('[INIT] ✓ Settings loaded');
+        } else {
+            console.log('[INIT] ⚠ loadSettings not found, skipping');
         }
-    }, { once: true });
+
+        // Generate daily challenges
+        if (typeof generateDailyChallenges === 'function') {
+            console.log('[INIT] Step 4: Generating daily challenges...');
+            generateDailyChallenges();
+            console.log('[INIT] ✓ Daily challenges generated');
+        } else {
+            console.log('[INIT] ⚠ generateDailyChallenges not found, skipping');
+        }
+
+        console.log('[INIT] Step 5: Setting up input handlers...');
+        setupInputHandlers();
+        console.log('[INIT] ✓ Input handlers set up');
+
+        console.log('[INIT] Step 6: Setting up touch controls...');
+        setupTouchControls();
+        console.log('[INIT] ✓ Touch controls set up');
+
+        console.log('[INIT] Step 7: Setting up mouse controls...');
+        setupMouseControls();
+        console.log('[INIT] ✓ Mouse controls set up');
+
+        console.log('[INIT] Step 8: Initializing title screen...');
+        initTitleScreen();
+        console.log('[INIT] ✓ Title screen initialized');
+
+        console.log('[INIT] Step 9: Starting game loop...');
+        requestAnimationFrame(gameLoop);
+        console.log('[INIT] ✓ Game loop started');
+
+        // Resume audio context on first user interaction
+        document.addEventListener('click', () => {
+            if (typeof AudioManager !== 'undefined') {
+                AudioManager.resume();
+            }
+        }, { once: true });
+
+        document.addEventListener('keydown', () => {
+            if (typeof AudioManager !== 'undefined') {
+                AudioManager.resume();
+            }
+        }, { once: true });
+
+        console.log('[INIT] ========== INITIALIZATION COMPLETE ==========');
+        console.log('[INIT] Game state:', game.state);
+        console.log('[INIT] Canvas:', canvas.width, 'x', canvas.height);
+        console.log('[INIT] Title screen element:', document.getElementById('title-screen') ? 'FOUND' : 'NOT FOUND');
+
+    } catch (error) {
+        console.error('[INIT] ========== FATAL ERROR DURING INITIALIZATION ==========');
+        console.error('[INIT] Error:', error);
+        console.error('[INIT] Stack:', error.stack);
+
+        // Display error on screen
+        document.body.innerHTML = `
+            <div style="background:#000;color:#f00;padding:20px;font-family:monospace;">
+                <h1>INITIALIZATION ERROR</h1>
+                <p><strong>Error:</strong> ${error.message}</p>
+                <pre>${error.stack}</pre>
+            </div>
+        `;
+    }
 };

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Deep Ones - Diagnostic Mode</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+        body {
+            background: #0a0a12;
+            color: #0f0;
+            font-family: 'VT323', monospace;
+            padding: 20px;
+            font-size: 16px;
+        }
+
+        h1 {
+            color: #5a9a7a;
+            text-shadow: 0 0 10px rgba(90, 154, 122, 0.5);
+        }
+
+        #console {
+            background: #000;
+            border: 2px solid #0f0;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+
+        .log { color: #0f0; }
+        .error { color: #f00; font-weight: bold; }
+        .warning { color: #ff0; }
+        .success { color: #0ff; }
+
+        #gameFrame {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #5a9a7a;
+            margin-top: 20px;
+        }
+
+        button {
+            background: #5a9a7a;
+            color: #0a0a12;
+            border: none;
+            padding: 10px 20px;
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #7aba9a;
+        }
+
+        #instructions {
+            background: rgba(90, 154, 122, 0.1);
+            border: 1px solid #5a9a7a;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 The Deep Ones - Diagnostic Mode</h1>
+
+    <div id="instructions">
+        <strong>Diagnostic Instructions:</strong>
+        <ol>
+            <li>This page will help identify any initialization errors</li>
+            <li>Check the console output below for diagnostic messages</li>
+            <li>The game will load in the iframe below</li>
+            <li>If you see errors, screenshot this page and report them</li>
+        </ol>
+    </div>
+
+    <div>
+        <button onclick="clearConsole()">Clear Console</button>
+        <button onclick="reloadGame()">Reload Game</button>
+        <button onclick="copyConsole()">Copy Console Output</button>
+    </div>
+
+    <div id="console">
+        <div class="log">[DIAGNOSTIC] Initializing diagnostic mode...</div>
+    </div>
+
+    <iframe id="gameFrame" src="index.html"></iframe>
+
+    <script>
+        const consoleDiv = document.getElementById('console');
+        const iframe = document.getElementById('gameFrame');
+
+        function addLog(msg, type = 'log') {
+            const div = document.createElement('div');
+            div.className = type;
+            const timestamp = new Date().toLocaleTimeString();
+            div.textContent = `[${timestamp}] ${msg}`;
+            consoleDiv.appendChild(div);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+        function clearConsole() {
+            consoleDiv.innerHTML = '<div class="log">[DIAGNOSTIC] Console cleared</div>';
+        }
+
+        function reloadGame() {
+            addLog('Reloading game...', 'warning');
+            iframe.src = iframe.src;
+        }
+
+        function copyConsole() {
+            const text = consoleDiv.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                addLog('Console output copied to clipboard!', 'success');
+            });
+        }
+
+        // Intercept console messages from iframe
+        iframe.onload = function() {
+            addLog('Iframe loaded successfully', 'success');
+
+            try {
+                const iframeWin = iframe.contentWindow;
+
+                // Override console methods
+                const originalLog = iframeWin.console.log;
+                const originalError = iframeWin.console.error;
+                const originalWarn = iframeWin.console.warn;
+
+                iframeWin.console.log = function(...args) {
+                    addLog(args.join(' '), 'log');
+                    originalLog.apply(iframeWin.console, args);
+                };
+
+                iframeWin.console.error = function(...args) {
+                    addLog('ERROR: ' + args.join(' '), 'error');
+                    originalError.apply(iframeWin.console, args);
+                };
+
+                iframeWin.console.warn = function(...args) {
+                    addLog('WARNING: ' + args.join(' '), 'warning');
+                    originalWarn.apply(iframeWin.console, args);
+                };
+
+                // Catch window errors
+                iframeWin.addEventListener('error', function(e) {
+                    addLog(`WINDOW ERROR: ${e.message} at ${e.filename}:${e.lineno}`, 'error');
+                });
+
+                addLog('Console interception set up', 'success');
+
+                // Check game state after a short delay
+                setTimeout(() => {
+                    try {
+                        if (iframeWin.game) {
+                            addLog(`Game state: ${iframeWin.game.state}`, 'success');
+                            addLog(`Canvas size: ${iframeWin.canvas.width}x${iframeWin.canvas.height}`, 'success');
+
+                            const titleScreen = iframe.contentDocument.getElementById('title-screen');
+                            if (titleScreen) {
+                                const style = iframeWin.getComputedStyle(titleScreen);
+                                addLog(`Title screen display: ${style.display}`, 'success');
+                            }
+                        } else {
+                            addLog('Game object not found!', 'error');
+                        }
+                    } catch (e) {
+                        addLog(`Error checking game state: ${e.message}`, 'error');
+                    }
+                }, 1000);
+
+            } catch (e) {
+                addLog(`Error setting up console interception: ${e.message}`, 'error');
+            }
+        };
+
+        iframe.onerror = function(e) {
+            addLog('Iframe failed to load!', 'error');
+        };
+
+        addLog('Diagnostic mode ready', 'success');
+        addLog('Loading game...', 'log');
+    </script>
+</body>
+</html>
