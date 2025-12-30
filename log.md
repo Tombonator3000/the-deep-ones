@@ -4123,3 +4123,151 @@ function drawAmbientEffects(ctx, gameState) {
 **Total Research Time:** ~2 timer  
 **Neste steg:** Prioriter Water System Overhaul
 
+
+---
+
+## 2025-12-30 - Ambient Effects & Enhanced Palettes
+
+### Implementert
+**Cast 'n' Chill-Inspirerte Forbedringer - Del 1: Atmosfære**
+
+#### 1. Ny fil: `js/ambient-effects.js`
+Komplett partikkelsystem for atmosfæriske effekter:
+
+**DAWN - Morgentåke:**
+- 60 tåkepartikler som ruller inn over vannet
+- Pulserende opacity for organisk følelse
+- Langsom horisontal drift + oppadstigende bevegelse
+- Radial gradient rendering for myk tåke
+
+**DUSK - Light Rays:**
+- 8 dramatiske lysrays fra solen
+- Svaier forsiktig i vinden (sinusbølge-bevegelse)
+- Pulserende intensitet for levende følelse
+- Elongated ellipse rendering for realistiske solstråler
+
+**NIGHT - Fireflies:**
+- 25 ildfluer med organisk flyvemønster
+- Wavy movement patterns (kombinert sin/cos)
+- Pulserende glow-effekt med varierende hastighet
+- Blanding av gul/grønn farge for variasjon
+- Bounce-logic fra skjermkanter
+
+**Teknisk:**
+- Partikkelbasert system med life/maxLife
+- Fade in/out på spawn og death
+- Type-spesifikke update og draw funksjoner
+- Max particle caps for performance
+- Probabilistic spawning per frame
+
+#### 2. Utvidet `js/palettes.js`
+**Nye palette-egenskaper for alle 4 tider:**
+
+```javascript
+// For hver tid (dawn, day, dusk, night):
+ambientLight    // Overordnet ambient lighting color
+highlightColor  // For highlights og refleksjoner
+shadowColor     // For shadows og mørke områder
+fogColor        // For tåkeeffekter (null hvis ingen tåke)
+```
+
+**Gradient Blending System:**
+- `lerpColor()` - Blend mellom hex og rgba farger
+- `lerpColorArray()` - Blend hele color arrays (for gradients)
+- `getBlendedPalette()` - Smooth transition mellom to tider
+- `getTransitionedPalette()` - Hent palette basert på game state
+- Støtter sun/moon posisjon blending
+- Håndterer optional properties (fog, sun, moon)
+
+**Time progression order:**
+```javascript
+const TIME_ORDER = ['dawn', 'day', 'dusk', 'night'];
+```
+
+#### 3. Integrering i `js/main.js`
+**Init:**
+- `initAmbientEffects()` kalles i både `startGame()` og `continueGame()`
+
+**Update Loop:**
+- `updateAmbientEffects(deltaTime)` - Oppdaterer alle partikler hver frame
+
+**Render:**
+- `drawAmbientEffects(ctx)` - Rendrer etter weather effects, før UI
+- Sikrer ambient effects ligger over scene men under UI
+
+#### 4. Oppdatert `index.html`
+- Lagt til `<script src="js/ambient-effects.js"></script>` i riktig rekkefølge
+- Lastes etter palettes.js, før game-state.js
+
+### Tekniske Detaljer
+
+**Performance:**
+- Particle caps: Fog=60, LightRays=8, Fireflies=25
+- Probabilistic spawning (ikke alle frames spawn partikler)
+- Automatic particle cleanup når life > maxLife
+- Delta-time-based updates for consistent speed
+
+**Rendering Order:**
+1. Weather effects (rain, fog, etc)
+2. **Ambient effects (NYT!)**
+3. Event visuals
+4. Sanity effects
+5. UI elements
+
+**Color Blending:**
+- Hex colors: RGB interpolation med bitwise ops
+- RGBA colors: Regex parsing + lerp på alle 4 kanaler
+- Arrays: Map over elements og blend hver farge
+- Clamping: Sikrer t ∈ [0, 1] for valid interpolation
+
+### Testresultater
+
+**Syntax Check:** ✓ Pass
+- Ingen syntax errors i ambient-effects.js
+- Ingen syntax errors i palettes.js
+- Alle funksjoner definert før bruk
+
+**Filstruktur:**
+```
+js/
+├── ambient-effects.js  (NYT - 314 linjer)
+├── palettes.js         (UTVIDET - 196 linjer)
+├── main.js            (OPPDATERT - integration)
+└── ... (13 andre moduler)
+```
+
+### Neste Steg
+
+**Høyeste prioritet (fra Cast 'n' Chill analyse):**
+- [ ] Water System Overhaul
+  - Reflection system
+  - Enhanced ripple rendering
+  - Weather integration (calm vs rough)
+  - Test på alle 8 lokasjoner
+
+**Middels prioritet:**
+- [ ] Landscape Polish
+  - Mer depth i parallax layers
+  - Atmospheric perspective
+  - Overlapping elements
+
+**Lav prioritet:**
+- [ ] UI Refinement
+  - Fade-out på inaktivitet
+  - Smooth transitions
+
+### Kodestatistikk
+- **Nye filer:** 1 (ambient-effects.js)
+- **Modifiserte filer:** 3 (palettes.js, main.js, index.html)
+- **Nye linjer kode:** ~360
+- **Nye funksjoner:** 15+
+
+### Notater
+Implementeringen følger Cast 'n' Chill's approach til atmospheric rendering, men tilpasset vårt Lovecraftian horror-tema. I stedet for cozy og relaxing, bruker vi ambient effects til å forsterke unsettling atmosphere:
+- DAWN fog = mystisk, ominøs morgen
+- DUSK light rays = dramatisk, urovekkende solnedgang  
+- NIGHT fireflies = unnatural, uhyggelig bioluminescence
+
+Partikkel-systemet er designet for å kunne utvides med flere effekter senere (f.eks. underwater particles, abyss effects, transformation particles).
+
+---
