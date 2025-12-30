@@ -112,7 +112,8 @@ function drawBoat() {
 
     const bob = Math.sin(game.time * 0.04) * 4;
     const x = game.boatX - game.cameraX;
-    const y = CONFIG.waterLine - 15 + bob;
+    // Adjusted: boat sits IN the water, not above it (hull bottom at waterline + 8px)
+    const y = CONFIG.waterLine - 5 + bob;
     const tilt = Math.sin(game.time * 0.03) * 0.03;
 
     // Debug: Log boat position every 2 seconds

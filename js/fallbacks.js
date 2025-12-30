@@ -5,12 +5,15 @@
 const FALLBACKS = {
     'sky-gradient': (ctx, offset, y, w, h, layer) => {
         const palette = getTimePalette();
+        // Create gradient from top to waterline
         const gradient = ctx.createLinearGradient(0, 0, 0, CONFIG.waterLine);
         palette.sky.forEach((color, i) => {
             gradient.addColorStop(palette.skyStops[i], color);
         });
         ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, w, CONFIG.waterLine);
+        // Fill entire sky area - ensure complete coverage from top to waterline
+        // Extend slightly beyond to ensure no gaps at edges
+        ctx.fillRect(-1, -1, w + 2, CONFIG.waterLine + 2);
     },
 
     'stars': (ctx, offset, y, w, h, layer) => {
@@ -655,18 +658,133 @@ const FALLBACKS = {
         }
     },
 
-    // Water reflection scaled for 480x270 resolution
+    // Water reflection scaled for 480x270 resolution - ENHANCED
     'water-reflection': (ctx, offset, y, w, h, layer) => {
         const palette = getTimePalette();
-        ctx.globalAlpha = 0.15;
+        const reflectionHeight = 60; // How far down the reflection extends
+        const waterStart = CONFIG.waterLine;
 
-        for (let ry = CONFIG.waterLine; ry < CONFIG.waterLine + 40; ry += 2) {
-            const distort = Math.sin(ry * 0.15 + game.time * 0.03 + offset * 0.01) * 2;
+        ctx.save();
+
+        // 1. SKY REFLECTION (inverted and faded)
+        // Create inverted sky gradient for reflection
+        const skyReflGradient = ctx.createLinearGradient(0, waterStart, 0, waterStart + reflectionHeight * 0.6);
+
+        // Reverse the sky colors for reflection effect
+        const reversedSky = [...palette.sky].reverse();
+        const reversedStops = [...palette.skyStops].reverse().map(stop => 1 - stop);
+
+        reversedSky.forEach((color, i) => {
+            // Make reflection more transparent and darker
+            const stop = i / (reversedSky.length - 1);
+            skyReflGradient.addColorStop(stop, color);
+        });
+
+        ctx.globalAlpha = 0.12; // Subtle sky reflection
+        ctx.fillStyle = skyReflGradient;
+        ctx.fillRect(0, waterStart, w, reflectionHeight * 0.6);
+
+        // 2. MOUNTAINS REFLECTION (with wave distortion)
+        ctx.globalAlpha = 0.18;
+        for (let ry = 0; ry < reflectionHeight * 0.7; ry += 2) {
+            const actualY = waterStart + ry;
+            const distort = Math.sin(ry * 0.12 + game.time * 0.025 + offset * 0.008) * 3 +
+                          Math.sin(ry * 0.2 + game.time * 0.015) * 1.5;
+
+            // Fade out as we go deeper
+            const fadeOut = 1 - (ry / (reflectionHeight * 0.7));
+            ctx.globalAlpha = 0.18 * fadeOut;
+
+            // Draw mountain reflection with distortion
             ctx.fillStyle = palette.mountains[0];
-            ctx.fillRect(distort, ry, w, 1);
+            for (let x = 0; x < w; x += 4) {
+                const xDistort = distort + Math.sin((x + offset * 0.1) * 0.05) * 1;
+                ctx.fillRect(x + xDistort, actualY, 4, 2);
+            }
         }
 
-        ctx.globalAlpha = 1;
+        // 3. TREES REFLECTION (darker and more distorted)
+        ctx.globalAlpha = 0.15;
+        for (let ry = reflectionHeight * 0.3; ry < reflectionHeight * 0.8; ry += 3) {
+            const actualY = waterStart + ry;
+            const distort = Math.sin(ry * 0.18 + game.time * 0.03 + offset * 0.012) * 4 +
+                          Math.sin(ry * 0.25 + game.time * 0.02) * 2;
+
+            // Fade out as we go deeper
+            const fadeOut = 1 - (ry / (reflectionHeight * 0.8));
+            ctx.globalAlpha = 0.15 * fadeOut;
+
+            // Draw tree reflection strips with more distortion
+            ctx.fillStyle = palette.trees[0];
+            for (let x = 0; x < w; x += 3) {
+                const xDistort = distort + Math.sin((x + offset * 0.35) * 0.08 + ry * 0.1) * 2;
+                ctx.fillRect(x + xDistort, actualY, 3, 3);
+            }
+        }
+
+        // 4. SUN/MOON REFLECTION (if visible)
+        if (palette.sun) {
+            const sunPos = getSunPosition ? getSunPosition() : palette.sun;
+            if (sunPos && sunPos.y < CONFIG.waterLine) {
+                // Sun is above horizon, draw reflection
+                const sunX = (sunPos.x || palette.sun.x) - offset * 0.1;
+                const reflectY = waterStart + 15 + Math.sin(game.time * 0.03) * 3;
+
+                // Vertical shimmer effect
+                const shimmerGrad = ctx.createLinearGradient(sunX, reflectY, sunX, reflectY + 40);
+                shimmerGrad.addColorStop(0, 'rgba(255, 240, 180, 0.3)');
+                shimmerGrad.addColorStop(0.3, 'rgba(255, 220, 150, 0.15)');
+                shimmerGrad.addColorStop(1, 'transparent');
+
+                ctx.globalAlpha = 0.4;
+                ctx.fillStyle = shimmerGrad;
+
+                // Wavy light column
+                for (let dy = 0; dy < 40; dy += 2) {
+                    const wave = Math.sin(dy * 0.2 + game.time * 0.05) * 8;
+                    const width = 6 + Math.sin(dy * 0.15) * 3;
+                    ctx.fillRect(sunX - width/2 + wave, reflectY + dy, width, 2);
+                }
+            }
+        }
+
+        if (palette.moon && game.timeOfDay === 'night') {
+            const moonPos = getMoonPosition ? getMoonPosition() : palette.moon;
+            if (moonPos && moonPos.y < CONFIG.waterLine) {
+                // Moon is above horizon, draw reflection
+                const moonX = (moonPos.x || palette.moon.x) - offset * 0.05;
+                const reflectY = waterStart + 12 + Math.sin(game.time * 0.025) * 2;
+
+                // Vertical moonlight shimmer
+                const moonShimmer = ctx.createLinearGradient(moonX, reflectY, moonX, reflectY + 35);
+                moonShimmer.addColorStop(0, 'rgba(200, 210, 230, 0.25)');
+                moonShimmer.addColorStop(0.4, 'rgba(180, 200, 220, 0.12)');
+                moonShimmer.addColorStop(1, 'transparent');
+
+                ctx.globalAlpha = 0.35;
+                ctx.fillStyle = moonShimmer;
+
+                // Wavy moonlight column
+                for (let dy = 0; dy < 35; dy += 2) {
+                    const wave = Math.sin(dy * 0.18 + game.time * 0.04) * 6;
+                    const width = 5 + Math.sin(dy * 0.12) * 2;
+                    ctx.fillRect(moonX - width/2 + wave, reflectY + dy, width, 2);
+                }
+            }
+        }
+
+        // 5. SURFACE SHIMMER (animated highlights on water surface)
+        ctx.globalAlpha = 0.2;
+        for (let i = 0; i < 10; i++) {
+            const shimmerX = (i * 48 + game.time * 0.4 + offset * 0.6) % w;
+            const shimmerY = waterStart + Math.sin(shimmerX * 0.05 + game.time * 0.03) * 2;
+            const shimmerWidth = 8 + Math.sin(game.time * 0.02 + i) * 4;
+
+            ctx.fillStyle = palette.waterHighlight;
+            ctx.fillRect(shimmerX, shimmerY, shimmerWidth, 1);
+        }
+
+        ctx.restore();
     },
 
     // Underwater background
