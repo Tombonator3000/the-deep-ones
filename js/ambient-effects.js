@@ -13,6 +13,19 @@ const AMBIENT_EFFECTS = {
     }
 };
 
+// Helper function to set alpha on an existing RGBA color string
+function setRGBAAlpha(rgbaString, newAlpha) {
+    // Extract RGB values from rgba string (handles both full rgba and incomplete strings)
+    const match = rgbaString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (!match) {
+        console.error('[AMBIENT] Invalid RGBA string:', rgbaString);
+        return `rgba(255, 255, 255, ${newAlpha})`;
+    }
+
+    const [_, r, g, b] = match;
+    return `rgba(${r}, ${g}, ${b}, ${newAlpha})`;
+}
+
 // Initialize ambient effects
 function initAmbientEffects() {
     AMBIENT_EFFECTS.particles = [];
@@ -114,11 +127,11 @@ function drawFogParticle(ctx, p, palette) {
     const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
 
     // Use dawn palette colors for fog
-    const fogColor = palette.ambientLight || 'rgba(200, 180, 170, ';
+    const fogColor = palette.ambientLight || 'rgba(200, 180, 170, 0.2)';
     const alpha = p.currentOpacity || p.opacity;
 
-    gradient.addColorStop(0, fogColor.replace(')', `, ${alpha})`));
-    gradient.addColorStop(0.5, fogColor.replace(')', `, ${alpha * 0.5})`));
+    gradient.addColorStop(0, setRGBAAlpha(fogColor, alpha));
+    gradient.addColorStop(0.5, setRGBAAlpha(fogColor, alpha * 0.5));
     gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
     ctx.fillStyle = gradient;
@@ -172,11 +185,11 @@ function drawLightRayParticle(ctx, p, palette) {
     const gradient = ctx.createLinearGradient(p.x, p.y, endX, endY);
 
     // Use sunset colors from palette
-    const rayColor = palette.highlightColor || 'rgba(240, 160, 100, ';
+    const rayColor = palette.highlightColor || 'rgba(240, 160, 100, 0.35)';
     const alpha = p.currentOpacity || p.opacity;
 
-    gradient.addColorStop(0, rayColor.replace(')', `, ${alpha * 0.3})`));
-    gradient.addColorStop(0.5, rayColor.replace(')', `, ${alpha})`));
+    gradient.addColorStop(0, setRGBAAlpha(rayColor, alpha * 0.3));
+    gradient.addColorStop(0.5, setRGBAAlpha(rayColor, alpha));
     gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
     ctx.save();

@@ -5075,3 +5075,153 @@ Logging kan deaktiveres senere ved å sette CONFIG.showDebug = false eller komme
 
 ---
 
+
+## 2025-12-30 — Black Screen Bug Fix (RGBA Gradient Error)
+
+### Problem
+
+Bruker rapporterte at spillet viste bare svart skjerm. Basert på console screenshots:
+- Spillet startet kort normalt
+- Skjermen panner oppover og blir svart
+- Console full av "SyntaxError: Failed to execute 'addColorStop' on 'CanvasGradient'" feil
+- Feilmeldinger som: `The value provided ('rgba(240, 160, 100, 0.35, 0.004...)') could not be parsed as a color`
+
+### Root Cause Analysis
+
+**Identifisert feil i `ambient-effects.js`:**
+
+Koden prøvde å manipulere RGBA-fargestrenger fra paletten ved å bruke `.replace()`:
+
+```javascript
+// FEIL KODE (før fix)
+const fogColor = palette.ambientLight || 'rgba(200, 180, 170, ';
+const alpha = p.currentOpacity || p.opacity;
+
+gradient.addColorStop(0, fogColor.replace(')', `, ${alpha})`));
+gradient.addColorStop(0.5, fogColor.replace(')', `, ${alpha * 0.5})`));
+```
+
+**Problemet:**
+- `palette.ambientLight` fra `palettes.js` er en KOMPLETT RGBA-streng: `'rgba(200, 180, 170, 0.2)'`
+- Koden antok at den var ufullstendig og prøvde å legge til alpha-verdi
+- Resultat: `'rgba(200, 180, 170, 0.2, 0.15)'` - **5 parametere i stedet for 4!**
+- Dette er en ugyldig farge og krasjer `addColorStop()`
+
+**Påvirkede funksjoner:**
+1. `drawFogParticle()` - linje 126-139
+2. `drawLightRayParticle()` - linje 180-206
+
+**Hvorfor spillet ble svart:**
+- Rendering-loopen krasjet hver gang ambient effects skulle tegnes
+- Canvas ble ikke oppdatert etter initial render
+- Kamera fortsatte å panne oppover, men ingenting ble tegnet
+- Resultat: svart skjerm
+
+### Løsning
+
+**1. Ny helper-funksjon: `setRGBAAlpha()`**
+
+```javascript
+function setRGBAAlpha(rgbaString, newAlpha) {
+    // Extract RGB values from rgba string (handles both full rgba and incomplete strings)
+    const match = rgbaString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (!match) {
+        console.error('[AMBIENT] Invalid RGBA string:', rgbaString);
+        return `rgba(255, 255, 255, ${newAlpha})`;
+    }
+
+    const [_, r, g, b] = match;
+    return `rgba(${r}, ${g}, ${b}, ${newAlpha})`;
+}
+```
+
+**2. Oppdatert `drawFogParticle()`:**
+
+```javascript
+// FIX
+const fogColor = palette.ambientLight || 'rgba(200, 180, 170, 0.2)';
+const alpha = p.currentOpacity || p.opacity;
+
+gradient.addColorStop(0, setRGBAAlpha(fogColor, alpha));
+gradient.addColorStop(0.5, setRGBAAlpha(fogColor, alpha * 0.5));
+gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+```
+
+**3. Oppdatert `drawLightRayParticle()`:**
+
+```javascript
+// FIX
+const rayColor = palette.highlightColor || 'rgba(240, 160, 100, 0.35)';
+const alpha = p.currentOpacity || p.opacity;
+
+gradient.addColorStop(0, setRGBAAlpha(rayColor, alpha * 0.3));
+gradient.addColorStop(0.5, setRGBAAlpha(rayColor, alpha));
+gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+```
+
+**4. Oppdatert fallback-farger:**
+
+Endret fallback-farger fra ufullstendige strenger til fullstendige RGBA-strenger:
+- `'rgba(200, 180, 170, '` → `'rgba(200, 180, 170, 0.2)'`
+- `'rgba(240, 160, 100, '` → `'rgba(240, 160, 100, 0.35)'`
+
+### Kodestatistikk
+
+**Filer modifisert:** 1 (`js/ambient-effects.js`)
+**Linjer lagt til:** 13 (helper funksjon)
+**Linjer endret:** 6 (drawFogParticle og drawLightRayParticle)
+**Nye funksjoner:** 1 (`setRGBAAlpha`)
+
+### Testing & Verification
+
+**Syntax check:**
+```bash
+node -c js/ambient-effects.js
+# ✓ No errors
+```
+
+**Forventet resultat:**
+- ✓ Ingen gradient parsing errors
+- ✓ Ambient effects (fog, light rays) tegnes korrekt
+- ✓ Spillet renderer normalt uten black screen
+- ✓ Smooth camera panning fungerer som normalt
+
+### Relaterte Notater
+
+**Andre potensielle issues funnet (ikke kritiske):**
+
+`events.js:552` og `systems.js:237` har lignende pattern:
+```javascript
+ctx.strokeStyle = color.replace(')', `, ${alpha})`).replace('rgb', 'rgba');
+```
+
+Men disse forårsaker **ikke** feil fordi:
+- Alle farger som brukes er hex-farger (`'#ffd700'`, `'#80e0a0'`, etc.)
+- `.replace(')', ...)` matcher ikke på hex-farger (returner uendret)
+- Koden går videre til hex-konvertering som fungerer korrekt
+- Logikken er forvirrende men fungerer ved et lykkelig uhell
+
+Disse kan refaktoreres senere for klarhet, men er ikke årsak til bugs.
+
+### Commit
+
+```
+commit 07d4c10
+Author: Claude
+Date: 2025-12-30
+
+fix: Fix RGBA gradient color parsing in ambient effects
+
+The ambient effects system was incorrectly manipulating RGBA color 
+strings from the palette, creating invalid color values with 5 
+parameters instead of 4 (e.g., 'rgba(240, 160, 100, 0.35, 0.08)').
+
+This caused "SyntaxError: Failed to execute 'addColorStop' on 
+'CanvasGradient'" errors that resulted in a black screen.
+```
+
+**Branch:** `claude/fix-black-screen-bug-ARyJ3`
+**Status:** Pushed til remote, klar for testing
+
+---
+
