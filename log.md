@@ -4424,3 +4424,172 @@ Fra Cast 'n' Chill analyse-listen:
 Landscape polish og UI refinement er fullført med Cast 'n' Chill som inspirasjon. Atmospheric perspective gir en merkbar dybdefølelse uten å miste pixel art-charmen. UI fade-out systemet er subtilt nok til å ikke være distraherende, men gir en mer polished "idle game" følelse når spilleren bare observerer.
 
 Neste fokus bør være water rendering for å matche Cast 'n' Chill's stunning water effects (innenfor våre vanilla JS constraints).
+
+---
+
+## 2025-12-30 - Minimal UI Cleanup & Chill n Fish Control System
+
+### Implementert
+**UI Minimalisering & Kontekst-Sensitive Kontroll-Hints**
+
+Basert på referanse-bilde fra "Chill n Fish" har jeg implementert et helt nytt minimalt UI-system som erstatter de gamle konstante UI-elementene med kontekst-sensitive kontroll-hints rundt skjermkantene.
+
+#### 1. Nytt Minimal Control Hints System
+
+**Funksjon: `drawMinimalControlHints()`**
+
+Erstatter tutorial-systemet og statiske kontroller med dynamiske hints basert på spilltilstand:
+
+**Layout (Chill n Fish-inspirert):**
+- **Top Center:** `🎣 [Rod Name]` - Viser nåværende fiskestang
+- **Top Right:** `IDLE MODE` - Pulserende indikator når idle fishing er aktiv
+- **Center Bottom:** Hovedaksjon (kontekst-sensitiv):
+  - `[SPACE] CAST YOUR LINE` når sailing
+  - `[SPACE] REEL IN` + `[↑↓] ADJUST DEPTH` når waiting
+  - `[SPACE] CONTINUE` når caught
+  - `[E] HARBOR` når nearDock
+- **Left Side:** `[←→] DRIVE BOAT` når sailing
+- **Bottom Left:** `[P] PAT DOG` (alltid tilgjengelig)
+- **Right Side:** Sekundære aksjoner:
+  - `[J] JOURNAL`
+  - `[L] LORE`
+  - `[H] HELP`
+
+**Styling:**
+- Minimale bokser med `rgba(20, 30, 40, 0.7)` bakgrunn
+- Subtil border: `rgba(100, 120, 140, 0.4)`
+- Tekst: `rgba(220, 230, 240, 0.85)`
+- Font: `12px VT323` for consistency
+- Respekterer UI fade-out system
+
+#### 2. Minimalisering av Eksisterende UI
+
+**HTML UI (index.html):**
+- `#ui` box: `display: none` - Skjult helt (money, depth, sanity, inventory, rod)
+- `#controls` box: `display: none` - Skjult, erstattet av canvas control hints
+
+**Canvas UI Elements (ui.js):**
+
+**drawLocationIndicator():**
+- ❌ Fjernet: Location name text i toppen
+- ✓ Beholdt: Minimal minimap (redusert fra 200x20 til 120x12 piksler)
+- Lavere opacity på alle elementer for minimal feel
+- Mindre boat marker triangle
+
+**drawWeatherIndicator():**
+- ❌ Helt skjult - Vær kommuniseres nå gjennom visuelle effekter
+- Function beholdt tom for compatibility
+
+**drawDogIndicator():**
+- ❌ Fjernet: Dog emoji og happiness bar
+- ✓ Beholdt: Kun bark-tekst når hunden bjeffer
+- Bark vises som floating text med subtil bakgrunn
+- Kommuniserer dog state uten konstant UI
+
+**drawTutorial():**
+- ❌ Fjernet: Tutorial tips-system
+- ✓ Erstattet: Integrert i drawMinimalControlHints()
+- Kontekst-sensitive hints erstatter tutorial
+
+**drawDailyChallenges():**
+- ❌ Kommentert ut i main.js for cleaner aesthetic
+- Kan re-aktiveres hvis ønskelig
+
+#### 3. Main.js Integration
+
+Oppdatert rendering pipeline:
+```javascript
+// Draw minimal UI elements
+drawLocationIndicator();  // Minimalized: just small minimap
+drawWeatherIndicator();   // Hidden: weather shown through visual effects
+drawDogIndicator();       // Minimalized: only barks shown
+
+// Draw MINIMAL CONTROL HINTS (Chill n Fish style)
+if (typeof drawMinimalControlHints === 'function') {
+    drawMinimalControlHints();
+}
+```
+
+Daily challenges kommentert ut for minimal UI.
+
+### Tekniske Detaljer
+
+**Filer modifisert:**
+- `index.html` - HTML UI boxes skjult via CSS
+- `js/ui.js` - Ny drawMinimalControlHints(), minimaliserte eksisterende funksjoner
+- `js/main.js` - Oppdatert rendering pipeline
+
+**Funksjonalitet beholdt:**
+- Transformation indicator (viktig for gameplay)
+- Streak indicator (dynamisk feedback)
+- Minimap (navigasjon)
+- Mute indicator
+- Endless mode indicator
+- Alle menus og popups fungerer som før
+
+**Funksjonalitet fjernet/skjult:**
+- Constant stats display (money, depth, sanity, inventory)
+- Location name text
+- Weather text indicator
+- Dog happiness bar
+- Tutorial tips boxes
+- Daily challenges panel
+
+### Sammenligning med Chill n Fish
+
+**Likheter:**
+- Kontroll-hints rundt skjermkantene
+- Kontekst-sensitive aksjoner i sentrum
+- Minimal permanent UI
+- Top right status indicator (IDLE MODE)
+- Clean, unobtrusive design
+
+**Våre tilpasninger:**
+- Beholdt minimap for navigasjon i stor verden (6000px)
+- Beholdt transformation indicator (core gameplay mechanic)
+- Beholdt streak system (feedback loop)
+- VT323 font matching for consistency
+- Lovecraftian color scheme vs cozy aesthetic
+
+### Brukeropplevelse
+
+**Før:**
+- Konstant stats box i top-left
+- Kontroller permanently visible bottom-left
+- Location name always shown
+- Weather always displayed
+- Dog happiness bar always visible
+- Tutorial tips popping up
+
+**Etter:**
+- Ren skjerm med kun spill-verdenen synlig
+- Kontroller vises bare når relevant
+- Kontekst-sensitive hints guider spilleren naturlig
+- Information kommuniseres gjennom gameplay (ikke UI)
+- Mer immersive, mindre cluttered
+- Fokus på atmosfære og verden
+
+### Neste Steg
+
+Basert på Chill n Fish-analysen:
+- [x] UI Cleanup & Minimal Controls
+- [ ] Water System Overhaul (reflections, ripples)
+- [ ] Enhanced fishing feedback
+- [ ] Polish visual effects
+
+### Kodestatistikk
+- **Modifiserte filer:** 3 (index.html, main.js, ui.js)
+- **Nye funksjoner:** 1 (drawMinimalControlHints)
+- **Modifiserte funksjoner:** 4 (drawLocationIndicator, drawWeatherIndicator, drawDogIndicator, drawTutorial)
+- **Linjer endret:** +177, -118
+- **Netto nye linjer:** ~59
+
+### Notater
+
+Dette er en betydelig UX-forbedring som gjør spillet mer immersive og fokusert. Inspirert av Cast 'n' Chill / Chill n Fish's minimale UI-filosofi, men tilpasset vårt Lovecraftian horror-tema.
+
+Nøkkel-prinsippet: **Show, don't tell**. I stedet for å konstant vise stats, lar vi spilleren oppdage og lære gjennom gameplay. Kontroller vises når de er relevante, ikke permanent.
+
+UI fade-out systemet (implementert i forrige update) fungerer nå enda bedre med det minimale designet - hele UI-et kan fade out for full immersion når spilleren bare observerer.
+
+---
