@@ -3672,3 +3672,454 @@ Dette gir det beste av begge verdener: vakker pixel art kombinert med levende, r
 - `js/main.js` — Hovedløkke som kaller rendering
 - `js/ui.js` — Crisp UI rendering (separat canvas)
 
+
+---
+
+## 2025-12-30 — RESEARCH: Cast 'n' Chill System Analysis
+
+### Oppgave
+Grundig undersøkelse av Cast 'n' Chill for å forstå deres tekniske systemer:
+- Grafikk motor og rendering
+- Pixel art teknikker
+- Gameplay systemer
+- UI/UX design
+- Hvordan vi kan bruke deres tilnærminger
+
+### Game Overview: Cast 'n' Chill
+
+**Utvikler:** Wombat Brawler (Brendan Watts & Mark White, Australia)  
+**Release:** 16. juni 2025 (PC), 19. desember 2025 (Switch/Switch 2)  
+**Genre:** Cozy idle/active fishing game  
+**Plattformer:** PC (Steam), Nintendo Switch, Switch 2  
+
+**Kjernekonsept:** 
+Idle fishing spill med både aktiv og passiv modus. Spiller kan enten styre båten og fiske aktivt, eller sette spillet i idle-modus hvor det fisker automatisk med offline progresjon.
+
+---
+
+### 1. TEKNISK STACK
+
+#### Game Engine: Unity
+- **Engine:** Unity Engine (bekreftet av flere tekniske kilder)
+- **Dimensjon:** 2D-fokusert implementasjon
+- **64-bit:** Krever 64-bit OS
+
+#### System Requirements
+**Minimum:**
+- **OS:** Windows 10 (64-bit)
+- **CPU:** Intel Core i3-2100
+- **RAM:** 4 GB
+- **GPU:** Intel HD 5300
+- **Storage:** 256 MB
+
+**Recommended:**
+- **GPU:** Intel HD 6000
+- Alt annet likt med minimum
+
+**Performance:**
+- **Switch 2:** 120 FPS @ 1080p (både handheld og TV-modus)
+- Svært lette system-krav = godt optimalisert
+
+---
+
+### 2. GRAFIKK-SYSTEMER
+
+#### Pixel Art Stil
+**Unik tilnærming:**
+- Mange av artistene har **bakgrunn i landskapsmaleri**, ikke tradisjonell pixel art
+- Dette gir "gorgeous realism" - blanding av realistiske kanadiske landskap med minimalistisk pixel art
+- Resultat: "Drop-dead gorgeous landscape pixel art"
+
+**Visuell kvalitet:**
+- 13 unike lokasjoner med "beautifully animated pixel art"
+- Misty forests, sparkling lakes, rocky rivers
+- Hver screenshot ser ut som et postkort
+
+#### Spesialteknikker
+
+**1. Vann-animasjon:**
+- Svært imponerende animert vann-effekt (ofte nevnt i reviews)
+- Refleksjoner som endrer seg med lyset
+- Stille vann med realistiske refleksjoner
+- Dynamiske effekter tilpasset tid på døgnet
+
+**2. Belysning & Atmosfære:**
+- Kvaliteten på lyset endrer seg gjennom dagen
+- Solnedganger bader landskapet i varme farger
+- Morgentåke ruller inn på tidlig morgen
+- Stor følelse av rom og storhet (mye himmel)
+
+**3. Dag/Natt-syklus:**
+- **4 tider på døgnet:** Dawn / Day / Dusk / Night
+- Legendary fish spawner kun på spesifikke tider
+- "Snooze"-knapp (sol/måne-ikon) for å endre tid
+- Lys-kvalitet og atmosfære tilpasser seg tiden
+
+#### Unity 2D Sprite System (Antatt)
+Basert på Unity-bruk, sannsynligvis:
+- **Sprite Renderer** komponenter
+- **Sprite Animation** system (eller 2D Animation package)
+- **Sorting Layers** for layering (parallax, water, boat, UI)
+- **Shader Graph** / Pixel art shaders for vann-effekter
+- **Post-processing** for atmosfære-effekter
+
+---
+
+### 3. GAMEPLAY SYSTEMS
+
+#### Dual-Mode Design
+**Active Mode:**
+- Full kontroll over båt og casting
+- Rask fiske-produksjon
+- Spilleren styrer alt
+
+**Passive/Idle Mode:**
+- Automatisk fishing
+- Offline progression
+- "Perfect playable screensaver"
+- Kan kjøre på sekundær skjerm eller i resizable vindu
+
+#### Fishing Mechanics
+
+**1. Casting & Reeling:**
+- Ro/kjør båt til fishing spot
+- Cast line (mus+tastatur eller controller)
+- Kamera senker seg under vannet når du caster
+- Kontroller hvor mye line som slippes ut
+- Noen fisk responderer bedre på langsom reeling (simulerer prey)
+
+**2. Tension System:**
+- "Firework-like display" fra fiskens hode når den kjemper hardt
+- MÅ slippe ut line når fisken strever
+- Deretter reel inn
+- **Ikke button-mashing** - krever delikat touch
+- Pull for hardt = line snapper, mister fisk OG agn
+
+**3. Fish Categories:**
+- **Size tiers:** S, M, L, XL, XXL
+- Hver størrelse krever spesifikk rod + lure kombinasjon
+- Legendary fish (største) spawner kun på spesifikke tider på døgnet
+- 16+ lokasjoner med unike arter
+
+#### Progression System
+
+**Currency:**
+- Selg fisk på dokken for penger
+- Større + sjeldnere fisk = mer verdt
+
+**Equipment Upgrades:**
+- **Rods:** Forskjellige stenger med ulik styrke og durability
+- **Line:** Bedre line = færre tapte fangster
+- **Lures:** Forskjellige agn tiltrekker spesifikke fiskearter
+- **Line strength:** Kan oppgraderes
+- **Line length:** Kan oppgraderes
+
+**Zone Unlocking:**
+- Fang nye arter konsekvent for å låse opp nye soner
+- **Rusty's shop:** Må "tip the jar" når alert vises for å progresse
+- Nye arter låser opp advanced lures
+- 16 "peaceful spots" å oppdage
+
+---
+
+### 4. UI/UX DESIGN
+
+#### Window Modes
+- **Fullscreen:** Støttes med toggle
+- **Windowed:** Resizable vindu
+- **Second monitor support:** Perfekt for passiv spilling ved siden av arbeid
+- **Always on top:** Standard i windowed (kan toggles via fullscreen)
+- **Zoom options:** Dynamiske innstillinger
+
+#### Settings
+- Basic audio settings
+- Basic video settings
+- Controls tab (viser minimal kontroll-oversikt)
+- Mode selector (idle/active) fra main menu
+
+#### Minimal UI Philosophy
+- Clean, unobtrusive design
+- Fokus på landskapet og atmosfæren
+- Enkle kontroller (ikke overveldet spilleren)
+
+---
+
+### 5. SAMMENLIGNING: Cast 'n' Chill vs The Deep Ones
+
+| **Aspekt** | **Cast 'n' Chill** | **The Deep Ones** | **Vår tilnærming** |
+|------------|-------------------|-------------------|-------------------|
+| **Engine** | Unity | Vanilla JS (Canvas API) | ✓ Beholder vanilla JS |
+| **Pixel Art** | Landscape painting-based | Procedural + Sprites | ✓ Hybrid fungerer |
+| **Vann** | Shader-based animation | Procedural ripples | ⚠️ Kan forbedres |
+| **Dag/Natt** | 4 tider, snooze button | 4 tider, naturlig progresjon | ✓ Forskjellig filosofi |
+| **Fishing** | Tension system, delicate | Minigame-based | ✓ Annen stil |
+| **Idle Mode** | Offline progression | N/A | 💡 Kunne vurderes |
+| **Locations** | 16 spots | 8 locations | ✓ Godt antall |
+| **Atmosfære** | Cozy, zen, meditative | Dark, Lovecraftian, sanity | ✓ Motsatte viber |
+
+---
+
+### 6. LÆRDOMMER & ANVENDELSER FOR THE DEEP ONES
+
+#### ✅ Det Vi Gjør Bra Allerede
+
+**1. Hybrid Approach:**
+- Cast 'n' Chill: 100% sprites + shaders
+- The Deep Ones: Procedural + sprites med fallback
+- **Fordel vår:** Mer fleksibilitet, alltid fungerer
+
+**2. Dag/Natt System:**
+- Begge har 4 tider på døgnet
+- De: Manual snooze button
+- Vi: Naturlig time-progression + REST i village
+- **Fordel vår:** Mer realistisk, bundet til gameplay
+
+**3. Lokasjon-diversity:**
+- De: 16 spots
+- Vi: 8 locations
+- **Vurdering:** 8 er nok for vår story-driven approach
+
+#### 🎯 Hva Vi Kan Lære
+
+**1. Water Rendering (HØYESTE PRIORITET)**
+**Problem:** Vår prosedyrale vann er OK, men Cast 'n' Chill har "stunning water effects"
+
+**Forslag:**
+```javascript
+// Legg til water reflection system
+function drawWaterReflections(ctx, gameState) {
+    // Speil himmel, celestials, landscape i vannet
+    // Legg til distortion basert på tid/vær
+    // Shimmer-effect for bevegelse
+}
+
+// Forbedre ripple-system
+function drawEnhancedRipples(ctx, x, y, time) {
+    // Multiple ripple rings
+    // Fade-out over tid
+    // Interaksjon med båt-bevegelse
+}
+```
+
+**Implementasjon:**
+- Opprett `js/water-effects.js` modul
+- Legg til water reflection til parallax system
+- Integrer med weather system (calm vs storm)
+- Bruk palette-system for tid-baserte farger
+
+**2. Atmosfære & Lighting**
+**Observasjon:** "Quality of light changed through the course of the day"
+
+**Forslag:**
+```javascript
+// Forbedre palettene med mer gradasjoner
+PALETTES.DAWN = {
+    // Legg til ambient light colors
+    ambient: '#4a3a5c',  // Purple-blue morning
+    highlight: '#ff9a6c', // Orange sunrise
+    shadow: '#1a0f2e',    // Deep purple shadows
+    // ...
+};
+
+// Legg til atmospheric particles
+function drawAtmosphere(ctx, timeOfDay, weather) {
+    // Morgentåke for DAWN
+    // Dust particles i DUSK
+    // Stars for NIGHT
+}
+```
+
+**3. Landscape Detail**
+**Observasjon:** Artistene hadde landscape painting bakgrunn
+
+**Forslag:**
+- Forbedre våre 8 lokasjoner med mer detaljerte features
+- Legg til mer depth i parallax layers
+- Overlapp elementer for å skape dybde
+- Bruk atmospheric perspective (fjerntliggende = blåere/lysere)
+
+**4. UI Polish**
+**Observasjon:** Minimal, unobtrusive UI
+
+**Vår status:**
+- Allerede ganske minimal
+- Men kan gjøres enda mer elegant
+
+**Forslag:**
+```javascript
+// Fade inn/ut UI elements basert på inaktivitet
+let uiOpacity = 1.0;
+function updateUIVisibility() {
+    if (playerIdle > 5000) {
+        uiOpacity = Math.max(0.3, uiOpacity - 0.01);
+    }
+}
+
+// Draw UI with opacity
+ctx.globalAlpha = uiOpacity;
+drawUI();
+ctx.globalAlpha = 1.0;
+```
+
+**5. Ambient Animations**
+**Observasjon:** "Fog rolls in during early mornings"
+
+**Forslag:**
+```javascript
+// js/ambient-effects.js (ny fil)
+const AMBIENT_EFFECTS = {
+    DAWN: {
+        fog: { density: 0.6, speed: 0.3, height: 0.4 },
+        particles: 'mist'
+    },
+    DUSK: {
+        particles: 'dust',
+        lightRays: true
+    },
+    NIGHT: {
+        particles: 'fireflies',  // Ved Corrupted Forest?
+        stars: 'dense'
+    }
+};
+
+function drawAmbientEffects(ctx, gameState) {
+    const effects = AMBIENT_EFFECTS[gameState.timeOfDay];
+    if (effects.fog) drawFog(ctx, effects.fog);
+    if (effects.particles) drawParticles(ctx, effects.particles);
+    if (effects.lightRays) drawLightRays(ctx, gameState);
+}
+```
+
+#### ⚠️ Hva Vi IKKE Skal Kopiere
+
+**1. Idle Mode:**
+- Cast 'n' Chill: Offline progression, playable screensaver
+- The Deep Ones: Story-driven, sanity-based, horror-fishing
+- **Konklusjon:** Idle mode passer ikke vår narrative focus
+
+**2. Cozy Atmosphere:**
+- De: Zen, meditative, relaxing
+- Vi: Lovecraftian, unsettling, ominous
+- **Konklusjon:** Vi er ANTI-cozy, og det er bra!
+
+**3. Unity Engine:**
+- De: Full engine med shader support
+- Vi: Vanilla JS
+- **Konklusjon:** Vår tilnærming gir oss unique identity
+
+---
+
+### 7. ACTION ITEMS
+
+#### 🔴 HØYESTE PRIORITET
+
+**[ ] Water System Overhaul**
+```
+1. Opprett js/water-effects.js
+2. Implementer reflection system
+3. Forbedre ripple rendering
+4. Integrer med weather (calm vs rough water)
+5. Test på alle 8 lokasjoner
+```
+
+**[ ] Atmospheric Lighting**
+```
+1. Utvid palettes.js med ambient/highlight/shadow colors
+2. Legg til gradient blending mellom tider
+3. Implementer atmospheric fog for DAWN
+4. Legg til light rays for DUSK
+```
+
+#### 🟡 MIDDELS PRIORITET
+
+**[ ] Ambient Effects**
+```
+1. Opprett js/ambient-effects.js
+2. Implementer particles system (mist, dust, fireflies)
+3. Legg til dynamic fog rendering
+4. Integrer med location system
+```
+
+**[ ] Landscape Polish**
+```
+1. Gjennomgå alle 8 lokasjoner
+2. Legg til mer depth i parallax
+3. Forbedre overlapping av elementer
+4. Implementer atmospheric perspective
+```
+
+**[ ] UI Refinement**
+```
+1. Implementer fade-out på inaktivitet
+2. Smooth transitions for meny-åpninger
+3. Polish på hover states
+4. Forbedre readability på alle tider
+```
+
+#### 🟢 LAV PRIORITET
+
+**[ ] Sprite Art Wishlist**
+```
+- Bedre fisher sprite (landscape painting stil)
+- Animated water tiles (hvis tid)
+- Atmospheric particles sprites
+- Enhanced sky gradients
+```
+
+---
+
+### 8. KONKLUSJON
+
+#### Hva Cast 'n' Chill Gjør Bra
+1. **Stunning water effects** (shader-based)
+2. **Landscape painting approach** til pixel art
+3. **Atmospheric lighting** gjennom dagen
+4. **Minimal, elegant UI**
+5. **Dual-mode flexibility** (idle/active)
+
+#### Hvordan Vi Kan Bruke Dette
+1. **Oppgrader vann-rendering** til samme kvalitet (uten shaders)
+2. **Forbedre atmosfære** med fog, particles, light rays
+3. **Polish våre paletter** med ambient lighting
+4. **Verfiner UI** med fade-effekter
+5. **Behold vår identitet** - dark, Lovecraftian, story-driven
+
+#### Vårt Unike Fortrinn
+- **Hybrid approach:** Procedural + sprites = fleksibilitet
+- **Narrative focus:** Story-driven vs idle screensaver
+- **Sanity system:** Mekanisk dybde de ikke har
+- **Vanilla JS:** Unique tech, ingen engine overhead
+- **Transformation arc:** Player blir Deep One (ingen har dette!)
+
+**The Deep Ones** har en solid base. Med noen targeted forbedringer til vann og atmosfære, kan vi matche Cast 'n' Chill's visuelt samtidig som vi beholder vår unique identity som et mørkt, narrativt fishing horror-spill.
+
+---
+
+### Kilder & Referanser
+
+**Steam & Reviews:**
+- [Cast n Chill on Steam](https://store.steampowered.com/app/3483740/Cast_n_Chill/)
+- [PCGamingWiki - Cast n Chill](https://www.pcgamingwiki.com/wiki/Cast_n_Chill)
+- [Cast n Chill Review - VICE](https://www.vice.com/en/article/cast-n-chill-is-an-idle-and-active-fishing-game-that-has-become-my-new-go-to-when-i-want-to-relax-review/)
+- [Cast n Chill Review - Qualbert](https://www.qualbert.com/reviews/cast-n-chill-review/)
+- [GamingOnLinux - Cast n Chill Preview](https://www.gamingonlinux.com/2025/02/cast-n-chill-is-a-gorgeous-looking-pixel-art-idle-fishing-game-coming-soon/)
+
+**Developer Info:**
+- [Wombat Brawler Official Site](https://www.wombatbrawler.com/cast-n-chill)
+- [NostalPix Developer Interview](https://nostal-pix.com/?p=2180)
+- [Queensland Games Festival Interview](https://aftermath.site/cast-n-chill-demo/)
+
+**Guides & Analysis:**
+- [Cast n Chill Walkthrough - Neoseeker](https://www.neoseeker.com/cast-n-chill/walkthrough)
+- [100% Achievement Guide - Steam](https://steamcommunity.com/sharedfiles/filedetails/?id=3501739394)
+- [Steam Community Discussions](https://steamcommunity.com/app/3483740/discussions/)
+
+**Technical:**
+- [SteamDB - Cast n Chill](https://steamdb.info/app/3483740/)
+- [System Requirements - PCGameBenchmark](https://www.pcgamebenchmark.com/cast-n-chill-system-requirements)
+
+---
+
+**Total Research Time:** ~2 timer  
+**Neste steg:** Prioriter Water System Overhaul
+
