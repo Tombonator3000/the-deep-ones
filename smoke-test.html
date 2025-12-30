@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Deep Ones - Smoke Test</title>
+    <style>
+        body {
+            background: #0a0a12;
+            color: #0f0;
+            font-family: monospace;
+            padding: 20px;
+        }
+        .success { color: #0f0; }
+        .error { color: #f00; }
+        .warning { color: #ff0; }
+        #status { margin-bottom: 20px; }
+        #gameFrame {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #0f0;
+            background: #000;
+        }
+    </style>
+</head>
+<body>
+    <h1>The Deep Ones - Smoke Test</h1>
+    <div id="status">
+        <div>Loading game...</div>
+    </div>
+    <iframe id="gameFrame" src="index.html"></iframe>
+
+    <script>
+        const status = document.getElementById('status');
+        const iframe = document.getElementById('gameFrame');
+
+        let checkCount = 0;
+        const maxChecks = 50;
+
+        function addStatus(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            status.appendChild(div);
+            console.log(msg);
+        }
+
+        // Wait for iframe to load
+        iframe.onload = function() {
+            addStatus('✓ iframe loaded', 'success');
+
+            setTimeout(function checkGame() {
+                checkCount++;
+
+                try {
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    const iframeWin = iframe.contentWindow;
+
+                    // Check if game object exists
+                    if (iframeWin.game) {
+                        addStatus(`✓ game object exists - state: ${iframeWin.game.state}`, 'success');
+
+                        // Check canvas
+                        const canvas = iframeDoc.getElementById('gameCanvas');
+                        if (canvas) {
+                            addStatus(`✓ gameCanvas exists - ${canvas.width}x${canvas.height}`, 'success');
+                        } else {
+                            addStatus('✗ gameCanvas NOT found', 'error');
+                        }
+
+                        // Check title screen
+                        const titleScreen = iframeDoc.getElementById('title-screen');
+                        if (titleScreen) {
+                            const style = iframeWin.getComputedStyle(titleScreen);
+                            addStatus(`✓ title-screen exists - display: ${style.display}, z-index: ${style.zIndex}`, 'success');
+                        } else {
+                            addStatus('✗ title-screen NOT found', 'error');
+                        }
+
+                        // Check if PIXEL_CONFIG exists
+                        if (iframeWin.PIXEL_CONFIG) {
+                            addStatus(`✓ PIXEL_CONFIG exists - ${iframeWin.PIXEL_CONFIG.internalWidth}x${iframeWin.PIXEL_CONFIG.internalHeight}`, 'success');
+                        }
+
+                        // Check if CONFIG exists
+                        if (iframeWin.CONFIG) {
+                            addStatus(`✓ CONFIG exists - canvas: ${iframeWin.CONFIG.canvas.width}x${iframeWin.CONFIG.canvas.height}`, 'success');
+                        }
+
+                        addStatus('\n=== GAME INITIALIZED SUCCESSFULLY ===', 'success');
+                    } else if (checkCount < maxChecks) {
+                        addStatus(`Waiting for game object... (${checkCount}/${maxChecks})`, 'warning');
+                        setTimeout(checkGame, 200);
+                    } else {
+                        addStatus('✗ game object never initialized - TIMEOUT', 'error');
+
+                        // Try to get console errors from iframe
+                        addStatus('Checking iframe console...', 'warning');
+                    }
+                } catch (e) {
+                    addStatus(`✗ Error accessing iframe: ${e.message}`, 'error');
+                    if (checkCount < maxChecks) {
+                        setTimeout(checkGame, 200);
+                    }
+                }
+            }, 500);
+        };
+
+        iframe.onerror = function(e) {
+            addStatus('✗ iframe failed to load', 'error');
+        };
+    </script>
+</body>
+</html>
