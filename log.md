@@ -4720,3 +4720,191 @@ Fremover bør det vurderes å:
 - Legge til automatiske tester som verifiserer at alle nødvendige moduler er lastet
 
 ---
+
+## 2025-12-30 — Dynamic Camera & Split-Screen Layout System
+
+### Problem
+
+Spillets layout viste alltid fisker/båt i midten av skjermen, uavhengig av om man fisker eller seiler. Brukeren ønsket:
+
+1. **SAILING MODE:** Fisker/båt nær bunnen av skjermen (større himmel/atmosfære synlig)
+2. **FISHING MODE:** Split-screen view med tydelig deling mellom over/under vann
+3. **Smooth transition:** Gradvis overgang mellom de to modusene
+
+### Eksisterende System
+
+**Canvas:** 480x270px (pixel art oppløsning)
+**WaterLine:** y=116px (43% av høyden)
+**Båt posisjon:** Alltid ved `waterLine - 15 + bob` ≈ y=101px
+**Problem:** Båten var alltid i midten av skjermen - ingen variasjon basert på game state
+
+Det eksisterende kamera-systemet (`game.camera`) panned NED når man fisket, men dette ga ikke den ønskede split-screen effekten.
+
+### Løsning: Invertert Kamera-logikk
+
+Implementerte ny vertikal kamera-offset med **invertert logikk**:
+
+**SAILING MODE:**
+- `camera.y = -100` (negativ verdi)
+- `ctx.translate(0, -(-100))` = `ctx.translate(0, 100)`
+- Hele verden flyttes NED 100px på skjermen
+- WaterLine (y=116) vises ved y=216 (80% av skjermhøyde)
+- Fisker/båt er nær bunnen, mer himmel synlig
+
+**FISHING MODE:**
+- `camera.y = 0 to +40` (basert på dybde)
+- `ctx.translate(0, -0)` til `ctx.translate(0, -40)`
+- Verden ved standard posisjon eller lett opp
+- WaterLine ved ~y=116 til y=156 (midten til litt under midten)
+- Split view: ~50% over vann, ~50% under vann
+
+### Implementasjon
+
+#### 1. Modifisert `updateCameraPan()` i js/systems.js (linje 1657-1728)
+
+```javascript
+// SAILING MODE: Push world down (camera.y = -100)
+if (game.state === 'sailing') {
+    cam.targetY = -100;
+    cam.mode = 'surface';
+}
+
+// FISHING MODE: Split view (camera.y = 0 to +40)
+else if (game.state === 'waiting' || game.state === 'reeling' || game.minigame.active) {
+    const depthPercent = Math.min(1, Math.max(0, depth / maxDepth));
+    cam.targetY = depthPercent * 40;  // 0 to 40px pan based on depth
+    cam.mode = 'underwater';
+}
+
+// CAUGHT: Transition back to sailing
+else if (game.state === 'caught') {
+    const targetSailing = -100;
+    cam.targetY += (targetSailing - cam.targetY) * 0.15;
+    cam.mode = 'transitioning';
+}
+```
+
+**Endringer:**
+- Fjernet positiv clamp (var 0-100, nå -120 til +60)
+- Inverterte logikk: negative verdier for sailing, positive for fishing
+- Smooth interpolasjon med `cam.panSpeed = 0.05`
+
+#### 2. Oppdatert render() i js/main.js (linje 342-348)
+
+```javascript
+// Før:
+if (cameraPanOffset > 0) {
+    ctx.translate(0, -cameraPanOffset);
+}
+
+// Etter:
+if (cameraPanOffset !== 0) {
+    ctx.translate(0, -cameraPanOffset);
+}
+```
+
+**Endring:** Fjernet `> 0` sjekk for å tillate negative verdier.
+
+#### 3. Ny funksjon: `drawWaterSurfaceLine()` i js/rendering.js (linje 1089-1140)
+
+Tegner tydelig hvit/cyan linje ved vannoverflaten når man fisker:
+
+**Features:**
+- Kun synlig i fishing mode (waiting/reeling)
+- Animated ripple effect med sin-wave
+- Dobbel linje: Hovedlinje (cyan, 2px) + highlight (hvit, 1px)
+- Subtle gradient glow (6px høyde) for dybdefølelse
+- Smooth animasjon: `Math.sin((x + time * 0.05) * 0.08 + time * 0.002)`
+
+**Rendering order:**
+1. Parallax layers (sky, land, water, underwater)
+2. Location features & fish
+3. Water reflection
+4. **→ Water surface line** (NYT)
+5. Boat & fishing line
+6. Weather & ambient effects
+
+### Tekniske Detaljer
+
+**Camera Transform Math:**
+```
+WaterLine i world coords: y = 116
+Ønsket screen posisjon (sailing): y = 216 (80% av 270)
+Transform nødvendig: +100px ned
+ctx.translate(0, -camera.y) hvor camera.y = -100
+→ ctx.translate(0, 100) → world moves down
+```
+
+**Depth-based panning:**
+```
+Depth: 0m → camera.y = 0 (waterLine ved y=116)
+Depth: 30m (max bamboo rod) → camera.y = 40 (waterLine ved y=156)
+```
+
+### Filer Modifisert
+
+1. **js/systems.js** (linje 1657-1728)
+   - `updateCameraPan()`: Invertert kamera-logikk
+   - Ny clamp range: -120 til +60 (fra 0 til 100)
+   - Smooth transition mellom modes
+
+2. **js/main.js** (linje 342-348, 375-378)
+   - Fjernet positiv-only sjekk for camera offset
+   - Lagt til `drawWaterSurfaceLine()` kall i render pipeline
+   - Oppdatert kommentarer
+
+3. **js/rendering.js** (linje 1089-1140)
+   - Ny `drawWaterSurfaceLine()` funksjon
+   - Animated ripple-effekt
+   - Dobbel-linje rendering med glow
+
+### Testing
+
+1. Åpne `game.html` i browser
+2. Start nytt spill
+3. **SAILING:** Båten skal være nær bunnen av skjermen, mye himmel synlig
+4. Trykk SPACE for å fiske
+5. **FISHING:** Skjermen skal smooth-transition til split view
+6. Tydelig hvit linje skal vises ved vannoverflaten
+7. Bruk pil opp/ned for å justere dybde - kamera skal pan ned litt når du går dypere
+8. Trykk SPACE igjen for å få fangst
+9. **CAUGHT:** Kamera skal smooth-transition tilbake til sailing view
+
+### Forventede Resultater
+
+**Sailing Mode:**
+- WaterLine ved ~80% av skjermhøyde (y=216 på skjermen)
+- Fisker/båt nær bunnen
+- Mye himmel, fjell, og atmosfære synlig
+- Følelse av å være på overflaten
+
+**Fishing Mode:**
+- WaterLine ved ~40-55% av skjermhøyde (y=116-156)
+- Split view: 50% himmel/over vann, 50% under vann
+- Tydelig hvit animated linje ved vannoverflaten
+- Kan se både båt over og fisk/undervannsmiljø under
+- Dypere fiske → mer undervann synlig
+
+**Transition:**
+- Smooth interpolasjon med `panSpeed = 0.05`
+- Ingen hopping eller rykking
+- Naturlig flow mellom states
+
+### Kodestatistikk
+
+- **Modifiserte funksjoner:** 2 (`updateCameraPan`, `render`)
+- **Nye funksjoner:** 1 (`drawWaterSurfaceLine`)
+- **Linjer endret:** ~120
+- **Filer modifisert:** 3
+
+### Notater
+
+Dette er en betydelig forbedring av gameplay-følelsen. Split-screen effekten når man fisker gir mye bedre spatial awareness og gjør det lettere å forstå hvor du fisker i forhold til vannoverflaten.
+
+Den inverterte kamera-logikken (negativ = ned, positiv = opp) kan virke mot-intuitiv først, men gir riktig resultat gjennom `ctx.translate(0, -camera.y)`.
+
+Smooth transition mellom states er kritisk - ingen hard snapping. Ved `panSpeed = 0.05` tar det ~2-3 sekunder å transition fra sailing til fishing, som føles naturlig.
+
+Water surface line er kun synlig når fishing for å ikke distrahere i sailing mode. Animated ripple gir levende følelse uten å være overbærende.
+
+---

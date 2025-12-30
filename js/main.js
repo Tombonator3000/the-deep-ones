@@ -339,9 +339,11 @@ function render() {
         applyBigCatchShake();
     }
 
-    // Apply underwater camera panning (Cast n Chill inspired)
+    // Apply vertical camera panning for split-screen effect
+    // Negative values push world down (sailing mode)
+    // Positive values push world up (fishing mode)
     const cameraPanOffset = getCameraPanOffset();
-    if (cameraPanOffset > 0) {
+    if (cameraPanOffset !== 0) {
         ctx.translate(0, -cameraPanOffset);
     }
 
@@ -368,6 +370,11 @@ function render() {
         drawEnhancedWaterReflection();
     } else if (typeof drawWaterReflection === 'function') {
         drawWaterReflection();
+    }
+
+    // Draw prominent water surface line when fishing (split-screen effect)
+    if (typeof drawWaterSurfaceLine === 'function') {
+        drawWaterSurfaceLine();
     }
 
     // Draw boat
