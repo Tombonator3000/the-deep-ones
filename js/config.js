@@ -16,7 +16,7 @@ const PIXEL_CONFIG = {
 const CONFIG = {
     canvas: { width: PIXEL_CONFIG.internalWidth, height: PIXEL_CONFIG.internalHeight },
     waterLine: Math.floor(PIXEL_CONFIG.internalHeight * PIXEL_CONFIG.waterLineRatio),
-    useSprites: true,  // Enabled to show boat/fisher sprites (lighthouse too big, uses fallback)
+    useSprites: true,  // Sprites enabled with auto-scaling for oversized assets
     showDebug: true,
     assetPath: '',
     dockX: 1500,  // Must match CONFIG.locations.dock.x

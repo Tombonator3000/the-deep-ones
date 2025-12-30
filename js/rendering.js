@@ -131,16 +131,69 @@ function drawBoat() {
     }
 
     const boatImg = loadedAssets.images['sprite-boat'];
+    const fisherImg = loadedAssets.images['sprite-fisher'];
+    const dogImg = loadedAssets.images['sprite-dog'];
+    const lanternImg = loadedAssets.images['sprite-lantern'];
 
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(tilt);
 
     if (boatImg && CONFIG.useSprites) {
-        // Scale boat sprite to configured size (boat.png is 1080x589, we want 90x50)
+        // Draw boat sprite (scaled to configured size)
         ctx.drawImage(boatImg,
             -SPRITES.boat.anchor.x, -SPRITES.boat.anchor.y,
             SPRITES.boat.width, SPRITES.boat.height);
+
+        // Draw fisher sprite if available
+        if (fisherImg) {
+            ctx.drawImage(fisherImg,
+                -SPRITES.fisher.anchor.x, -SPRITES.fisher.anchor.y - 20,  // Position on boat
+                SPRITES.fisher.width, SPRITES.fisher.height);
+        } else {
+            // Fallback to procedural fisher
+            const transVis = getTransformationVisuals() || {
+                skinColor: '#d4a574', eyeSize: 1, hasGills: false,
+                hasWebbing: false, glowIntensity: 0
+            };
+            drawFisher(0, 0, transVis);
+        }
+
+        // Draw dog sprite if available
+        if (dogImg) {
+            const dogFrame = Math.floor(game.time * 0.006) % 4;
+            const frameWidth = dogImg.width / 4;
+            ctx.drawImage(dogImg,
+                dogFrame * frameWidth, 0, frameWidth, dogImg.height,
+                25 - SPRITES.dog.anchor.x, -5 - SPRITES.dog.anchor.y,
+                frameWidth, dogImg.height);
+        } else {
+            drawBoatDog(0, 0);
+        }
+
+        // Draw lantern sprite if available
+        if (lanternImg) {
+            const lanternFrame = Math.floor(game.time * 0.008) % 4;
+            const frameWidth = lanternImg.width / 4;
+            ctx.drawImage(lanternImg,
+                lanternFrame * frameWidth, 0, frameWidth, lanternImg.height,
+                -30 - SPRITES.lantern.anchor.x, -10 - SPRITES.lantern.anchor.y,
+                frameWidth, lanternImg.height);
+        } else {
+            drawBoatLantern(0, 0);
+        }
+
+        // Draw rod when fishing
+        if (game.state !== 'sailing') {
+            const rodImg = loadedAssets.images['sprite-rod'];
+            if (rodImg) {
+                ctx.drawImage(rodImg,
+                    5, -20 - SPRITES.rod.anchor.y,
+                    SPRITES.rod.width, SPRITES.rod.height);
+            } else {
+                drawBoatFishingRod(0, 0);
+            }
+        }
     } else {
         drawBoatProcedural(0, 0);
     }

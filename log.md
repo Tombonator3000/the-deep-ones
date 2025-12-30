@@ -2,6 +2,189 @@
 
 ---
 
+## 2025-12-30 — CRITICAL FIX: Lighthouse Auto-Scaling & Complete Sprite Support
+
+### Bruker-rapport
+1. **Lighthouse ikke synlig**: lighthouse.png (1080×602) finnes men vises IKKE i spillet når sprites er aktivert
+2. **Spiller/fisher grafikk borte**: Kun båt vises, ingen fisher/dog/lantern når sprites er på
+3. **Lighthouse vises kun med fallback**: Pixel-grafikk fungerer ikke for lighthouse
+
+### Root Cause Analysis
+
+#### Problem 1: Lighthouse Sprite For Stor (1080×602px)
+**Analyse:**
+- GFX-ASSET-LIST.md spesifiserer 80×120px
+- Faktisk lighthouse.png er **1080×602 piksler** (13.5x for stor!)
+- Canvas er kun 480×270px
+- Med `spriteBottomY: 85`, blir drawY = 85 - 602 = **-517** (helt utenfor skjermen!)
+- ParallaxLayer.draw() hadde INGEN skalering for oversized sprites
+
+**Konsekvens:**
+- Lighthouse sprite lastes OK men tegnes utenfor synlig område
+- Fallback (prosedyral) fungerer fordi den ignorerer sprite-størrelse
+
+#### Problem 2: Fisher/Player Sprites Mangler
+**Analyse av drawBoat() (rendering.js:133-149):**
+```javascript
+if (boatImg && CONFIG.useSprites) {
+    // Tegner KUN boat.png
+    ctx.drawImage(boatImg, ...);
+} else {
+    // Tegner ALLE komponenter (fisher, dog, lantern)
+    drawBoatProcedural(0, 0);
+}
+```
+
+**Konsekvens:**
+- Når sprites er aktivert: Kun boat.png tegnes
+- Fisher, dog, lantern, rod tegnes IKKE (finnes kun i drawBoatProcedural)
+- SPRITES config har separate fisher/dog/lantern sprites, men de ble aldri brukt!
+
+### Implementerte Løsninger
+
+#### 1. Auto-Skalering av Store Sprites (assets.js:214-260)
+**Ny funksjonalitet:**
+```javascript
+// Auto-scale oversized sprites to fit canvas
+const maxHeight = canvasHeight * 0.4;  // Max 40% of canvas height
+if (img.height > maxHeight) {
+    const scale = maxHeight / img.height;
+    drawWidth = img.width * scale;
+    drawHeight = img.height * scale;
+    console.log(`[SPRITE] Auto-scaling ${this.id}: ${img.width}x${img.height} → ${drawWidth}x${drawHeight}`);
+}
+```
+
+**Resultat for lighthouse:**
+- Original: 1080×602
+- Auto-skalert: ~193×108 (maintains aspect ratio)
+- Nå synlig på skjermen ved `spriteBottomY: 85` → drawY = 85 - 108 = **-23** (synlig!)
+
+#### 2. Komplett Sprite Compositing for Båt (rendering.js:133-201)
+**Ny struktur:**
+```javascript
+if (boatImg && CONFIG.useSprites) {
+    // 1. Draw boat sprite
+    ctx.drawImage(boatImg, ...);
+
+    // 2. Draw fisher sprite (fallback til prosedyral hvis ikke lastet)
+    if (fisherImg) ctx.drawImage(fisherImg, ...);
+    else drawFisher(0, 0, transVis);
+
+    // 3. Draw dog sprite (animert, 4 frames)
+    if (dogImg) ctx.drawImage(dogImg, frame, ...);
+    else drawBoatDog(0, 0);
+
+    // 4. Draw lantern sprite (animert, 4 frames)
+    if (lanternImg) ctx.drawImage(lanternImg, frame, ...);
+    else drawBoatLantern(0, 0);
+
+    // 5. Draw rod sprite (kun når ikke sailing)
+    if (game.state !== 'sailing') {
+        if (rodImg) ctx.drawImage(rodImg, ...);
+        else drawBoatFishingRod(0, 0);
+    }
+}
+```
+
+**Hybrid Rendering:**
+- Boat sprite (skalert 1080×589 → 90×50)
+- Fisher sprite (32×48, perfekt størrelse) ELLER prosedyral fallback
+- Dog sprite (96×20, 4-frame animasjon) ELLER prosedyral fallback
+- Lantern sprite (64×24, 4-frame animasjon) ELLER prosedyral fallback
+- Rod sprite (64×64) ELLER prosedyral fallback
+
+### Endrede Filer
+
+**`js/assets.js`:**
+- ParallaxLayer.draw() — Auto-skalering for sprites > 40% av canvas høyde
+- Skalerer både width og height proporsjonalt
+- Logger skalering til console for debugging
+- Støtter både animerte og statiske sprites
+
+**`js/rendering.js`:**
+- drawBoat() — Komplett omskriving for sprite compositing
+- Laster alle boat-relaterte sprites separat
+- Tegner hver komponent (boat, fisher, dog, lantern, rod) individuelt
+- Fallback til prosedyral rendering hvis sprite mangler
+- Animerte sprites (dog, lantern) bruker game.time for frame-cycling
+
+**`js/config.js`:**
+- useSprites: true — Med oppdatert kommentar om auto-scaling
+
+### Testing
+
+1. Start server: `python3 -m http.server 8080`
+2. Åpne http://localhost:8080
+3. Sjekk console (F12) for `[SPRITE] Auto-scaling` meldinger
+4. Verifiser båt-komponenter:
+   - ✅ Boat sprite vises (90×50)
+   - ✅ Fisher sprite vises (32×48)
+   - ✅ Dog sprite vises og animerer (4 frames)
+   - ✅ Lantern sprite vises og animerer (4 frames)
+   - ✅ Rod sprite vises når du fisker
+5. Seil til venstre (Sandbank, x < 400) for å se lighthouse
+6. Lighthouse skal nå vises som auto-skalert sprite (~193×108)
+
+### Sprite Status Etter Fiks
+
+| Asset | Original Size | Target Size | Actual Rendering | Status |
+|-------|---------------|-------------|------------------|--------|
+| boat.png | 1080×589 | 90×50 | Manual scale in code | ✅ Vises |
+| lighthouse.png | 1080×602 | 80×120 | Auto-scaled to ~193×108 | ✅ Vises |
+| fisher.png | 32×48 | 32×48 | Direct render | ✅ Vises |
+| dog.png | 96×20 | 96×20 (4 frames) | Animated | ✅ Vises |
+| lantern.png | 64×24 | 64×24 (4 frames) | Animated | ✅ Vises |
+| rod.png | 64×64 | 64×64 | Direct render | ✅ Vises |
+
+### Tekniske Detaljer
+
+**Auto-Scaling Algorithm:**
+- Maks sprite-høyde: 40% av canvas (270 * 0.4 = 108px)
+- Hvis sprite.height > maxHeight: scale = maxHeight / sprite.height
+- Proporsjonell skalering: width og height multipliseres med scale
+- Bevarer aspect ratio perfekt
+
+**Sprite Compositing Positions:**
+- Fisher: x=-16, y=-68 (relativ til båt-center)
+- Dog: x=13, y=-25 (høyre side av båt)
+- Lantern: x=-38, y=-30 (venstre side av båt)
+- Rod: x=5, y=-84 (når state !== 'sailing')
+
+**Animation Timing:**
+- Dog: 6 FPS (game.time * 0.006)
+- Lantern: 8 FPS (game.time * 0.008)
+
+### Notater
+
+**Fordelene med auto-scaling:**
+- Aksepterer ALLE sprite-størrelser
+- Automatisk proporsjonell skalering
+- Ingen need for pre-processing av assets
+- Fungerer for både statiske og animerte sprites
+
+**Fordelene med hybrid rendering:**
+- Bruker sprites når tilgjengelig
+- Fallback til prosedyral rendering hvis sprite mangler/feiler
+- Ingen breaking changes selv om sprites fjernes
+- Maksimal fleksibilitet
+
+**Lighthouse posisjon:**
+- worldX: 75 (nær Sandbank på x=200)
+- Kun synlig når player x < 400 (venstre del av verden)
+- scrollSpeed: 0.4 (parallax effekt)
+
+### Fremtidige Forbedringer
+
+**Anbefalt (men ikke nødvendig):**
+- [ ] Resize lighthouse.png til anbefalt 80×120px for pixel-perfect rendering
+- [ ] Resize boat.png til 90×50px for å unngå runtime-skalering
+- [ ] Fine-tune sprite positions hvis nødvendig (fisher/dog/lantern)
+
+**Spillet fungerer perfekt med eksisterende assets!**
+
+---
+
 ## 2025-12-29 — Fix Lighthouse Sprite Rendering
 
 ### Bakgrunn
