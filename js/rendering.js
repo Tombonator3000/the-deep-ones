@@ -137,7 +137,10 @@ function drawBoat() {
     ctx.rotate(tilt);
 
     if (boatImg && CONFIG.useSprites) {
-        ctx.drawImage(boatImg, -SPRITES.boat.anchor.x, -SPRITES.boat.anchor.y);
+        // Scale boat sprite to configured size (boat.png is 1080x589, we want 90x50)
+        ctx.drawImage(boatImg,
+            -SPRITES.boat.anchor.x, -SPRITES.boat.anchor.y,
+            SPRITES.boat.width, SPRITES.boat.height);
     } else {
         drawBoatProcedural(0, 0);
     }
