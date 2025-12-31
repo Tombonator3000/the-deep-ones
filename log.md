@@ -5690,3 +5690,129 @@ node -c js/rendering.js    # ✓ No errors
 4. Mulig optimalisering av loop-hastighet hvis performance issues
 
 ---
+
+## 2025-12-31 - Bug Fix: Debug Mode Default Value
+
+### Session Info
+- **Agent:** Claude (Sonnet 4.5)
+- **Task:** Find and fix a bug in the codebase
+- **Branch:** `claude/fix-codebase-bug-8OqNg`
+
+### Bug Discovered
+
+**Type:** Configuration Error  
+**Severity:** Low (Quality of Life)  
+**File:** `js/config.js` line 20  
+
+**Problem:**  
+`CONFIG.showDebug` was set to `true` by default, causing debug mode to be active in production:
+
+```javascript
+// Before (BUG):
+showDebug: true,
+```
+
+**Impact:**
+1. ❌ Debug panel visible on game start
+2. ❌ Console logging boat position every 2 seconds (js/rendering.js:119-127)
+3. ❌ Visual debug markers drawn for boat position (js/rendering.js:212)
+4. ❌ Visual debug marker for lighthouse (js/fallbacks.js:545)
+5. ❌ Unnecessary performance overhead from debug logging
+
+**Why This Is a Bug:**
+- Debug mode should be **OFF** by default in production code
+- Users should not see debug information unless explicitly enabled
+- Continuous console logging creates performance overhead
+- Professional games hide debug features from end users
+
+### Fix Applied
+
+**Solution:**  
+Changed `showDebug` default value from `true` to `false` with clarifying comment:
+
+```javascript
+// After (FIXED):
+showDebug: false,  // Debug mode off by default (toggle with 'D' key)
+```
+
+**Verification:**
+```bash
+node -c js/config.js    # ✓ Syntax valid
+```
+
+**Files Modified:**
+- `js/config.js` - Line 20 changed
+
+### Testing Notes
+
+**Debug Toggle Functionality:**
+- Users can still enable debug mode by pressing 'D' key (js/input.js:229)
+- Debug panel shows:
+  - Asset loading status (loaded/fallback counts)
+  - Current rendering mode (sprites vs procedural)
+  - Toggle instructions
+
+**Expected Behavior After Fix:**
+1. ✅ Game starts with debug panel hidden
+2. ✅ No console spam from boat position logging
+3. ✅ No visual debug markers on screen
+4. ✅ Press 'D' key to toggle debug mode on/off as needed
+5. ✅ Cleaner user experience
+
+### Why This Bug Existed
+
+**Root Cause:**  
+Development convenience - developer left debug mode on during testing and forgot to disable it before commit.
+
+**Common Pattern:**  
+This is a very common bug in game development:
+- Debug flags set to `true` during development
+- Helpful during testing/debugging
+- Easy to forget to disable before release
+- Should use build system or environment variables for debug flags
+
+**Best Practice:**
+- Use `const DEBUG = process.env.NODE_ENV === 'development'` in Node projects
+- Use build flags for production vs development builds
+- Never commit with debug mode enabled by default
+
+### Code Quality Impact
+
+**Before Fix:**
+- Confusing for end users
+- Unprofessional appearance
+- Performance overhead (minimal but unnecessary)
+- Debug panel clutter
+
+**After Fix:**
+- Clean, professional appearance
+- Better performance (no debug logging)
+- Debug mode still accessible for developers via 'D' key
+- Production-ready default configuration
+
+### Related Files
+
+**Files referencing `CONFIG.showDebug`:**
+1. `js/config.js:20` - Configuration definition (FIXED)
+2. `js/rendering.js:212` - Boat position debug marker
+3. `js/fallbacks.js:545` - Lighthouse debug marker
+4. `js/input.js:229` - Debug toggle on 'D' key press
+5. `js/assets.js:166` - Debug panel visibility control
+
+### Commit Message
+
+```
+fix: Disable debug mode by default in production
+
+- Changed CONFIG.showDebug from true to false
+- Debug mode should not be active by default
+- Users can still toggle with 'D' key
+- Removes console spam and debug markers
+- More professional user experience
+
+Fixes configuration bug where debug panel and logging
+were visible to end users by default.
+```
+
+---
+
