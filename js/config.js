@@ -17,7 +17,7 @@ const CONFIG = {
     canvas: { width: PIXEL_CONFIG.internalWidth, height: PIXEL_CONFIG.internalHeight },
     waterLine: Math.floor(PIXEL_CONFIG.internalHeight * PIXEL_CONFIG.waterLineRatio),
     useSprites: true,  // Sprites enabled with auto-scaling for oversized assets
-    showDebug: true,
+    showDebug: false,  // Debug mode off by default (toggle with 'D' key)
     assetPath: '',
     dockX: 1500,  // Must match CONFIG.locations.dock.x
     worldWidth: 6000,
