@@ -148,6 +148,179 @@ function handleEndingInput(e) {
     return true;  // Block all other input during ending
 }
 
+// ============================================================
+// SPACE KEY HANDLERS (refactored from monolithic switch case)
+// ============================================================
+
+// Reset game state back to sailing (reusable helper)
+function resetToSailingState() {
+    game.state = 'sailing';
+    game.depth = 0;
+    game.targetDepth = 0;
+    if (game.camera) {
+        game.camera.targetY = 0;
+    }
+}
+
+// Handle space key when in 'sailing' state - cast line into water
+function handleSpaceKeySailing() {
+    game.state = 'waiting';
+    game.targetDepth = 0;  // Start at surface, use Down arrow to go deeper
+    game.depth = 0;
+    triggerSplashSound();
+    if (typeof playSplash === 'function') playSplash();
+}
+
+// Handle space key when in 'waiting' state - reel line back in
+function handleSpaceKeyWaiting() {
+    resetToSailingState();
+}
+
+// Process lore fragment catch
+function processLoreCatch(c) {
+    const lore = LORE_FRAGMENTS.find(l => l.id === c.loreId);
+    if (lore && !lore.found) {
+        lore.found = true;
+        game.loreFound.push(lore.id);
+        game.currentLore = lore;
+
+        // Remove from floating bottles if exists
+        const bottleIndex = game.loreBottles.findIndex(b => b.id === lore.id);
+        if (bottleIndex !== -1) {
+            game.loreBottles.splice(bottleIndex, 1);
+        }
+    }
+
+    // Apply small sanity loss from reading eldritch text
+    game.sanity = Math.max(0, game.sanity - c.sanityLoss);
+    game.transformation.totalSanityLost += c.sanityLoss;
+
+    game.currentCatch = null;
+    resetToSailingState();
+    autoSave();
+}
+
+// Track catch statistics for achievements and challenges
+function trackCatchStatistics(c, zone) {
+    // Track total fish caught and biggest catch
+    game.achievements.stats.totalFishCaught++;
+    if (c.value > game.achievements.stats.biggestCatch[zone]) {
+        game.achievements.stats.biggestCatch[zone] = c.value;
+    }
+
+    // Check daily challenges
+    if (typeof checkDailyChallengeProgress === 'function') {
+        checkDailyChallengeProgress('catch', { zone: zone });
+        if (game.timeOfDay === 'night') {
+            checkDailyChallengeProgress('nightCatch', 1);
+        }
+        if (game.weather.current === 'storm') {
+            checkDailyChallengeProgress('stormCatch', 1);
+        }
+    }
+
+    // Track achievement stats
+    if (game.timeOfDay === 'night') {
+        game.achievements.stats.nightCatches++;
+    }
+    if (game.weather.current === 'storm') {
+        game.achievements.stats.stormCatches++;
+    }
+}
+
+// Add catch to inventory or convert to money
+function addCatchToInventory(c, adjustedValue) {
+    if (game.inventory.length < game.inventoryMax) {
+        // Store with adjusted value for selling
+        const catchWithBonus = { ...c, value: adjustedValue };
+        game.inventory.push(catchWithBonus);
+    } else {
+        // Inventory full - auto-sell at 50% value
+        game.money += Math.floor(adjustedValue * 0.5);
+        game.achievements.stats.totalGoldEarned += Math.floor(adjustedValue * 0.5);
+    }
+}
+
+// Trigger visual effects for rare/valuable catches
+function triggerCatchVisualEffects(c) {
+    if (c.value >= 180 && typeof game.visualEffects !== 'undefined') {
+        game.visualEffects.bigCatchShake = 0.5;
+    }
+    if (c.value >= 500 && typeof triggerGlitch === 'function') {
+        triggerGlitch(0.3);
+    }
+}
+
+// Track story flags for special creatures
+function trackStoryFlags(c) {
+    if (c.name === "The Unnamed") {
+        game.storyFlags.caughtUnnamed = true;
+    }
+}
+
+// Process normal (non-lore) catch
+function processNormalCatch(c) {
+    // Apply sanity loss
+    game.sanity = Math.max(0, game.sanity - c.sanityLoss);
+    game.transformation.totalSanityLost += c.sanityLoss;
+
+    // Add to journal
+    addToJournal(c);
+
+    // Add to streak
+    if (typeof addToStreak === 'function') {
+        addToStreak();
+    }
+
+    // Apply streak bonus to value
+    const streakBonus = game.streak.comboMultiplier || 1;
+    const adjustedValue = Math.floor(c.value * streakBonus);
+
+    // Determine depth zone
+    const zone = c.value >= 500 ? 'abyss' : c.value >= 180 ? 'deep' : c.value >= 60 ? 'mid' : 'surface';
+
+    // Track statistics
+    trackCatchStatistics(c, zone);
+
+    // Add to inventory or auto-sell
+    addCatchToInventory(c, adjustedValue);
+
+    // Track in caught creatures list
+    game.caughtCreatures.push(c);
+    if (c.rarity < 0.15) game.lastRareCatch = true;
+
+    // Add to trophy tracking (Cast n Chill inspired)
+    if (typeof addTrophy === 'function') {
+        addTrophy(c);
+    }
+
+    // Trigger visual effects
+    triggerCatchVisualEffects(c);
+
+    // Track story flags
+    trackStoryFlags(c);
+
+    // Reset state
+    game.currentCatch = null;
+    resetToSailingState();
+    autoSave();
+}
+
+// Handle space key when in 'caught' state - confirm and process catch
+function handleSpaceKeyCaught() {
+    const c = game.currentCatch;
+    if (!c) return;
+
+    // Handle lore fragments specially
+    if (c.isLore && c.loreId) {
+        processLoreCatch(c);
+        return;
+    }
+
+    // Handle normal catch
+    processNormalCatch(c);
+}
+
 function setupInputHandlers() {
     document.addEventListener('keydown', (e) => {
         // Mark UI activity for fade-out system
@@ -316,131 +489,13 @@ function setupInputHandlers() {
                 }
                 break;
             case ' ':
+                // Refactored: delegate to state-specific handlers
                 if (game.state === 'sailing') {
-                    game.state = 'waiting';
-                    game.targetDepth = 0;  // Start at surface, use Down arrow to go deeper
-                    game.depth = 0;
-                    triggerSplashSound();
-                    if (typeof playSplash === 'function') playSplash();
+                    handleSpaceKeySailing();
                 } else if (game.state === 'waiting') {
-                    game.state = 'sailing';
-                    game.depth = 0;
-                    game.targetDepth = 0;
-                    // Reset camera to surface
-                    if (game.camera) {
-                        game.camera.targetY = 0;
-                    }
+                    handleSpaceKeyWaiting();
                 } else if (game.state === 'caught') {
-                    const c = game.currentCatch;
-
-                    // Handle lore fragments specially
-                    if (c.isLore && c.loreId) {
-                        const lore = LORE_FRAGMENTS.find(l => l.id === c.loreId);
-                        if (lore && !lore.found) {
-                            lore.found = true;
-                            game.loreFound.push(lore.id);
-                            game.currentLore = lore;
-                            // Remove from floating bottles if exists
-                            const bottleIndex = game.loreBottles.findIndex(b => b.id === lore.id);
-                            if (bottleIndex !== -1) {
-                                game.loreBottles.splice(bottleIndex, 1);
-                            }
-                        }
-                        // Apply small sanity loss from reading eldritch text
-                        game.sanity = Math.max(0, game.sanity - c.sanityLoss);
-                        game.transformation.totalSanityLost += c.sanityLoss;
-
-                        game.currentCatch = null;
-                        game.state = 'sailing';
-                        game.depth = 0;
-                        game.targetDepth = 0;
-                        if (game.camera) {
-                            game.camera.targetY = 0;
-                        }
-                        autoSave();
-                        break;
-                    }
-
-                    game.sanity = Math.max(0, game.sanity - c.sanityLoss);
-
-                    // Track sanity lost for transformation
-                    game.transformation.totalSanityLost += c.sanityLoss;
-
-                    // Add to journal
-                    addToJournal(c);
-
-                    // Add to streak
-                    if (typeof addToStreak === 'function') {
-                        addToStreak();
-                    }
-
-                    // Apply streak bonus to value
-                    const streakBonus = game.streak.comboMultiplier || 1;
-                    const adjustedValue = Math.floor(c.value * streakBonus);
-
-                    // Track total fish caught and biggest catch
-                    game.achievements.stats.totalFishCaught++;
-                    const zone = c.value >= 500 ? 'abyss' : c.value >= 180 ? 'deep' : c.value >= 60 ? 'mid' : 'surface';
-                    if (c.value > game.achievements.stats.biggestCatch[zone]) {
-                        game.achievements.stats.biggestCatch[zone] = c.value;
-                    }
-
-                    // Check daily challenges
-                    if (typeof checkDailyChallengeProgress === 'function') {
-                        checkDailyChallengeProgress('catch', { zone: zone });
-                        if (game.timeOfDay === 'night') {
-                            checkDailyChallengeProgress('nightCatch', 1);
-                        }
-                        if (game.weather.current === 'storm') {
-                            checkDailyChallengeProgress('stormCatch', 1);
-                        }
-                    }
-
-                    if (game.inventory.length < game.inventoryMax) {
-                        // Store with adjusted value for selling
-                        const catchWithBonus = { ...c, value: adjustedValue };
-                        game.inventory.push(catchWithBonus);
-                    } else {
-                        game.money += Math.floor(adjustedValue * 0.5);
-                        game.achievements.stats.totalGoldEarned += Math.floor(adjustedValue * 0.5);
-                    }
-
-                    game.caughtCreatures.push(c);
-                    if (c.rarity < 0.15) game.lastRareCatch = true;
-
-                    // Add to trophy tracking (Cast n Chill inspired)
-                    if (typeof addTrophy === 'function') {
-                        addTrophy(c);
-                    }
-
-                    // Trigger visual effects for rare/valuable catches
-                    if (c.value >= 180 && typeof game.visualEffects !== 'undefined') {
-                        game.visualEffects.bigCatchShake = 0.5;
-                    }
-                    if (c.value >= 500 && typeof triggerGlitch === 'function') {
-                        triggerGlitch(0.3);
-                    }
-
-                    // Track story flags
-                    if (c.name === "The Unnamed") game.storyFlags.caughtUnnamed = true;
-
-                    // Track achievement stats
-                    if (game.timeOfDay === 'night') {
-                        game.achievements.stats.nightCatches++;
-                    }
-                    if (game.weather.current === 'storm') {
-                        game.achievements.stats.stormCatches++;
-                    }
-
-                    game.currentCatch = null;
-                    game.state = 'sailing';
-                    game.depth = 0;
-                    game.targetDepth = 0;
-                    // Reset camera to surface
-                    if (game.camera) {
-                        game.camera.targetY = 0;
-                    }
-                    autoSave();
+                    handleSpaceKeyCaught();
                 }
                 break;
             case 'h':
