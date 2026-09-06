@@ -1,63 +1,45 @@
-# The Stillwater Below — leveranse og Gauntlet-resultat
+# The Stillwater Below v0.3 — Gauntlet result
 
-6. september 2026. Dette er en spillbar første del med ny grafikk og ny, avgrenset spillmotor. Den gamle prototypens komplette kampanje er ikke gjenoppbygd. Kildegrunnlag: `b25609d8be952085f85797dd4a178813ad5b256e`. De eksakte filene som er testet og bygget identifiseres av `BUILD-FINGERPRINT.json` i denne mappen; rapporten følger samme kildeversjon.
+6 September2026. Expanded playable prototype from the owner's Cast n Chill × Lovecraft brief. Original game source retained. This supersedes v0.2; old reports are in v0.2-archive/, and root round-1/,round-2/,round-3/,runtime/ images are historical v0.2 evidence. Current hashes: BUILD-FINGERPRINT.json.
 
-## Hva som fungerer
+## Implemented
 
-Du kan ro, velge dybde, kaste, sette kroken, veksle mellom sveiving og slakk, miste eller lande fisk, beholde eller slippe fangsten fri, selge hos Old Marsh, kjøpe bedre stang og finne den første unormale arten. Fiskekasse, penger, stang, loggbok og sinnsro lagres lokalt. Bris kan klappes, og hvile ved brygga gjenoppretter sinnsroen. Lyd må aktiveres av spilleren.
+Three long scrollable waterways with physical docks, direction-aware sailing and following camera. Separate scenery/fog/reflections and articulated fisherman/dog/oar. Underwater is hidden until a cast, then opens as the line sinks. Line curves, sways and reacts to casts/fights.
 
-Den faktiske brukerreisen er dokumentert i `USER-JOURNEY.md`: torsk + abbor ga 84 mynt; startbeløpet 20 ble til 104, stanga kostet 90, og 14 sto igjen. På 24 meters dybde ble hviskeålen fanget og beholdt. Sinnsro 86, tre oppdagede arter, stang og penger overlevde ny innlasting. Ingen skjult manipulering av spilltilstand ble brukt for denne testen.
+Depth/lure selection, tension, fish/junk/relic catches, keep/release tradeoffs, journal, sales, four rods, three lures, boat upgrade, licenses and map travel from dock. Five sanity stages visibly transform the character; three basic endings have distinct rule gates. Visual editor: object placement, depth zones, dock, save, JSON export/import and isolated playtest. Version2 saves migrate to3.
 
-## Krav og resultat
+## Gates
 
-| Krav | Status | Bevis / begrensning |
+| Gate | Result | Evidence/limit |
 | --- | --- | --- |
-| Sammenhengende fangst → handel → oppgradering → unormal oppdagelse | PASS | Faktisk brukerreise gjennom synlige kontroller |
-| Lagre og fortsette | PASS | Ny innlasting gjenopprettet de observerte verdiene |
-| Regler, pause, tidsuavhengig simulering og transaksjonsvern | PASS | Seks meningsfulle Node-tester; samme tidsbestemte input ved 30/60/120 Hz |
-| Byggbar leveranse | PASS | Vite-produksjonsbygg gjennomført; låste avhengigheter |
-| Lesbare spill-, bok- og butikkflater | PASS på observerte størrelser | 1363×936, simulert 390 px bredde og faktisk 500×824 nettleserflate; fysisk berøringsskjerm ikke kontrollert |
-| Visuell helhetsvurdering >8/10, med 10 = moderne AAA | FAIL / åpen | Uavhengig Astra: 6,5 → 7,4 → 7,8; vurderingsankeret ble beholdt |
-| Skymåling med definerte frame-grenser | PASS | 120 s, 59,6 fps, p95/p99 16,8 ms; fire intervaller >50 ms |
-| Vedvarende 60 fps på representativ målmaskin og produksjonsbygg | UNVERIFIED | Skymålinger beskrives separat; de sertifiserer ikke spillerens PC eller telefon |
-| Lyd | Delvis verifisert | På/av virker i UI. Lyttetest og miks er ikke verifisert |
+| Travel→catch→dock→sell→license→new area→reload | PASS | Real visible browser journey in USER-JOURNEY.md |
+| Simulation/save/editor rules | PASS | Ten tests, timed input30/60/120Hz, all three ending gates |
+| Production build | PASS | Vite build; files identified by fingerprint |
+| Portrait/no-selection controls | PASS on observed layout | 390px game container; physical phone untested |
+| Independent visual review >8/10 | PASS for reviewed stills | Astra7.3→7.7→7.9→8.1, 10 anchored to modern AAA |
+| 60fps frame-time target | NOT VERIFIED on target hardware | Cloud samples fail; no-game control also very slow. Raw current data in PERFORMANCE.json |
+| SFX/music | Implemented, partly verified | UI activation works; no listening/mix pass |
+| Editor import | Schema PASS; file picker unverified | Save/export/playtest/restore through UI; JSON rules tested separately |
 
-## Tre korrigerende runder
+## Corrective visual rounds
 
-| Runde | Observert problem | Gjennomført rettelse og kontroll |
+| Round | Critic | Corrections in next pass |
 | --- | --- | --- |
-| 1 — 6,5/10 | Mobiloverlapp, skadet mørk sprite, lys natt under vann, liten kampmåler, flat loggbok | Containerbasert oppstilling; mattegrense 29 → 8; nattkontrast; større måler med framgang; papir og innbinding |
-| 2 — 7,4/10 | Morgengry ikke valgbart, usynlig lukkeknapp over butikkbildet, solnedgang også om dagen, statiske reaksjoner | Gyldig valgfelt; fast kontraststerk lukkeknapp; nytt dagslysbilde; egen reaksjonspose |
-| 3 — 7,8/10 | Kontinuerlig bevegelseskvalitet utilstrekkelig dokumentert | Overflaterefleksjoner og tåke beveger seg separat; fisker/hund reagerer ved napp; hånd/stang og skrog undersøkt i faktisk napp. Helhetskravet er fortsatt åpent |
+|1|7.3|Natural-aspect water sampling, contact/reflections, smaller lighthouse, softer lower vignette|
+|2|7.7|Shore contact occlusion, line-entry ripples, clearer fish focus; editor ruin preview/portrait chart|
+|3|7.9|Full creature replacing weak hat/coat transformation; cached cool night lighting; rod grip aligned|
+|4|8.1|Creature head, hunched silhouette and webbed hands read without HUD; boat fits night. Final lantern anchor corrected before final capture|
 
-Fullstendige, uavhengige rapporter og uendrede skjermbilder ligger i `round-1/`, `round-2/` og `round-3/`. Skår er en subjektiv kritikervurdering, ikke et ytelsesmål eller en sertifisering.
+Round notes and unedited screenshots: v0.3/. This is a subjective still-image score, not earned progression, continuous animation or60fps certification. Remaining gaps: water/sprite texture consistency, environmental interaction and supporting-interface polish. It is not a claim of finished AAA quality.
 
-## Konsept og faktisk spill
+## Performance interpretation
 
-Det foreløpige målet er `docs/rebuild/concept-dusk.png`. De leverte bakgrunnene er opprinnelig genererte illustrasjoner; båt, fisk, line, refleksjoner, tåke og tilbakemeldinger tegnes separat. All tekst, alle knapper og alle menyer er faktiske HTML-elementer.
+Cached silhouettes/scenery/night variants reduce drawing work. Low measured CPU drawing cost does not prove completed GPU/display frames. A bare requestAnimationFrame page, no game code/images/audio/Canvas, also performed poorly in the same cloud browser. This suggests an environment scheduling limitation; the cause is not established and does not turn a failed game sample into a pass.
 
-| Referansetrekk | Faktisk implementering | Gjenværende forskjell |
-| --- | --- | --- |
-| Rolig høstvik, fjell og fyr over et synlig dyp | Samme kystgeometri og sammenhengende utsnitt | Konseptets vannlinje var ca.49,8 %; produksjonsbildenes er 52,71 % og er brukt konsekvent |
-| Liten trebåt, fisker, hund og varm lykt | To registrerte båtposer; dynamisk stang, dupping og refleksjon | To holdte positurer, ingen komplett animasjonsrigg |
-| Levende vann og tåke | Maskert overflatebrytning, undervannsstriper, glimt og bevegelig tåke | Sammenhengende kvalitet må vurderes under stabile opptaksforhold |
-| Tydelig døgnstemning | Tre tegnede miljøer: skumring, overskyet dag og natt | Morgengry bruker en varm variant av skumringsbildet |
-| Lovecraft-inspirert uro | Dybdekrav, unormale arter, sinnsrovalg, hvisking og kort skyggeeffekt | Et første møte; ingen ferdig historie med alle gamle avslutninger |
+Normal-motion and reduced-motion samples are distinguished in PERFORMANCE.json. The archived v0.2 59.6fps result is not evidence for v0.3. Production-build measurement on representative desktop/phone remains required.
 
-`runtime/dusk.jpg` og `runtime/day-narrow.jpg` viser siste spillflate. `runtime/shop.jpg` og `runtime/whisper-eel.jpg` viser den gjennomførte handels-/fangstreisen før siste miljøpass. De er skjermbilder fra spillet og er ikke retusjert.
+## Remaining scope
 
-## Ytelse og testmiljø
+Three areas, six fish, three junk objects, three relics. Not the full old eight-area/22-species campaign, co-op, idle mode, full narrative/balance pass or native packaging. One custom world stored at a time; JSON export preserves additional boards. Dawn uses warmed dusk art. Cutout/water texture seams, audio mix and physical touch remain open.
 
-Første skymåling ga ca.1–2 fps, også med animert lag avslått og tilnærmet 0 ms tegnetid. Det peker mot begrensning i testmiljøets levering av frames; årsaken er ikke bevist. Lav tegnetid alene ble ikke brukt som 60-fps-bevis. Etter at spillflaten var aktiv og ble brukt, viste samme nettleser 60 fps. Avsluttende prøve: **59,6 fps**, **p95 16,8 ms**, **p99 16,8 ms**, fire intervaller over 50 ms, 7153 frames på 120 sekunder, 0 synlighetsavbrudd, én oppløsning **1363×936 / DPR 1**, gjennomsnittlig tegnetid 0,27 ms. De valgte skymålingsgrensene bestod. Råresultat, arbeidslast og begrensninger finnes i `PERFORMANCE.json`.
-
-Måleverktøyet bruker 5 sekunders oppvarming, deretter 120 sekunder med requestAnimationFrame-intervaller. Tersklene er p95 ≤17,5 ms (liten vsync-toleranse), p99 ≤20 ms; pauser i synlighet gjør målingen ugyldig. Det måler også antall intervaller over 50 ms og CPU-tid for tegning. GPU-tid og minneprofil er ikke målt. Testing i denne økten brukte den overvåkede Vite-forhåndsvisningen og sky-Chrome 151; produksjonsbygget er laget fra de samme kildefilene, men et produksjonsbygg på fysisk målmaskin må testes separat.
-
-## Neste avgrensede steg
-
-1. Åpne produksjonsbygget på vanlig PC og ønsket telefon. Gjenta målingen med `?qa=1` ved samme grafikkinnstilling, inkludert kast, kamp, fangst, butikk og reise. Dokumenter maskin, oppløsning og p95/p99.
-2. Spill inn 20–30 sekunder med stabil bildefrekvens. La kritikeren vurdere særlig vann, figurreaksjoner og overganger mot det uendrede konseptmålet. Lag sammenhengende figuranimasjon der opptaket viser et konkret behov.
-3. Utvid deretter én sone med neste fortellingshendelse og fiskbare funn. Behold de fungerende reglene og lagringsformatet mens mer av den gamle idébanken velges ut.
-
-Ingen bakgrunnsjobb fortsetter utviklingen etter denne leveransen. Endringer skal vurderes videre fra denne dokumenterte prototypen.
-
-Et ekstra lesende bevegelsespass finnes i `round-3/motion-addendum.md`. Tre påfølgende bilder bekreftet flyttende fisk, båt/stang og vannmønstre med stabil kyst og skrog. Helhetsskåren ble stående på 7,8; dette ble ikke brukt til å hevde sammenhengende figuranimasjon. Den eneste kodeendringen etter dette visuelle passet reparerte målepanelets ferdigmelding og gjorde oppløsningsendringer ugyldige i ytelsestesten. Den endelige målingen brukte denne rettelsen.
+Stack/research and the two suggested Three.js repositories: docs/rebuild/STACK.md. Delivery uses the same public Site and existing draft PR.

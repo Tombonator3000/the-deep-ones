@@ -132,3 +132,40 @@ Both boat poses use crop `(90,25,1352,472)`, pivot `(676,451)`. Idle rod hand is
 The initial runtime black-matte threshold of 29 damaged dark coat regions in the first review. Final edge-connected masking uses `RGB max < 8`, caches immutable ImageBitmaps, and preserves the RGB source atlases. The runtime mask and hand alignment were inspected in actual gameplay.
 
 Final daytime uses the authored overcast background, not a sunset recolor. Dawn remains a warm variant of dusk. The lake refraction mask uses the production artwork's source coordinates and transforms with the crop; underwater refraction, moving mist, fish, rod, bobbing, reflection and feedback are independent runtime elements.
+
+## v0.3 continuous-world art pass
+
+The preceding sections describe the retained v0.2 assets. v0.3 uses separately articulated hull/body/forearm/dog/oar assets, not two whole-boat poses. The old whole-boat sprites remain a fallback and fish source. The following briefs summarize the generation constraints retained from the continuation; they are not represented as verbatim tool transcripts.
+
+| Canonical file | Size | Purpose and alpha |
+| --- | --- | --- |
+| docs/rebuild/concept-continuous-waters.png | 1672×941 | Original target for continuous layered fishing scenery |
+| v2/public/art/shoreline.png | 2172×724 | Four separated village/forest/lighthouse/reed shore groups; genuine alpha |
+| v2/public/art/dock.png | 1672×941 | Side-view physical dock/shop scene; genuine alpha |
+| v2/public/art/actors.png | 1536×1024 | Separated hull, human/early-transformed body, forearm, dog and oar; checker matte extracted at load |
+| v2/public/art/objects.png | 1536×1024 | Boot, tin, net, compass, idol and journal; checker matte extracted at load |
+| v2/public/art/sea-chart.png | 1672×941 | Decorative fictional parchment chart; opaque, exact pins/routes are separate HTML/SVG |
+| v2/public/art/deep-one.png | 1536×1024 | Full seated gilled creature replacing weak late-stage face swap; checker matte extracted at load |
+
+Generation briefs:
+1. Continuous-water concept: original painterly pixel fishing world with multiple depth planes, distant mountains/town, independent shores, mist, long open water, small human/dog boat, understated Lovecraft dread. A visual target, not a functional screenshot.
+2. Shore atlas: separate isolated autumn village, fir forest, lighthouse island and near-shore reeds, matched teal/amber palette, no baked full-scene background, suitable for separate parallax.
+3. Dock: complete weathered physical wooden dock and small tackle outpost, side-on contact with water, pilings visible for underwater reveal; warm lamps and cohesive pixel-painted materials.
+4. Actor atlas: separated boat hull, seated fisherman, early transformed body, forearm, terrier and oar; coherent proportions for code-driven articulation. No baked rod/line, scene, wake or reflection.
+5. Catch objects: distinct boot, tin, net, compass, idol and journal in separated cells; weathered readable silhouettes and cohesive materials.
+6. Decorative nautical chart: flat 16:9 parchment, original fictional New England coast; sheltered wooded mainland harbour lower left, ragged reef chain centre, ominous trench upper right; faded sage/teal engraving, coast hatching, firs, hills, hamlets, lighthouses, restrained waves, fine pixel-painted detail, warm ivory/sand. No text, labels, pins, routes, UI or frame. Original output exec-953100df-0058-4613-893c-50188ca243f9.png.
+7. Full Deep One: use actors atlas as style reference; one right-facing seated hips-up creature, large amphibian head, protruding jaw, pale bulging amber eye, ridged gill neck, hunched back/fin spines, webbed hand bent to grip a future rod. No hat, hair or beard. Ragged open olive coat, teal-gray scaled head/neck/chest/hands; fine pixel painting, no glossy 3D/cartoon treatment. Dim cool moonlight and restrained lantern rim; no scene, boat, seat, rod or text. Transparency requested, but actual output contained a checker matte. Original output exec-c9ff5aff-b8c9-415d-afc7-60d12b711533.png.
+
+### Runtime extraction and pivots
+
+Unedited original generated files are retained. Runtime edge-connected flood masking removes near-black pixels with RGB max<8, or exterior neutral light checker pixels (lowest channel>175 and channel spread<28). Enclosed eyes and dark interior details are preserved. The new creature/shores are alpha-trimmed after cropping for consistent actual contact bounds. Checker sources are not advertised as genuine alpha.
+
+Actors: hull(5,282,699,250), human(704,95,415,459), early deep(1138,96,392,460), forearm(57,680,424,183), dog(546,598,326,348), oar(861,711,655,137). Each is independently transformed around seat/elbow/hull pivots. Rod grip is attached to the visible hand; the late creature has a separate grip offset. The rod and line are runtime curves.
+
+Shore: village(10,210,600,385), forest(615,250,490,345), island(1110,215,560,380), reeds(1690,290,460,305). Bounds trimmed to actual alpha before placement. Forest nominal width230 world units, other middle-distance shores480, scaled per world object. Reflections/contact ripples are rendered separately.
+
+Objects: boot(0,0,512,500), tin(512,0,512,500), net(1024,0,512,500), compass(0,500,512,524), idol(512,500,512,524), journal(1024,500,512,524).
+
+Night variants are cached once: actor/shore brightness .66, saturation .76 with cool source-atop tint; creature brightness .83, saturation .88; dock brightness .64/saturation .78. No per-frame sprite filtering. Ruin arches are a code-native textured bitmap, shared by editor preview and underwater runtime.
+
+Final concept-to-runtime evidence: quality/v0.3/. The full late creature and cooler night rig raised the independent still-image score from7.9 to8.1. Texture consistency and contact interaction retain visible polish opportunities.

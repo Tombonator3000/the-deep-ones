@@ -182,3 +182,8 @@ Total bredde: 1200px
 ---
 
 Lykke til med pixel art! 🎨🐙
+
+
+## The Stillwater Below v0.3 assets
+
+The new runtime is v2/. Generated shore, dock, actor, object, sea-chart and full Deep One assets live in v2/public/art/. See docs/rebuild/ART-PROMPTS.md for source crops, alpha/matte status, rig pivots, masking and generation briefs. art.js preserves old fish/whole-boat fallback and generates a textured ruin; render.js caches night variants and keeps scenery, hull, body, arm, dog, oar and line separate. Original prototype layout above retained.

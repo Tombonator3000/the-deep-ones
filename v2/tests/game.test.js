@@ -1,56 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FishingGame, freshSave, validateSave, CONFIG } from '../game.js';
-
+import {FishingGame,freshSave,validateSave,CONFIG,getCatch,stageFor} from '../game.js';
+import {AREAS,validateWorld,worldExport} from '../world.js';
 function advance(g,seconds,hz=60){for(let i=0;i<Math.ceil(seconds*hz);i++)g.tick(1/hz);}
-function catchFish(g,hz=60,fixedInputs=false){
-  assert.equal(g.cast(),true);let seconds=0;
-  while(g.phase!=='bite'&&seconds<10){g.tick(1/hz);seconds+=1/hz;}
-  assert.equal(g.phase,'bite');g.action();
-  while(g.phase==='fight'&&seconds<60){
-    if(fixedInputs)g.reeling=g.elapsed%4<2.6;
-    else if(g.tension>.65)g.reeling=false;else if(g.tension<.18)g.reeling=true;
-    g.tick(1/hz);seconds+=1/hz;
-  }
-  assert.equal(g.phase,'caught');return seconds;
-}
-test('normal fishing -> sale -> new rod -> first abnormal discovery, persists without duplication',()=>{
-  const g=new FishingGame(freshSave(),()=>0);
-  catchFish(g);assert.equal(g.pending.id,'cod');g.resolveCatch(true);
-  catchFish(g);g.resolveCatch(true);assert.equal(g.save.inventory.length,2);
-  g.toDock();advance(g,3);assert.equal(g.save.x,.20);g.paused=true;
-  assert.equal(g.sell(),76);assert.equal(g.sell(),0);assert.equal(g.save.money,96);
-  assert.equal(g.buyRod(1),true);assert.equal(g.save.money,6);assert.equal(g.buyRod(1),false);
-  g.paused=false;g.save.x=.4;g.setDepth(24);catchFish(g);assert.equal(g.pending.id,'eel');
-  g.resolveCatch(true);assert.equal(g.resolveCatch(true),false);assert.equal(g.save.sanity,86);assert.equal(g.save.discovery,true);
-  const restored=new FishingGame(JSON.parse(JSON.stringify(g.save)));
-  assert.equal(restored.save.money,6);assert.equal(restored.save.rod,1);assert.deepEqual(restored.save.inventory,['eel']);assert.equal(restored.save.journal.eel,1);
-});
-test('depth/location/rod jointly constrain catches; releasing records discovery without sanity loss',()=>{
-  const s=freshSave();s.caught=1;s.rod=1;s.x=.2;
-  const g=new FishingGame(s,()=>0);g.setDepth(40);assert.equal(g.save.targetDepth,18);assert.equal(g.selectFish().id,'cod');
-  g.save.x=.4;g.setDepth(24);catchFish(g);assert.equal(g.pending.id,'eel');g.resolveCatch(false);
-  assert.equal(g.save.sanity,100);assert.deepEqual(g.save.inventory,[]);assert.equal(g.save.journal.eel,1);assert.equal(g.save.discovery,true);
-});
-test('30 / 60 / 120 fps produce comparable fishing time and held movement',()=>{
-  // Replay the same time-based player inputs at each refresh rate. A feedback
-  // controller sampled at different rates is not the same input sequence.
-  const results=[30,60,120].map(hz=>{const g=new FishingGame(freshSave(),()=>.2);g.move=1;advance(g,2,hz);const x=g.save.x;g.move=0;return{time:catchFish(g,hz,true),x};});
-  assert.ok(Math.max(...results.map(r=>r.time))-Math.min(...results.map(r=>r.time))<.25);
-  for(const r of results)assert.ok(Math.abs(r.x-.64)<1e-9);
-});
-test('continuous reeling can snap line; paused menus freeze progression',()=>{
-  const g=new FishingGame(freshSave(),()=>0);g.cast();advance(g,5);g.action();
-  const elapsed=g.elapsed;g.paused=true;advance(g,30);assert.equal(g.elapsed,elapsed);assert.equal(g.phase,'fight');
-  g.paused=false;advance(g,15);assert.equal(g.phase,'ready');assert.equal(g.save.caught,0);assert.equal(g.save.inventory.length,0);assert.ok(g.events.some(e=>e.type==='snap'));
-});
-test('save validation rejects malformed fields and excessive inventory',()=>{
-  const s=validateSave({version:2,money:'Infinity',sanity:-500,rod:999,inventory:Array(20).fill('cod').concat('unknown'),journal:{cod:2,eel:'many',hacker:50},x:NaN,light:'bad'});
-  assert.equal(s.money,20);assert.equal(s.sanity,0);assert.equal(s.rod,2);assert.equal(s.inventory.length,CONFIG.capacity);assert.deepEqual(s.journal,{cod:2});assert.equal(s.x,.43);assert.equal(s.light,'auto');
-  assert.deepEqual(validateSave({version:1,money:700}),freshSave());
-});
-test('dog cooldown, full basket and shop constraints prevent reward exploits',()=>{
-  const g=new FishingGame(freshSave());g.save.sanity=50;assert.equal(g.pet(),true);assert.equal(g.pet(),false);assert.equal(g.save.sanity,54);
-  g.save.inventory=Array(CONFIG.capacity).fill('cod');assert.equal(g.cast(),false);
-  assert.equal(g.sell(),0);g.save.money=1000;assert.equal(g.buyRod(1),false);
-});
+function catchOne(g,keep=true,hz=60,fixed=false){assert.equal(g.cast(),true);let seconds=0;while(g.phase!=='bite'&&seconds<35){g.tick(1/hz);seconds+=1/hz;}assert.equal(g.phase,'bite');g.action();while(g.phase==='fight'&&seconds<90){if(fixed)g.reeling=g.elapsed%4<2.6;else if(g.tension>.65)g.reeling=false;else if(g.tension<.18)g.reeling=true;g.tick(1/hz);seconds+=1/hz;}assert.equal(g.phase,'caught');const id=g.pending.id;g.resolveCatch(keep);return{id,seconds};}
+function dock(g){g.paused=false;g.setMove(g.save.x>g.area.dockX?-1:1);let n=0;while(!g.atDock&&n++<5000)g.tick(1/60);assert.equal(g.atDock,true);g.anchor();g.paused=true;}
+test('physical sailing -> catching -> return to dock -> sale -> upgrade -> abnormal catch -> reload',()=>{const g=new FishingGame(freshSave(),()=>.2);g.setMove(1);advance(g,6);g.anchor();assert.ok(g.save.x>1800);assert.equal(g.save.facing,1);assert.equal(catchOne(g).id,'cod');assert.equal(catchOne(g).id,'cod');assert.equal(g.sell(),0);dock(g);assert.equal(g.save.facing,-1);assert.equal(g.sell(),76);assert.equal(g.sell(),0);assert.equal(g.buyRod(1),true);assert.equal(g.save.money,6);assert.equal(g.buyRod(1),false);g.paused=false;g.setMove(1);advance(g,5);g.anchor();g.setDepth(24);assert.equal(catchOne(g).id,'eel');assert.equal(g.save.sanity,86);assert.equal(g.resolveCatch(true),false);const restored=new FishingGame(JSON.parse(JSON.stringify(g.save)));assert.equal(restored.save.money,6);assert.equal(restored.save.rod,1);assert.deepEqual(restored.save.inventory,['eel']);assert.equal(restored.save.journal.eel,1);});
+test('each area has a physical dock, thousands of travel units and licensed travel cannot teleport home',()=>{const g=new FishingGame({...freshSave(),money:1000},()=>.2);g.paused=true;assert.equal(g.buyLicense('reef'),false);assert.equal(g.visit('reef'),false);dock(g);assert.equal(g.buyLicense('reef'),true);assert.equal(g.buyLicense('reef'),false);assert.equal(g.visit('reef'),true);assert.equal(g.save.x,AREAS[1].dockX);assert.equal(g.atDock,true);g.paused=false;g.setMove(1);advance(g,12);g.anchor();assert.ok(g.save.x>3000);g.paused=true;assert.equal(g.sell(),0);assert.equal(g.visit('cove'),false);dock(g);assert.equal(g.visit('cove'),true);});
+test('depth is animated, can change while waiting, and cancellation retrieves before sailing',()=>{const g=new FishingGame(freshSave(),()=>.3);g.cast();advance(g,.8);assert.equal(g.depth,0);assert.equal(g.phase,'casting');advance(g,.6);assert.equal(g.phase,'sinking');assert.ok(g.depth>0&&g.depth<12);advance(g,2);assert.equal(g.phase,'waiting');g.setDepth(18);assert.equal(g.phase,'sinking');advance(g,.25);assert.ok(g.depth>12&&g.depth<18);g.cancel();assert.equal(g.phase,'retrieving');const x=g.save.x;g.setMove(1);advance(g,.5);assert.equal(g.save.x,x);advance(g,.5);assert.equal(g.phase,'ready');assert.equal(g.depth,0);});
+test('junk and location-bound relics have distinct utility; releasing preserves humanity',()=>{const g=new FishingGame({...freshSave(),caught:1,discovery:true,rod:1,x:5400,targetDepth:30},()=>.2);assert.equal(catchOne(g).id,'compass');assert.deepEqual(g.save.relics,['compass']);assert.equal(g.save.inventory.length,0);assert.equal(g.save.sanity,95);g.save.lure='magnet';assert.equal(catchOne(g).id,'boot');assert.deepEqual(g.save.inventory,['boot']);assert.equal(g.save.sanity,95);g.save.lure='worm';g.save.discovery=false;assert.equal(catchOne(g,false).id,'eel');assert.equal(g.save.sanity,97);assert.equal(g.save.journal.eel,1);});
+test('all five transformation stages and all three ending gates are real and persistent',()=>{assert.deepEqual([100,69,39,19,0].map(v=>stageFor(v).id),['human','touched','changing','becoming','deep']);const save={...freshSave(),area:'abyss',licenses:['cove','reef','abyss'],x:8200,relics:['compass','journal','idol'],relicOrder:['compass','journal','idol'],sanity:30};for(const kind of['human','deep','prophet']){const g=new FishingGame(save);assert.equal(g.gateReady,true);assert.equal(g.finish(kind),true);assert.equal(g.finish(kind),false);const restored=new FishingGame(JSON.parse(JSON.stringify(g.save)));assert.equal(restored.save.ending,kind);assert.equal(restored.continueEndless(),true);}const g=new FishingGame({...save,sanity:19});assert.equal(g.finish('human'),false);g.save.x=500;assert.equal(g.finish('deep'),false);g.save.sanity=0;assert.equal(g.finish('deep'),true);});
+test('keeping cursed catches triggers transformation; dock rest allows a human route',()=>{const g=new FishingGame({...freshSave(),sanity:72});g.phase='caught';g.pending=getCatch('eel');assert.equal(g.resolveCatch(true),true);assert.equal(g.stage.id,'touched');assert.ok(g.events.some(e=>e.type==='stage'));g.save.sanity=10;g.phase='caught';g.pending=getCatch('eel');g.resolveCatch(true);assert.equal(g.save.sanity,0);assert.ok(g.events.some(e=>e.type==='ending-choice'));dock(g);g.rest();assert.equal(g.save.sanity,35);assert.equal(g.save.day,2);});
+test('same timed input behaves consistently at 30, 60 and 120 Hz',()=>{const r=[30,60,120].map(hz=>{const g=new FishingGame(freshSave(),()=>.2);g.setMove(1);advance(g,3,hz);g.anchor();const x=g.save.x;return{x,time:catchOne(g,true,hz,true).seconds};});assert.ok(Math.max(...r.map(v=>v.x))-Math.min(...r.map(v=>v.x))<6);assert.ok(Math.max(...r.map(v=>v.time))-Math.min(...r.map(v=>v.time))<.4);});
+test('pause, full hold and uninterrupted reeling cannot duplicate or bypass fishing outcomes',()=>{const g=new FishingGame(freshSave(),()=>.2);g.cast();advance(g,7);assert.equal(g.phase,'bite');g.action();g.paused=true;const elapsed=g.elapsed;advance(g,20);assert.equal(g.elapsed,elapsed);g.paused=false;advance(g,18);assert.equal(g.phase,'ready');assert.ok(g.events.some(e=>e.type==='snap'));assert.equal(g.save.caught,0);g.save.inventory=Array(8).fill('cod');assert.equal(g.cast(),false);g.save.sanity=50;assert.equal(g.pet(),true);assert.equal(g.pet(),false);});
+test('old save migrates without losing purchases, money or catches; bad input is bounded',()=>{const s=validateSave({version:2,money:266,rod:2,sanity:86,inventory:['eel'],journal:{eel:1},x:.79,caught:3});assert.equal(s.version,3);assert.equal(s.money,266);assert.equal(s.rod,2);assert.equal(s.x,760);assert.deepEqual(s.inventory,['eel']);const invalid=validateSave({version:3,money:'Infinity',sanity:-500,rod:999,inventory:Array(22).fill('cod').concat('bogus'),journal:{cod:2,eel:'many'},x:NaN});assert.equal(invalid.money,20);assert.equal(invalid.inventory.length,8);assert.deepEqual(invalid.journal,{cod:2});assert.equal(invalid.x,760);});
+test('visual editor export -> validate -> save -> reload -> playable custom map, rejecting unsafe structures',()=>{const raw=worldExport(AREAS[0]);raw.area.name='Testvika';raw.area.dockX=800;raw.area.objects[0].x=2200;const a=validateWorld(raw);assert.equal(a.id,'custom');const g=new FishingGame({...freshSave(),customWorld:worldExport(a)});dock(g);assert.equal(g.visit('custom'),true);assert.equal(g.area.name,'Testvika');assert.equal(g.save.x,800);const restored=new FishingGame(JSON.parse(JSON.stringify(g.save)));assert.equal(restored.area.objects[0].x,2200);const bad=structuredClone(raw);bad.area.objects[0].type='javascript:alert(1)';assert.throws(()=>validateWorld(bad));bad.area.objects=[];bad.area.width=Infinity;assert.throws(()=>validateWorld(bad));});

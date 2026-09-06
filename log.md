@@ -6192,3 +6192,17 @@ Owner requests a new Cast n Chill × Lovecraft game with substantially improved 
 
 
 Completed a new vanilla-JS/Canvas2D slice in `v2/`: cast/hook/reel/slack/keep/release, real depth limits, sequential rods, dock sales, journal, dog cooldown, composure tradeoffs and validated local saves. Original campaign source remains the archive. Generated and inspected dusk/day/night scenery, two actor poses, six fish and Old Marsh. Added source-registered water/mist animation and real HTML paper UI. Independent Astra reviews drove repairs to portrait layout, matte extraction, night contrast, fight feedback, unknown-species labels, dawn option and pinned dialog close. Actual browser journey reached an abnormal catch after selling normal fish and buying the new rod; reload preserved all values. Six simulation tests and production build passed. Source, prompts, runtime captures and open visual/performance gates are recorded in `docs/rebuild/` and `quality/`. This is not a completed campaign or a certified 60-fps/AAA release.
+
+## 2026-09-06 — Continuous waters and the complete fishing loop (in progress)
+
+Owner reports the single-screen movement, remote dock button and mobile text-selection bug. Scope: world-space sailing and physical docks in every area; direction-aware articulated boat; depth-following underwater reveal; actual parallax and atmosphere; license/map/gear progression; junk and relic catches; five sanity stages and playable ending choices; a visual area editor; better movement/fishing/environment SFX. Preserve/migrate existing v2 saves. Keep the existing public Site and draft PR. Gauntlet: real journeys, independent Astra visual review, frame-time measurement and explicit remaining limits. Research and new layer assets are running independently; implementation stays in canonical v2/.
+
+## 2026-09-06 — Continuous waters v0.3 completed
+
+Implemented three long world-space areas with physical docks and no return teleport, facing-aware sailing, articulated fisherman/forearm/dog/oar, camera follow, independent scenery/fog/reflection layers and depth-following underwater reveal. Added four rods, three lures, boat upgrade, license/chart travel, junk and three relics, five sanity stages, three ending gates, Marsh reactions, expanded Web Audio feedback and version3 migration.
+
+Visual editor supports dragging props, dock/depth zones, save, JSON import/export and isolated playtests that restore the campaign. Real browser flow caught/sold a46coin perch, sailed back roughly360m, bought140coin Reef license, traveled from dock and reloaded at172coins. Brisvika editor save/export/playtest/restore verified; import schema Node-tested, file picker unverified.
+
+New original generated concept/shores/dock/actors/objects/chart/full Deep One art integrated. Independent Astra critique7.3→7.7→7.9→8.1 after water/contact/scale repairs and distinct monster/night-lighting pass. Final boundary check found boat/rod clipping; camera now retains320world units of margin at both ends. Day/dawn/dusk/night observed. Ten meaningful simulation/schema tests and final production build pass.
+
+Current cloud frame samples fail60fps; even no-game rAF control is very slow, suggesting environment scheduling but not proving its cause. No false target-device or audio-listening certification. Exact evidence, current hashes, prompts/briefs, stack decision and limits in docs/rebuild/ and quality/. Preserving the existing draft PR and updating the same public Site; original prototype retained.
