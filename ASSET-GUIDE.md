@@ -2,6 +2,10 @@
 
 > New slice asset pipeline: `v2/public/art/`, crop metadata in `v2/render.js`, and full provenance/prompts in `docs/rebuild/ART-PROMPTS.md`. This older guide remains for the original prototype. The new atlas is RGB with a black matte; the renderer masks only edge-connected near-black pixels once at load, preserving dark interiors. Dusk/night source size is 1672×941; shared waterline is 0.5271. Do not claim the generated atlas has native transparency.
 
+## v0.4 living waters assets
+
+`reef.png` and `abyss.png` are 1672×941 RGB environment paintings; native cutaways are y455 and y469, respectively. `render.js` maps the continuous reflected surface and underwater parts separately. These biomes do not reuse the cove's autumn shoreline props. `boats.png` is a 1536×1024 RGB black-matte sheet containing three empty right-facing hulls; the loader removes edge-connected matte once and caches cool/night variants. The articulated fisherman, dog, rod and oar are separate. Exact generation prompts: `docs/rebuild/LIVING-WATERS-ART.md`.
+
 ## 🎨 Hvordan bytte ut grafikk
 
 Spillet bruker et **parallax layer system** med automatisk fallback til prosedyral grafikk.

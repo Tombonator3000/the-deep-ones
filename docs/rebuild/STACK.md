@@ -59,3 +59,10 @@ Target: 60fps, p95 ≤17.5ms, p99 ≤20ms, no visibility interruptions or resizi
 Three long areas, six fish, three junk catches, three relics, four rods, three lures, one boat upgrade, five sanity stages and three basic endings. Four lighting choices use three painted backgrounds; dawn is a warm dusk variant. One custom-area editor slot with JSON import/export.
 
 This is an expanded playable prototype, not the complete old eight-area/22-species campaign, a balanced commercial release, co-op, idle play or native builds. Audio listening/mix and physical phone input remain unverified. The 8.1/10 visual score applies to reviewed stills, not AAA or animation/performance certification.
+
+
+## v0.4 living waters expansion
+
+The Canvas2D stack remains: a 3D migration is unnecessary for the fixed side-on fishing camera and would not by itself improve the art. Three distinct painted biomes now combine with moving weather/fog, cove leaves, gulls, lamp flicker, layered cutaways, articulated boats and schools. Continuous reflection sampling replaces the earlier three-row repetition.
+
+Four owned/selectable boats, six baits, three functional equipment upgrades and nine conditional diary entries expand the game. `ecology.js` shares species/bait affinities, habitat lists and weather; `story.js` drives authored progression. Nibbling and refusal are explicit simulation phases. Version 2/3 saves migrate to 4 without losing purchases. Existing long-area travel, physical docks, map licenses, sanity/monster/endings and visual editor remain. The delivered content is still three areas and six fish, not the complete original campaign. 60fps on target hardware remains an open gate.

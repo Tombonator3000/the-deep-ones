@@ -6206,3 +6206,10 @@ Visual editor supports dragging props, dock/depth zones, save, JSON import/expor
 New original generated concept/shores/dock/actors/objects/chart/full Deep One art integrated. Independent Astra critique7.3→7.7→7.9→8.1 after water/contact/scale repairs and distinct monster/night-lighting pass. Final boundary check found boat/rod clipping; camera now retains320world units of margin at both ends. Day/dawn/dusk/night observed. Ten meaningful simulation/schema tests and final production build pass.
 
 Current cloud frame samples fail60fps; even no-game rAF control is very slow, suggesting environment scheduling but not proving its cause. No false target-device or audio-listening certification. Exact evidence, current hashes, prompts/briefs, stack decision and limits in docs/rebuild/ and quality/. Preserving the existing draft PR and updating the same public Site; original prototype retained.
+
+## 2026-09-06 — Living waters expansion (in progress)
+
+Owner requests visibly distinct biomes, different boat silhouettes, less obstructive HUD, an overarching diary story, more meaningful equipment/baits, schooling fish and uncertain investigative nibbles. Add coherent weather, windblown leaves, birds and flickering lamps. Preserve saves, editor and public Site; validate bait/nibble decisions and equipment rather than cosmetic labels. New biome/background and boat assets requested before integration.
+
+### v0.4 completed implementation and review
+Distinct reef/abyss paintings and 3 hull assets integrated; compact HUD, weather/ambient effects, habitat schools, six bait preferences and nibble/refusal states, 4 owned boats, 3 equipment upgrades, 9 diary entries and save-v4 migration. Fourteen tests and production build pass. Browser verified purchase/equip, diary, portrait fishing and biome identity. Independent critic8.0→8.2 after continuous reflection sampling and mounted lantern correction. Frame-time and physical-device limits recorded separately in quality/PERFORMANCE.json.

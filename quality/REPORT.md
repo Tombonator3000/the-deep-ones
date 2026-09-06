@@ -1,45 +1,21 @@
-# The Stillwater Below v0.3 — Gauntlet result
+# The Stillwater Below v0.4 — Living Waters
 
-6 September2026. Expanded playable prototype from the owner's Cast n Chill × Lovecraft brief. Original game source retained. This supersedes v0.2; old reports are in v0.2-archive/, and root round-1/,round-2/,round-3/,runtime/ images are historical v0.2 evidence. Current hashes: BUILD-FINGERPRINT.json.
+6 September 2026. This report supersedes v0.3; older evidence is archived in v0.3-archive/. Runtime/production hashes are in BUILD-FINGERPRINT.json.
 
-## Implemented
+## Delivered
 
-Three long scrollable waterways with physical docks, direction-aware sailing and following camera. Separate scenery/fog/reflections and articulated fisherman/dog/oar. Underwater is hidden until a cast, then opens as the line sinks. Line curves, sways and reacts to casts/fights.
+Three distinctive environments: wooded cove, exposed basalt coast and drowned cathedral islands. Weather cycles and manual weather, wind-blown cove leaves, gulls, rain, fog, lamp flicker and restrained storm flashes. Four boats with distinct generated hulls, ownership/switching and different capacity/speed. Six baits with species affinities and three functional equipment upgrades. Schools respect habitats; fish investigate, nibble, accept or refuse, and excessive lure movement scares them. Nine conditional authored diary entries connect the missing father, relics, humanity and endings. Compact HUD moves long instructions and narrative into menus.
 
-Depth/lure selection, tension, fish/junk/relic catches, keep/release tradeoffs, journal, sales, four rods, three lures, boat upgrade, licenses and map travel from dock. Five sanity stages visibly transform the character; three basic endings have distinct rule gates. Visual editor: object placement, depth zones, dock, save, JSON export/import and isolated playtest. Version2 saves migrate to3.
+Existing long waterways, physical docks, facing-aware sailing, progressive underwater cutaway, map/license loop, fish/junk/relics, visible transformation, endings and visual editor remain. v2/v3 saves migrate to v4.
 
-## Gates
+## Evidence
 
-| Gate | Result | Evidence/limit |
-| --- | --- | --- |
-| Travel→catch→dock→sell→license→new area→reload | PASS | Real visible browser journey in USER-JOURNEY.md |
-| Simulation/save/editor rules | PASS | Ten tests, timed input30/60/120Hz, all three ending gates |
-| Production build | PASS | Vite build; files identified by fingerprint |
-| Portrait/no-selection controls | PASS on observed layout | 390px game container; physical phone untested |
-| Independent visual review >8/10 | PASS for reviewed stills | Astra7.3→7.7→7.9→8.1, 10 anchored to modern AAA |
-| 60fps frame-time target | NOT VERIFIED on target hardware | Cloud samples fail; no-game control also very slow. Raw current data in PERFORMANCE.json |
-| SFX/music | Implemented, partly verified | UI activation works; no listening/mix pass |
-| Editor import | Schema PASS; file picker unverified | Save/export/playtest/restore through UI; JSON rules tested separately |
-
-## Corrective visual rounds
-
-| Round | Critic | Corrections in next pass |
-| --- | --- | --- |
-|1|7.3|Natural-aspect water sampling, contact/reflections, smaller lighthouse, softer lower vignette|
-|2|7.7|Shore contact occlusion, line-entry ripples, clearer fish focus; editor ruin preview/portrait chart|
-|3|7.9|Full creature replacing weak hat/coat transformation; cached cool night lighting; rod grip aligned|
-|4|8.1|Creature head, hunched silhouette and webbed hands read without HUD; boat fits night. Final lantern anchor corrected before final capture|
-
-Round notes and unedited screenshots: v0.3/. This is a subjective still-image score, not earned progression, continuous animation or60fps certification. Remaining gaps: water/sprite texture consistency, environmental interaction and supporting-interface polish. It is not a claim of finished AAA quality.
-
-## Performance interpretation
-
-Cached silhouettes/scenery/night variants reduce drawing work. Low measured CPU drawing cost does not prove completed GPU/display frames. A bare requestAnimationFrame page, no game code/images/audio/Canvas, also performed poorly in the same cloud browser. This suggests an environment scheduling limitation; the cause is not established and does not turn a failed game sample into a pass.
-
-Normal-motion and reduced-motion samples are distinguished in PERFORMANCE.json. The archived v0.2 59.6fps result is not evidence for v0.3. Production-build measurement on representative desktop/phone remains required.
+- Production build: PASS. Fourteen meaningful Node tests: PASS, including new bait distributions, nibble/refusal, equipment effects, boat capacity/ownership and diary/save behavior.
+- Actual browser UI: shop purchase/equip, diary, bait selection, 390px layout, cast/approach/bite/fight and three biomes. See USER-JOURNEY.md.
+- Independent still-image critique: 8.0→8.2/10 after two targeted corrections. The strict >8 visual gate passes for reviewed images, not animation or performance. See v0.4/review.md and unedited captures/provenance.
+- 60fps: not verified on target hardware. Current raw cloud measurement and limits are in PERFORMANCE.json; old measurements are not substituted.
+- SFX/weather sound implemented, listening/mix not verified. Physical mobile touch and editor file-picker import remain unverified.
 
 ## Remaining scope
 
-Three areas, six fish, three junk objects, three relics. Not the full old eight-area/22-species campaign, co-op, idle mode, full narrative/balance pass or native packaging. One custom world stored at a time; JSON export preserves additional boards. Dawn uses warmed dusk art. Cutout/water texture seams, audio mix and physical touch remain open.
-
-Stack/research and the two suggested Three.js repositories: docs/rebuild/STACK.md. Delivery uses the same public Site and existing draft PR.
+Still an expanded playable prototype: three areas, six fish, three junk and three relics, not all eight areas/22 species of the old design. Narrative/balance needs playtesting. Water can look softer than the boat and landscape; schools can gain more variation. No claim of completed AAA production quality. Same public Site and existing draft PR are retained.

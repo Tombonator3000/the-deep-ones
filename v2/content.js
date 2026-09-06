@@ -3,7 +3,7 @@ export const FISH = [
   { kind: 'fish', id: 'perch', name: 'Midnight Perch', local: 'Skumringsabbor', depth: [8, 52], value: 46, loss: 0, weight: 0.9, length: 28, color: '#cda767', text: 'Stripene blir mørkere etter solnedgang. Ingen på kaia synes det er rart.', note: 'Liker det siste lyset, rett under den varme overflaten.' },
   { kind: 'fish', id: 'eel', name: 'Whisper Eel', local: 'Hviskeål', depth: [22, 85], value: 84, loss: 14, weight: 2.3, length: 81, color: '#80b6a7', text: 'Du hørte den før du så den. Stemmen var den samme som i barndomshjemmet ditt.', note: 'Nedenfor 22 meter. Den svømmer mot linen når resten av stimen snur.' },
   { kind: 'fish', id: 'squid', name: 'Glass Squid', local: 'Glassblekksprut', depth: [40, 110], value: 108, loss: 19, weight: 3.1, length: 63, color: '#abdbd7', text: 'Gjennomsiktig. Du kan se hva den har spist. Det var ikke en fisk.', note: 'Dypt under fyret. Lanternen din skinner tvers gjennom den.' },
-  { kind: 'fish', id: 'angler', name: 'Bone Angler', local: 'Beinulke', depth: [65, 150], value: 152, loss: 25, weight: 5.8, length: 77, color: '#d9cbab', text: 'Lyset er vakkert. Du vil se på det litt til. Bare litt til.', note: 'Under 44 meter. Når dens lys tennes, slukker de andre.' },
+  { kind: 'fish', id: 'angler', name: 'Bone Angler', local: 'Beinulke', depth: [65, 150], value: 152, loss: 25, weight: 5.8, length: 77, color: '#d9cbab', text: 'Lyset er vakkert. Du vil se på det litt til. Bare litt til.', note: 'Under 65 meter. Når dens lys tennes, slukker de andre.' },
   { kind: 'fish', id: 'choir', name: 'The Congregation', local: 'Menigheten', depth: [95, 150], value: 240, loss: 35, weight: 8.6, length: 109, color: '#8ec1b5', text: 'Flere fisk. Én pust. Du slipper blikket fra dem, men de slipper ikke deg.', note: 'Lengst ute. Dypest nede. Old Marsh vil ikke snakke om den.' },
 ];
 export const RODS=[
@@ -12,8 +12,25 @@ export const RODS=[
  {name:'Loddet fra vraket',depth:100,price:240,strength:1.45,detail:'Sterkere snelle. Linen synger i vinden.'},
  {name:'Avgrunnskalleren',depth:150,price:560,strength:1.7,detail:'Til det siste mørket. Hold godt fast.'}
 ];
-export const LURES=[{id:'worm',name:'Meitemark',price:0,detail:'Vanlig fisk og en rolig tur.'},{id:'jig',name:'Lysende pilk',price:65,detail:'Raskere napp. Lokker fram merkelige skapninger.'},{id:'magnet',name:'Bergingsmagnet',price:80,detail:'Mer skrap og flere gjenstander fra bunnen.'}];
-export const BOATS=[{name:'Den gamle sjekta',price:0,capacity:8,speed:1},{name:'Ny motor og større fiskekasse',price:180,capacity:14,speed:1.38}];
+export const LURES=[
+ {id:'worm',name:'Meitemark',price:0,detail:'Abborens favoritt. God til havnetorsk i grunna.'},
+ {id:'shrimp',name:'Saltreke',price:45,detail:'Torsk elsker reke. Blekksprut undersøker den også.'},
+ {id:'jig',name:'Lysende pilk',price:65,detail:'Best til glassblekksprut. Ål følger lyset.'},
+ {id:'magnet',name:'Bergingsmagnet',price:80,detail:'Berg skrap og relikvier. Fisk liker sjelden metall.'},
+ {id:'blood',name:'Blodagn',price:110,detail:'Lokker hviskeål og beinulke fra mørket.'},
+ {id:'offering',name:'Den tause offerkroken',price:240,detail:'Menigheten samler seg rundt den. Brukes i avgrunnen.'}
+];
+export const BOATS=[
+ {name:'Den gamle sjekta',price:0,capacity:8,speed:1,detail:'Fars trebåt. Lett, liten og kjent.'},
+ {name:'Rødvinge',price:180,capacity:14,speed:1.38,detail:'En smal rød sjekte. 14 plasser, 38 % raskere.'},
+ {name:'Marshs arbeidsbåt',price:480,capacity:22,speed:1.65,detail:'Blå motorbåt med lavt akterhus. 22 plasser, 65 % raskere.'},
+ {name:'Den bleke fergen',price:880,capacity:18,speed:1.48,detail:'Et beinblekt skrog. 18 plasser, 25 % mindre sinnsrotap.'}
+];
+export const EQUIPMENT=[
+ {id:'line',name:'Flettet sjøline',price:75,detail:'25 % langsommere økning i linetrekk under kamp.'},
+ {id:'reel',name:'Messingsnelle',price:125,detail:'20 % raskere innsveiving når fisken gir etter.'},
+ {id:'lamp',name:'Vokterens lykt',price:160,detail:'20 % mindre sinnsrotap fra unormale fangster.'}
+];
 export const OBJECTS=[
  {id:'boot',kind:'junk',name:'The Other Boot',local:'En gammel støvel',depth:[0,55],value:8,loss:0,weight:1.1,length:31,color:'#746555',text:'Venstrestøvel. Hver eneste gang.',note:'Skrap kan selges til Marsh. Magneten finner mer.'},
  {id:'tin',kind:'junk',name:'Rust & Salt',local:'Rusten hermetikk',depth:[0,70],value:6,loss:0,weight:.3,length:15,color:'#a68d71',text:'Etiketten lover fersk makrell. Den har løyet i førti år.',note:'Finnes i grunne viker og ved brygger.'},
