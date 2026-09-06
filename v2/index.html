@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="nb">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#10292c"><meta name="description" content="En stille fisketur. Varmt lys over vannet, og noe som venter under. Et spill om fangster, hemmeligheter og veien hjem."><title>The Stillwater Below</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%2310292c'/%3E%3Cpath d='M20 6v22a7 7 0 1 1-7-7m7-15 4 4' fill='none' stroke='%23e6c489' stroke-width='3'/%3E%3C/svg%3E"><link rel="stylesheet" href="/style.css"></head>
+<body>
+<main id="game" aria-label="Fiskespillet The Stillwater Below">
+  <canvas id="landscape" aria-hidden="true"></canvas><canvas id="scene" aria-label="Båt og fisk i Stillwater Cove"></canvas>
+  <div class="vignette" aria-hidden="true"></div>
+  <header class="topbar">
+    <div class="brand"><span class="eyebrow">THE</span><h1>STILLWATER <em>BELOW</em></h1><div class="chapter">EN FISKERS FORTELLING</div></div>
+    <div class="place"><span id="location">Stillwater Cove</span><small id="clock">DAG 1 · SKUMRING</small></div>
+    <div class="top-actions"><button id="audio" class="icon-button" aria-label="Slå på lyd" title="Slå på lyd"></button><button id="settings" class="icon-button" aria-label="Innstillinger" title="Innstillinger"></button></div>
+  </header>
+  <aside class="resources" aria-label="Progresjon"><div class="money"><span class="coin">◈</span><strong id="money">20</strong><span>mynt</span></div><div class="composure"><span id="sanity-label">SINNSRO</span><div class="calm-track"><div id="sanity-bar"></div></div><span id="sanity-number">100</span></div></aside>
+  <div id="whisper" class="whisper" aria-live="polite"></div>
+  <div id="fish-tip" class="fish-tip"><span class="tip-rule"></span><p id="hint">En stille kveld. Prøv et kast.</p><small id="subhint">Velg dybde, og se hva som biter.</small></div>
+  <div id="fight" class="fight" hidden><div class="fight-heading"><span id="fight-label">LA DEN TREKKE</span><span id="distance">12 m igjen</span></div><div class="tension-track"><div class="tension-safe"></div><div id="tension"></div><div class="tension-line"></div></div><div class="fight-caption"><span>LINETREKK · Trygt</span><span>Brudd</span></div><div class="progress-caption"><span>FANGST</span><span id="catch-progress-label">0 % inne</span></div><div class="catch-progress"><div id="catch-progress"></div></div></div>
+  <footer class="controls">
+    <div class="boat-controls"><div class="move-pair"><button id="left" class="square" aria-label="Ro mot venstre" title="Ro mot venstre">←</button><span class="anchor-symbol" aria-hidden="true">⚓</span><button id="right" class="square" aria-label="Ro mot høyre" title="Ro mot høyre">→</button></div><button id="pet" class="pet-button">Klapp Bris <span>♡</span></button></div>
+    <div class="fishing-controls"><div class="depth-control"><label for="depth">FISKEDYBDE <strong id="depth-value">12 m</strong></label><input id="depth" type="range" min="4" max="18" value="12" step="1" aria-label="Fiskedybde"><span id="depth-limit">18 m line</span></div><button id="cast" class="primary"><span id="cast-icon"></span><span id="cast-label">Kast linen</span><kbd>SPACE</kbd></button><button id="cancel" class="cancel" hidden>Trekk inn linen</button></div>
+    <nav class="book-controls" aria-label="Båtens utstyr"><button id="journal" class="tool-button"><span class="tool-icon" id="journal-icon"></span><span>Loggbok</span><small id="journal-count">0 / 6</small></button><button id="dock" class="tool-button"><span class="tool-icon" id="dock-icon"></span><span>Til brygga</span><small id="bag-count">0 / 8 fisk</small></button></nav>
+  </footer>
+  <div id="toast" role="status" class="toast"></div>
+  <div id="loading" class="loading"><span class="eyebrow">STILLWATER COVE</span><p>Lyset synker. Båten venter.</p></div>
+</main>
+<dialog id="modal"><button id="close-modal" class="close" aria-label="Lukk">×</button><div id="modal-content"></div></dialog>
+<script type="module" src="/main.js"></script>
+</body></html>

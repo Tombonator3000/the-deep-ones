@@ -1,5 +1,7 @@
 # The Deep Ones — Asset Guide
 
+> New slice asset pipeline: `v2/public/art/`, crop metadata in `v2/render.js`, and full provenance/prompts in `docs/rebuild/ART-PROMPTS.md`. This older guide remains for the original prototype. The new atlas is RGB with a black matte; the renderer masks only edge-connected near-black pixels once at load, preserving dark interiors. Dusk/night source size is 1672×941; shared waterline is 0.5271. Do not claim the generated atlas has native transparency.
+
 ## 🎨 Hvordan bytte ut grafikk
 
 Spillet bruker et **parallax layer system** med automatisk fallback til prosedyral grafikk.

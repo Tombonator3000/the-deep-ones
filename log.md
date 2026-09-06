@@ -6186,4 +6186,9 @@ All existing functionality preserved - no behavior changes.
 **Next Steps:** Consider applying similar refactoring patterns to other identified complex functions (`update()`, `drawBoat()`, `getContextualDialog()`).
 
 ---
+# 2026-09-06 — The Stillwater Below: new representative slice
 
+Owner requests a new Cast n Chill × Lovecraft game with substantially improved art, generated concepts, an independent Astra critic and measured performance. Baseline `b25609d8`. New canonical slice in `v2/`; original prototype retained. Work order and acceptance gates: `docs/rebuild/BRIEF.md`. First target: fish → sell → improve equipment → first unsettling discovery, with an illustrated journal, dog, local save and touch/keyboard input. Visual target generation and read-only source audit started before substantial visual implementation. Results will be recorded after actual runtime validation.
+
+
+Completed a new vanilla-JS/Canvas2D slice in `v2/`: cast/hook/reel/slack/keep/release, real depth limits, sequential rods, dock sales, journal, dog cooldown, composure tradeoffs and validated local saves. Original campaign source remains the archive. Generated and inspected dusk/day/night scenery, two actor poses, six fish and Old Marsh. Added source-registered water/mist animation and real HTML paper UI. Independent Astra reviews drove repairs to portrait layout, matte extraction, night contrast, fight feedback, unknown-species labels, dawn option and pinned dialog close. Actual browser journey reached an abnormal catch after selling normal fish and buying the new rod; reload preserved all values. Six simulation tests and production build passed. Source, prompts, runtime captures and open visual/performance gates are recorded in `docs/rebuild/` and `quality/`. This is not a completed campaign or a certified 60-fps/AAA release.
