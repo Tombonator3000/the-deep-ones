@@ -1,3 +1,20 @@
+# The Stillwater Below — new game slice
+
+**Working title; the old prototype is preserved below.** The new editable game is in [`v2/`](v2/), with detailed original dusk/night artwork, real fishing tension, six discoveries, Old Marsh's shop, equipment, companion dog and device-local progress.
+
+```bash
+npm ci
+npm run dev
+```
+
+Build: `npm run build`. Game-flow checks: `npm test`. The built output is `dist/`.
+
+Read the [current brief](docs/rebuild/BRIEF.md), [prototype audit](docs/rebuild/PROTOTYPE-AUDIT.md), [stack and scope](docs/rebuild/STACK.md), and [actual art prompts](docs/rebuild/ART-PROMPTS.md). The new slice uses its own save key and does not overwrite old prototype saves.
+
+## Original prototype archive
+
+The sections below document the older game. Their feature counts and roadmap are historical, not the status of the new slice. Original root `index.html`, `js/` and art are retained.
+
 # 🐙 The Deep Ones
 
 > *"The fish bite back... in ways you can't forget."*

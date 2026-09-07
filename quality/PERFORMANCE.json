@@ -1,0 +1,40 @@
+{
+  "version": "0.4.0",
+  "date": "2026-09-06",
+  "sourceFingerprintSha256": "2cab09f091f905d22ce1205cdd1c7af4fc81914208c08dbda514d09fcee4ce0e",
+  "environment": {
+    "browser": "Cloud Chrome151, supervised Vite preview",
+    "physicalHardware": "Not exposed; not a physical target device",
+    "warmupSeconds": 5,
+    "preset": "Normal motion explicitly enabled via Settings; water copying, drawing and all scene layers enabled",
+    "workload": "Final frozen source; isolated Reef rain scene with blue boat, cast12m, approach and unattended bite expiry back to surface; no resize or visibility interruption"
+  },
+  "measurement": {
+    "durationSeconds": 120,
+    "frames": 1640,
+    "averageFps": 13.62,
+    "p95Ms": 516.6,
+    "p99Ms": 599.9,
+    "stallsOver50ms": 174,
+    "meanRenderMs": 0.86,
+    "interruptions": 0,
+    "canvas": "1363\u00d7936",
+    "observedCanvases": [
+      "1363\u00d7936"
+    ],
+    "devicePixelRatio": 1,
+    "renderer": "Canvas2D / cloud Chrome",
+    "gate": "FAIL"
+  },
+  "targetDeviceGate": "UNVERIFIED",
+  "thresholds": {
+    "p95MaxMs": 17.5,
+    "p99MaxMs": 20
+  },
+  "limitations": [
+    "The cloud sample fails the60fps gate. Low mean drawing cost is not a GPU/display frame certification.",
+    "Physical desktop/phone and production-build performance remain unverified.",
+    "Previous version no-game scheduling control was also slow but is historical evidence, not a current control or a basis to normalize this sample into a pass.",
+    "This sample does not contain a complete shop/editor journey or certify SFX/motion quality."
+  ]
+}

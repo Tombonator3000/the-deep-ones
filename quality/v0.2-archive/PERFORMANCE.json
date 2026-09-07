@@ -1,0 +1,52 @@
+{
+  "date": "2026-09-06",
+  "sourceFingerprintSha256": "c5fbd856c15099254a8ce3952994c6828a77128a5c8a9bf70a8700aa64071273",
+  "environment": {
+    "browser": "Cloud Chrome 151",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "build": "Supervised Vite development preview; production archive built from identical source",
+    "physicalHardware": "Not exposed / not a physical target-device test",
+    "preset": "All scene layers enabled; normal motion; DPR1; three authored environments",
+    "warmupSeconds": 5,
+    "workload": [
+      "Animated scenery, 19 fish, boat, reflection, mist and particles",
+      "Dusk-to-night transition",
+      "Actual cast, hook, alternating reel/slack, catch and release",
+      "Journal open/close",
+      "Keyboard boat movement across dock/cove threshold",
+      "Shop open and return to boat"
+    ]
+  },
+  "measurement": {
+    "durationSeconds": 120,
+    "frames": 7153,
+    "averageFps": 59.6,
+    "p95Ms": 16.8,
+    "p99Ms": 16.8,
+    "stallsOver50ms": 4,
+    "meanRenderMs": 0.27,
+    "interruptions": 0,
+    "canvas": "1363×936",
+    "observedCanvases": [
+      "1363×936"
+    ],
+    "devicePixelRatio": 1,
+    "renderer": "Canvas2D / cloud Chrome",
+    "gate": "PASS"
+  },
+  "thresholds": {
+    "p95MaxMs": 17.5,
+    "p99MaxMs": 20,
+    "stallDefinitionMs": 50,
+    "visibilityInterruptionsAllowed": 0,
+    "resizeDuringSampleAllowed": false
+  },
+  "targetDeviceGate": "UNVERIFIED",
+  "limitations": [
+    "Four intervals exceeded 50 ms; percentile pass is not a promise of zero hitches.",
+    "GPU timing and memory were not measured.",
+    "Earlier inactive-preview diagnostics delivered roughly1–2fps even with all animated drawing disabled; later active view delivered60fps. Cause inferred, not proven.",
+    "A preliminary run resized and its completion UI did not update; it was discarded. The instrumentation was fixed and this run repeated at one recorded resolution.",
+    "Physical desktop/phone and actual production-build performance remain unverified."
+  ]
+}

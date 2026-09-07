@@ -6186,4 +6186,30 @@ All existing functionality preserved - no behavior changes.
 **Next Steps:** Consider applying similar refactoring patterns to other identified complex functions (`update()`, `drawBoat()`, `getContextualDialog()`).
 
 ---
+# 2026-09-06 — The Stillwater Below: new representative slice
 
+Owner requests a new Cast n Chill × Lovecraft game with substantially improved art, generated concepts, an independent Astra critic and measured performance. Baseline `b25609d8`. New canonical slice in `v2/`; original prototype retained. Work order and acceptance gates: `docs/rebuild/BRIEF.md`. First target: fish → sell → improve equipment → first unsettling discovery, with an illustrated journal, dog, local save and touch/keyboard input. Visual target generation and read-only source audit started before substantial visual implementation. Results will be recorded after actual runtime validation.
+
+
+Completed a new vanilla-JS/Canvas2D slice in `v2/`: cast/hook/reel/slack/keep/release, real depth limits, sequential rods, dock sales, journal, dog cooldown, composure tradeoffs and validated local saves. Original campaign source remains the archive. Generated and inspected dusk/day/night scenery, two actor poses, six fish and Old Marsh. Added source-registered water/mist animation and real HTML paper UI. Independent Astra reviews drove repairs to portrait layout, matte extraction, night contrast, fight feedback, unknown-species labels, dawn option and pinned dialog close. Actual browser journey reached an abnormal catch after selling normal fish and buying the new rod; reload preserved all values. Six simulation tests and production build passed. Source, prompts, runtime captures and open visual/performance gates are recorded in `docs/rebuild/` and `quality/`. This is not a completed campaign or a certified 60-fps/AAA release.
+
+## 2026-09-06 — Continuous waters and the complete fishing loop (in progress)
+
+Owner reports the single-screen movement, remote dock button and mobile text-selection bug. Scope: world-space sailing and physical docks in every area; direction-aware articulated boat; depth-following underwater reveal; actual parallax and atmosphere; license/map/gear progression; junk and relic catches; five sanity stages and playable ending choices; a visual area editor; better movement/fishing/environment SFX. Preserve/migrate existing v2 saves. Keep the existing public Site and draft PR. Gauntlet: real journeys, independent Astra visual review, frame-time measurement and explicit remaining limits. Research and new layer assets are running independently; implementation stays in canonical v2/.
+
+## 2026-09-06 — Continuous waters v0.3 completed
+
+Implemented three long world-space areas with physical docks and no return teleport, facing-aware sailing, articulated fisherman/forearm/dog/oar, camera follow, independent scenery/fog/reflection layers and depth-following underwater reveal. Added four rods, three lures, boat upgrade, license/chart travel, junk and three relics, five sanity stages, three ending gates, Marsh reactions, expanded Web Audio feedback and version3 migration.
+
+Visual editor supports dragging props, dock/depth zones, save, JSON import/export and isolated playtests that restore the campaign. Real browser flow caught/sold a46coin perch, sailed back roughly360m, bought140coin Reef license, traveled from dock and reloaded at172coins. Brisvika editor save/export/playtest/restore verified; import schema Node-tested, file picker unverified.
+
+New original generated concept/shores/dock/actors/objects/chart/full Deep One art integrated. Independent Astra critique7.3→7.7→7.9→8.1 after water/contact/scale repairs and distinct monster/night-lighting pass. Final boundary check found boat/rod clipping; camera now retains320world units of margin at both ends. Day/dawn/dusk/night observed. Ten meaningful simulation/schema tests and final production build pass.
+
+Current cloud frame samples fail60fps; even no-game rAF control is very slow, suggesting environment scheduling but not proving its cause. No false target-device or audio-listening certification. Exact evidence, current hashes, prompts/briefs, stack decision and limits in docs/rebuild/ and quality/. Preserving the existing draft PR and updating the same public Site; original prototype retained.
+
+## 2026-09-06 — Living waters expansion (in progress)
+
+Owner requests visibly distinct biomes, different boat silhouettes, less obstructive HUD, an overarching diary story, more meaningful equipment/baits, schooling fish and uncertain investigative nibbles. Add coherent weather, windblown leaves, birds and flickering lamps. Preserve saves, editor and public Site; validate bait/nibble decisions and equipment rather than cosmetic labels. New biome/background and boat assets requested before integration.
+
+### v0.4 completed implementation and review
+Distinct reef/abyss paintings and 3 hull assets integrated; compact HUD, weather/ambient effects, habitat schools, six bait preferences and nibble/refusal states, 4 owned boats, 3 equipment upgrades, 9 diary entries and save-v4 migration. Fourteen tests and production build pass. Browser verified purchase/equip, diary, portrait fishing and biome identity. Independent critic8.0→8.2 after continuous reflection sampling and mounted lantern correction. Frame-time and physical-device limits recorded separately in quality/PERFORMANCE.json.

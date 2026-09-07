@@ -1,0 +1,35 @@
+{
+  "sourceBase": "b25609d8be952085f85797dd4a178813ad5b256e",
+  "branch": "feature/stillwater-rebuild",
+  "note": "Visual round 3 preceded only the opt-in diagnostic completion/layout-validation fix. Art, rendering and gameplay rules are identical; final benchmark exercises the current UI.",
+  "runtimeFilesSha256": {
+    "package-lock.json": "c9a3686f42c66e510a8b47846177bee42ed9cb09b4c4b648abbb3fdcaeb55014",
+    "package.json": "2ac95ca35477be7dde86c29acc255f3f21a9b5d23c39b42f5351afbf9b7d27ef",
+    "v2/audio.js": "a469ccaba92c1d027b01e9e84df809bce23d2e7aadffc4da3e3d3c58e3c09b32",
+    "v2/game.js": "8537680879c4d0967b94a107405bf7d7ae2c29c761cd65d82efe742577d206a1",
+    "v2/index.html": "a8b45c3aa255764279836a0b42ce1a4ba5f06a60308dee6bf12fdd2b4cc726ef",
+    "v2/main.js": "8da1731bbd75951a76d19411de5e5f4dcbe25add4a0f0007c9e379700077f8e4",
+    "v2/public/art/environment-day.png": "29dde979acb054fe33c3606e52182ae79cded0f18ec27984cbf3c759aad2b56f",
+    "v2/public/art/environment-dusk.png": "e16506e629abe5a14df7ba24639f1cb6d982502a3ba3a67999cc6d9bd4cbafb0",
+    "v2/public/art/environment-night.png": "ea0f439fae41573247092be1f25a8f9026f54963d90940f041f0ef92c9c1e880",
+    "v2/public/art/old-marsh.png": "5ba79f6c3e4fcb43b5a13626871297c89e305eeb76d77d8dc735d5d515079dcf",
+    "v2/public/art/sprites-alert.png": "6af78edc075956e3e35f31f7c220818927bfff769f6ddbb015505b19492f53d7",
+    "v2/public/art/sprites.png": "b2f6e44542cef5acdb93e40d82d3b31d305ada4b8257236b07e9f4c2f815c9b9",
+    "v2/render.js": "4f12c95271d79b6ccd3f1c72efc0b1575c9f0d16fad6cb234dd181c5edb481bc",
+    "v2/style.css": "49d232dc5d8b04e70b865fc8dc8fd9ffc7fb2b5370d1ef9a2a22e5a5d6ba8ebe",
+    "v2/tests/game.test.js": "2805acbf7a8b15e9c62c27648137166cebc4172b3d213db27cbfec9b45410ab4",
+    "vite.config.js": "e3bcfbdd58be511d64813200928500815e624d5982151c42fa5427ddfbec4e41"
+  },
+  "aggregateSha256": "c5fbd856c15099254a8ce3952994c6828a77128a5c8a9bf70a8700aa64071273",
+  "productionOutputsSha256": {
+    "dist/art/environment-day.png": "29dde979acb054fe33c3606e52182ae79cded0f18ec27984cbf3c759aad2b56f",
+    "dist/art/environment-dusk.png": "e16506e629abe5a14df7ba24639f1cb6d982502a3ba3a67999cc6d9bd4cbafb0",
+    "dist/art/environment-night.png": "ea0f439fae41573247092be1f25a8f9026f54963d90940f041f0ef92c9c1e880",
+    "dist/art/old-marsh.png": "5ba79f6c3e4fcb43b5a13626871297c89e305eeb76d77d8dc735d5d515079dcf",
+    "dist/art/sprites-alert.png": "6af78edc075956e3e35f31f7c220818927bfff769f6ddbb015505b19492f53d7",
+    "dist/art/sprites.png": "b2f6e44542cef5acdb93e40d82d3b31d305ada4b8257236b07e9f4c2f815c9b9",
+    "dist/assets/index-BKBgY8FL.css": "01057e3ac76db280949318c9eaa9972c3a419ee21f73267ccf95b21fe75b234f",
+    "dist/assets/index-qWSNqckK.js": "02f2ddb84e3e3dc0c8a530acb1df9cb2e929f922b8fd8358891f9faa2f7c70ee",
+    "dist/index.html": "97acf955f784862f90dd491a05042db43d089097f01121c28de5404c4db3590a"
+  }
+}
